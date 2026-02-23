@@ -1,7 +1,7 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.3  
-**Date:** February 18, 2026  
+**Version:** 1.4  
+**Date:** February 23, 2026  
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
 **Trigger:** End of every session with database changes, or on request
@@ -25,25 +25,25 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 
 | Changed? | Category | Triggers |
 |----------|----------|----------|
-| ☘| New tables created | → Run Section 2 (New Table) + Section 3 (Database Validation) |
-| ☘| Existing tables modified (columns, constraints) | → Run Section 3 (Database Validation) |
-| ☘| RLS policies added or changed | → Run Section 3 (Database Validation) |
-| ☘| GRANTs added or changed | → Run Section 3 (Database Validation) |
-| ☘| New views created | → Run Section 4 (Security Validation) |
-| ☘| New functions created | → Run Section 4 (Security Validation) |
-| ☘| Audit triggers added | → Run Section 3 (Database Validation) |
-| ☘| Architecture documents created or updated | → Run Section 5 (Manifest) |
-| ☘| AG prompts sent (UI changes) | → Run Section 6 (Deploy Reminder) |
-| ☘| Any database changes at all | → Run Section 6b (Schema Backup) + Section 9 (Stats Alignment) |
-| ☘| Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
-| ☘| No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
+| ☐ | New tables created | → Run Section 2 (New Table) + Section 3 (Database Validation) |
+| ☐ | Existing tables modified (columns, constraints) | → Run Section 3 (Database Validation) |
+| ☐ | RLS policies added or changed | → Run Section 3 (Database Validation) |
+| ☐ | GRANTs added or changed | → Run Section 3 (Database Validation) |
+| ☐ | New views created | → Run Section 4 (Security Validation) |
+| ☐ | New functions created | → Run Section 4 (Security Validation) |
+| ☐ | Audit triggers added | → Run Section 3 (Database Validation) |
+| ☐ | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
+| ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) |
+| ☐ | Any database changes at all | → Run Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 9 (Stats Alignment) |
+| ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
+| ☐ | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
 
 ---
 
 ## Section 2: New Table Validation
 
 **When:** Any new table was created this session.  
-**Skill:** `operations/new-table-checklist.md`
+**Skill:** `gis-new-table-checklist-v1_0.md` (or `docs-architecture/operations/new-table-checklist.md`)
 
 For each new table, verify:
 
@@ -63,7 +63,7 @@ For each new table, verify:
 ## Section 3: Database Change Validation
 
 **When:** Any table, column, RLS, GRANT, trigger, or constraint changes.  
-**Skill:** `operations/database-change-validation.md`
+**Skill:** `gis-database-change-validation-skill-v1_0.md` (or `docs-architecture/operations/database-change-validation.md`)
 
 Run the applicable sections from the validation skill:
 
@@ -84,7 +84,7 @@ Run the applicable sections from the validation skill:
 ## Section 4: Security Posture Validation
 
 **When:** New views created, new functions created, or Supabase Security Advisor email received.  
-**Skill:** `identity-security/security-validation-runbook.md`
+**Skill:** `gis-security-validation-runbook-v1_0.md` (or `docs-architecture/identity-security/security-validation-runbook.md`)
 
 | Check | Runbook Section | Quick Query |
 |-------|----------------|-------------|
@@ -103,7 +103,7 @@ Run the applicable sections from the validation skill:
 ## Section 5: Architecture Manifest Update
 
 **When:** Any new architecture documents, skills, or runbooks were created or versioned this session.  
-**Document:** `MANIFEST.md` (current version)
+**Document:** `gis-architecture-manifest-v1_25.md` (current version)
 
 | Check | Action |
 |-------|--------|
@@ -118,10 +118,10 @@ Run the applicable sections from the validation skill:
 
 ## Section 6: Deploy Reminder
 
-**When:** AG prompts were sent that modify production-visible features.
+**When:** Claude Code commits were made that modify production-visible features.
 
 Remind Stuart to:
-1. **Commit** changes in AG / local repo
+1. **Commit** changes in Claude Code / local repo
 2. **Push** to `dev` branch on GitHub
 3. **Merge** `dev` → `main` to trigger Netlify production deployment
 4. **Verify** the change is live on `nextgen.getinsync.ca`
@@ -157,23 +157,79 @@ ls -la getinsync-nextgen-schema-YYYY-MM-DD.sql
 head -20 getinsync-nextgen-schema-YYYY-MM-DD.sql
 ```
 
-Expected: ~500-600KB file, starts with `-- PostgreSQL database dump`.
+Expected: ~500-700KB file, starts with `-- PostgreSQL database dump`.
 
-### Commit to GitHub
+### Commit to Code Repo
 
 ```bash
 git add getinsync-nextgen-schema-YYYY-MM-DD.sql
 git commit -m "Schema backup YYYY-MM-DD: [brief description of changes]"
-git push origin main
+git push origin dev
 ```
 
-**Note:** Local repo is on `main` branch (no local `dev`). AG pushes to GitHub separately.
+### Copy to Architecture Repo
+
+```bash
+cp getinsync-nextgen-schema-YYYY-MM-DD.sql ~/getinsync-architecture/schema/nextgen-schema-current.sql
+```
+
+This ensures the architecture repo always has the latest schema. The dated copy stays in the code repo for history.
 
 ### Post-Backup
 
 - **Roll database password** in Supabase Dashboard → Settings → Database
 - **Update Claude Code `.env` file** — `~/Dev/getinsync-nextgen-ag/.env` contains the DB password for read-only access. Update it with the new password after rolling.
-- AG/Netlify are NOT affected by password changes (use API keys, not DB password)
+- Claude Code/Netlify are NOT affected by password changes (use API keys, not DB password)
+
+---
+
+## Section 6c: Architecture Repo Sync
+
+**When:** Architecture documents were created or updated this session (from this chat OR Claude Code), OR schema backup was taken.
+
+### Two Repos, Two Commits
+
+| Repo | Path | Branch | Contains |
+|------|------|--------|----------|
+| **Code** | `~/Dev/getinsync-nextgen-ag` | `dev` | Application code, schema backups |
+| **Architecture** | `~/getinsync-architecture` | `main` | Architecture docs, current schema, manifest |
+
+Claude Code accesses architecture docs via the symlink `./docs-architecture/` → `~/getinsync-architecture/`.
+
+### Checklist
+
+| # | Check | Action |
+|---|-------|--------|
+| 1 | New docs produced in this chat? | Stuart copies to `~/getinsync-architecture/` in correct folder |
+| 2 | Claude Code modified `docs-architecture/`? | Verify Claude Code committed and pushed the architecture repo |
+| 3 | Schema backup taken (Section 6b)? | Copy dated schema to `~/getinsync-architecture/schema/nextgen-schema-current.sql` |
+| 4 | Manifest updated (Section 5)? | Ensure `MANIFEST.md` in architecture repo reflects changes |
+| 5 | Architecture repo clean? | Run verification below |
+
+### Verification
+
+```bash
+cd ~/getinsync-architecture && git status && git log --oneline -3 && cd ~/Dev/getinsync-nextgen-ag
+```
+
+**Expected:** Clean working tree, latest commit matches this session's work.
+
+### When This Chat Produces Documents
+
+This Claude Project chat cannot push to git. When architecture docs are created here:
+
+1. Stuart downloads the file from this chat
+2. Stuart copies it to the correct folder in `~/getinsync-architecture/`
+3. Stuart commits and pushes:
+   ```bash
+   cd ~/getinsync-architecture
+   git add -A
+   git commit -m "docs: [description of new/updated doc]"
+   git push
+   cd ~/Dev/getinsync-nextgen-ag
+   ```
+
+**Pass criteria:** `git status` in `~/getinsync-architecture` shows clean working tree, latest commit matches this session's work.
 
 ---
 
@@ -185,12 +241,13 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 
 | Section | What to include |
 |---------|-----------------|
-| **Completed** | SQL applied, AG prompts sent, architecture decisions made |
+| **Completed** | SQL applied, Claude Code changes, architecture decisions made |
 | **Database changes** | Tables created/modified, RLS policies, triggers, functions, views |
-| **Frontend changes** | AG deployments, components modified |
-| **Files created** | Architecture docs, AG prompts, skills, runbooks |
+| **Frontend changes** | Claude Code commits, components modified |
+| **Files created** | Architecture docs, skills, runbooks |
 | **Validation results** | Pass/fail for each check run from Sections 2–5 |
-| **Still open** | Bugs, next steps, pending AG work |
+| **Repo status** | Both repos committed and pushed? |
+| **Still open** | Bugs, next steps, pending work |
 | **Context for next session** | What the next Claude instance needs to know |
 
 ---
@@ -198,14 +255,14 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 ## Section 8: Monthly SOC2 Evidence (If Applicable)
 
 **When:** First session of each month, or when explicitly requested.  
-**Skill:** `identity-security/soc2-evidence-collection.md`
+**Skill:** `gis-soc2-evidence-collection-skill.md`
 
 | Check | Action |
 |-------|--------|
 | Run `generate_soc2_evidence()` RPC | Produces monthly snapshot JSON |
 | Name file per convention | `GIS-SOC2-EV-{seq}-{YYYY}-{MM}-{DD}.json` |
 | Compare to previous month | Note any variance in table/policy/trigger counts |
-| Log in evidence index | Update `identity-security/soc2-evidence-index.md` if it exists |
+| Log in evidence index | Update `gis-soc2-evidence-index` if it exists |
 
 **Pass criteria:** Snapshot collected, named correctly, variance explained.
 
@@ -238,9 +295,9 @@ Compare the query results against these documents. If any are stale, flag for up
 
 | Document | Section | What to Check |
 |----------|---------|---------------|
-| `MANIFEST.md` | Schema Statistics | tables, views, functions, RLS policies, audit triggers, schema backup date |
-| `identity-security/soc2-evidence-index.md` | Current Readiness Score + CC6.6 rows | table count, trigger count, policy count |
-| `identity-security/security-posture-overview.md` | Timeline section + body stats | table count, trigger count, policy count, view count |
+| `gis-architecture-manifest-v1_XX.md` | Schema Statistics | tables, views, functions, RLS policies, audit triggers, schema backup date |
+| `gis-soc2-evidence-index-v1_0.md` | Current Readiness Score + CC6.6 rows | table count, trigger count, policy count |
+| `gis-security-posture-automated-overview-v1_1.md` | Timeline section + body stats | table count, trigger count, policy count, view count |
 | Claude memory | SOC2 + RLS memory entries | table count, trigger count |
 
 ### 9.3 — Update or Flag
@@ -259,14 +316,14 @@ Compare the query results against these documents. If any are stale, flag for up
 ## Section 10: Open Items Maintenance
 
 **When:** Every session — this is how the backlog stays alive.  
-**Document:** `planning/open-items-priority-matrix.md`
+**Document:** `gis-open-items-priority-matrix.md`
 
 ### 10.1 — Harvest New Items
 
 Review the session for anything that was:
 - Discovered but not fixed (bugs, design debt, data quality issues)
 - Deferred deliberately ("parked", "future", "not today")
-- Promised but not delivered (AG prompts sent but unconfirmed)
+- Promised but not delivered (Claude Code changes sent but unconfirmed)
 - Dependencies identified (X blocks Y)
 
 ### 10.2 — Classify New Items
@@ -283,7 +340,7 @@ Move items to the "Completed This Session" section with resolution notes. Don't 
 
 ### 10.4 — SOC2 Policy Gap Check
 
-Reference `identity-security/soc2-evidence-index.md` § "Policy Documents Needed":
+Reference `gis-soc2-evidence-index-v1_0.md` § "Policy Documents Needed":
 
 | Policy | Status | Priority |
 |--------|--------|----------|
@@ -300,7 +357,7 @@ When any policy is drafted, update both this table AND the evidence index.
 
 ### 10.5 — Reproduce Updated List
 
-If items were added or completed, produce an updated `planning/open-items-priority-matrix.md` (no date suffix — one file, always current) and present it to Stuart for upload to the project.
+If items were added or completed, produce an updated `gis-open-items-priority-matrix.md` (no date suffix — one file, always current) and present it to Stuart for upload to the project.
 
 **Pass criteria:** All new items captured, completed items closed, SOC2 policy gap status current.
 
@@ -310,16 +367,16 @@ If items were added or completed, produce an updated `planning/open-items-priori
 
 | Document | What It Does | When Referenced |
 |----------|-------------|-----------------|
-| `operations/new-table-checklist.md` | Per-table creation checklist | New tables (Section 2) |
-| `operations/database-change-validation.md` | SQL validation queries for DB changes | Any DB change (Section 3) |
-| `identity-security/security-validation-runbook.md` | View/function/posture checks | New views/functions (Section 4) |
-| `MANIFEST.md` | Master document catalog | New/updated docs (Section 5) |
-| `identity-security/rls-policy-addendum.md` | RLS policy reference | Policy changes (Section 3) |
-| `identity-security/soc2-evidence-collection.md` | Monthly evidence procedure | Monthly (Section 8) |
-| `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4) |
-| `identity-security/security-posture-overview.md` | External security overview | Stats alignment (Section 9) |
-| `identity-security/user-registration.md` | Signup/invitation flows | SOC2 CC6.1 evidence |
-| `planning/open-items-priority-matrix.md` | Prioritized backlog (living doc, overwritten each session) | Open items (Section 10) |
+| `gis-new-table-checklist-v1_0.md` | Per-table creation checklist | New tables (Section 2) |
+| `gis-database-change-validation-skill-v1_0.md` | SQL validation queries for DB changes | Any DB change (Section 3) |
+| `gis-security-validation-runbook-v1_0.md` | View/function/posture checks | New views/functions (Section 4) |
+| `gis-architecture-manifest-v1_25.md` | Master document catalog | New/updated docs (Section 5) |
+| `gis-rls-policy-architecture-v2_4` | RLS policy reference | Policy changes (Section 3) |
+| `gis-soc2-evidence-collection-skill.md` | Monthly evidence procedure | Monthly (Section 8) |
+| `gis-soc2-evidence-index-v1_1.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4) |
+| `gis-security-posture-automated-overview-v1_1.md` | External security overview | Stats alignment (Section 9) |
+| `gis-user-registration-invitation-architecture-v1_0.md` | Signup/invitation flows | SOC2 CC6.1 evidence |
+| `gis-open-items-priority-matrix.md` | Prioritized backlog (living doc, overwritten each session) | Open items (Section 10) |
 
 ---
 
@@ -331,9 +388,10 @@ If items were added or completed, produce an updated `planning/open-items-priori
 | v1.1 | 2026-02-11 | Added Section 6b: Schema Backup with pg_dump command, connection details, verify steps, git commit, and post-backup password roll. Added "Any database changes" trigger to Section 1. |
 | v1.2 | 2026-02-12 | Added Section 9: Cross-Document Stats Alignment — prevents stat drift across manifest, evidence index, security overview, and memory. Added Section 10: Open Items Maintenance — harvests new items, classifies by priority, closes completed items, tracks SOC2 policy gaps, reproduces updated matrix. Updated Section 1 triggers to include "any work done" → Sections 9+10. Updated Document Map with evidence index, security overview, user registration, and open items matrix. |
 | v1.3 | 2026-02-18 | Section 6b Post-Backup: Added reminder to update Claude Code `.env` file after rolling database password. Clarified AG/Netlify not affected. |
+| v1.4 | 2026-02-23 | **Added Section 6c: Architecture Repo Sync** — dual-repo commit verification for `~/getinsync-architecture`. Covers docs produced in this chat (Stuart copies manually) and docs modified by Claude Code (via `./docs-architecture/` symlink). Includes schema backup copy step. Updated Section 1 triggers: architecture docs now trigger 6c, DB changes now trigger 6c. Updated Section 6b: added schema copy to architecture repo step. Updated Section 6 language: AG → Claude Code. Updated Section 7: added repo status row. Updated manifest reference to v1_25. Fixed mojibake throughout (CP1252 encoding artifacts). |
 
 ---
 
-*Document: operations/session-end-checklist.md*  
+*Document: gis-session-end-checklist-v1_4.md*  
 *Trigger: End of every productive session*  
 *February 2026*
