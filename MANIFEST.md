@@ -184,7 +184,7 @@ Every document is tagged with its relationship to the production system:
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | operations/development-rules.md | **v1.4** | 🟢 | **Development rules — Claude Code as primary, AG as fallback. Impact analysis, view contracts, clean compile.** |
-| operations/team-workflow.md | v1.0 | 🟠 | Team workflow — **references AG as primary, needs update for Claude Code** |
+| operations/team-workflow.md | v2.0 | 🟢 | Team workflow — Stuart + Claude Code two-role model, dual-repo commits, impact analysis (rewritten Feb 23) |
 | CLAUDE.md | v1.0 | 🟢 | **Claude Code auto-read rules file — architecture rules, impact analysis, do-not list, DB access** |
 
 ### Demo & Testing
