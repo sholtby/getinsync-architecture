@@ -1,6 +1,6 @@
 # identity-security/soc2-evidence-index.md
 GetInSync NextGen — SOC2 Type II Evidence Index  
-Last updated: 2026-02-12  
+Last updated: 2026-02-23  
 Status: 🟢 AS-BUILT (evidence collection started Feb 8, 2026)
 
 ---
@@ -55,9 +55,9 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 
 | # | Type | Evidence | Location |
 |---|------|----------|----------|
-| 1 | 📄 | RLS Policy Architecture — 282+ policies across 72 tables | identity-security/rls-policy.md + v2_4-addendum |
+| 1 | 📄 | RLS Policy Architecture — 347 policies across 90 tables | identity-security/rls-policy.md + v2_4-addendum |
 | 2 | 📄 | Access Control Matrix (5 roles × 5 operations) | identity-security/rls-policy.md § SOC2 Compliance |
-| 3 | 📄 | RBAC model (namespace_role + workspace role) | identity-security/identity-security.md ⚠️ NEEDS REWRITE |
+| 3 | 📄 | RBAC model (namespace_role + workspace role) | identity-security/identity-security.md (v1.2 — rewritten Feb 23) |
 | 4 | ðŸ” | All tables have RLS enabled | `SELECT count(DISTINCT tablename) FROM pg_policies WHERE schemaname = 'public';` → should match table count |
 | 5 | ðŸ” | No orphaned admin accounts | `SELECT * FROM platform_admins pa WHERE NOT EXISTS (SELECT 1 FROM auth.users au WHERE au.id = pa.user_id);` → 0 rows |
 | 6 | ðŸ” | Users by role distribution | `SELECT namespace_role, count(*) FROM users GROUP BY namespace_role;` |
@@ -66,7 +66,7 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 | 9 | ðŸ” | Namespace isolation verification | `SELECT n.name, count(a.id) FROM namespaces n LEFT JOIN workspaces w ON w.namespace_id = n.id LEFT JOIN applications a ON a.workspace_id = w.id GROUP BY n.name;` |
 
 **Gaps:**
-- ⚠️ **Identity/Security doc needs rewrite** (v1_1 references Entra ID, not Supabase Auth) — WBS 1.8.3
+- ✅ **Identity/Security doc rewritten to v1.2** (Feb 23, 2026) — Supabase Auth, RBAC, SOC2 controls
 - ⚠️ **No MFA enforcement** — Supabase Auth supports MFA but not enforced yet
 - ⚠️ **No formal access review process** — need quarterly review procedure documented
 
@@ -120,7 +120,7 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 
 | # | Type | Evidence | Location |
 |---|------|----------|----------|
-| 1 | 📄 | Application audit logging (17 tables with triggers) | public.audit_logs table (created Feb 8, 2026) |
+| 1 | 📄 | Application audit logging (37 tables with triggers) | public.audit_logs table (created Feb 8, 2026) |
 | 2 | 📄 | Authentication audit logging | auth.audit_log_entries (Supabase built-in) |
 | 3 | 📄 | Audit log schema design | identity-security/identity-security.md § 9.2 |
 | 4 | ðŸ” | Audit trail evidence accumulation | `SELECT min(created_at), max(created_at), count(*) FROM audit_logs;` |
@@ -277,7 +277,7 @@ These standalone policy documents don't exist yet but are required for SOC2. Eac
 
 | Category | Status | Score |
 |----------|--------|-------|
-| CC6.1 Logical Access | RLS + RBAC implemented, docs need update | 🟡 75% |
+| CC6.1 Logical Access | RLS + RBAC implemented, docs updated. MFA + access review pending | 🟡 80% |
 | CC6.2 Encryption | Supabase handles, needs documentation | 🟡 60% |
 | CC6.3 API Auth | JWT + RLS implemented, needs docs | 🟡 65% |
 | CC6.6 Audit Logging | ✅ Implemented Feb 8, 2026 | 🟢 90% |
@@ -295,7 +295,7 @@ These standalone policy documents don't exist yet but are required for SOC2. Eac
 
 ### Before ServiceNow Knowledge (May 2026)
 1. ✅ Audit logging implemented (Feb 8 — this migration)
-2. Rewrite Identity/Security doc to v2.0 (WBS 1.8.3 — Week 1)
+2. ✅ Rewrite Identity/Security doc (v1.2 — Feb 23, 2026)
 3. Draft Information Security Policy (2-3 hours)
 4. Draft Change Management Policy (1-2 hours)
 5. Enable GitHub Dependabot (30 minutes)
@@ -322,7 +322,7 @@ Quick reference: which architecture doc evidences which control.
 | Document | Controls Evidenced |
 |----------|--------------------|
 | identity-security/rls-policy.md | CC6.1, CC6.3, C1.1 |
-| identity-security/identity-security.md | CC6.1, CC6.6 (⚠️ needs rewrite) |
+| identity-security/identity-security.md | CC6.1, CC6.6 |
 | planning/work-package-multi-region.md | CC6.2, C1.2 |
 | MANIFEST.md | CC7.1 |
 | archive/superseded/architecture-changelog-v1_7.md | CC7.1 |
@@ -347,6 +347,7 @@ Quick reference: which architecture doc evidences which control.
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-02-08 | Initial SOC2 Evidence Index. Audit logging migration created. Trust criteria mapped to existing docs and queries. Gaps identified. Readiness scored at ~50%. |
+| v1.2 | 2026-02-23 | Stats updated: 90 tables (was 72), 347 RLS policies (was 282), 37 audit triggers (was 17). Identity-security rewrite ⚠️ flags cleared (v1.2 done). CC6.1 readiness bumped 75%→80%. |
 | v1.1 | 2026-02-12 | Stats corrected: 72 tables (was 66), 17 audit triggers (was 11), 282+ RLS policies (was 279). Manifest ref v1.18→v1.20. Schema backup ref Feb 8→Feb 11. Added 9 docs to control mapping (Security & Operations section + user registration + RLS v2.4 addendum). Policy docs assigned to Delta via Jira (8 tickets). |
 
 ---
