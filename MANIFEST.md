@@ -93,7 +93,7 @@ Every document is tagged with its relationship to the production system:
 | identity-security/rls-policy.md | v2.3 | 🟠 | RLS policies — **stale: 307 policies documented, now 347** |
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
 | identity-security/rbac-permissions.md | v1.0 | 🟢 | RBAC permission matrix — role-action mapping for all entities |
-| core/involved-party.md | v1.9 | 🟠 | Contacts, organizations — tier names fixed, ReadOnly→viewer still pending |
+| core/involved-party.md | v1.9 | 🟢 | Contacts, organizations — tier names + role names corrected (updated Feb 23) |
 | planning/super-admin-provisioning.md | v0.2 | 🟢 | Platform admin namespace provisioning |
 | identity-security/user-registration.md | v1.0 | 🟢 | Signup and invitation flows |
 
@@ -554,9 +554,9 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 46 |
+| 🟢 AS-BUILT | 47 |
 | 🟡 AS-DESIGNED | 7 |
-| 🟠 NEEDS UPDATE | 2 |
+| 🟠 NEEDS UPDATE | 1 |
 | ☪ REFERENCE | 15 |
 | 🗴 DEPRECATED (removed) | 14 |
 | **Total tracked** | **84** |

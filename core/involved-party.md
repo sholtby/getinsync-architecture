@@ -48,7 +48,7 @@ For pricing and tier details, see **marketing/pricing-model.md**.
    - **All contacts are visible across all Workspaces within the same Namespace.**
    - All domain objects (Applications, DeploymentProfiles, ITServices, Integrations, etc.) reference ContactId, not IndividualId.
    - **PrimaryWorkspaceId (optional)** indicates the contact's "home" workspace for UI filtering purposes.
-   - **Contact includes WorkspaceRole** (Admin, Editor, Steward, Read-Only, Restricted).
+   - **Contact includes WorkspaceRole** (Admin, Editor, Steward, Viewer, Restricted).
 
 3. **Organization is Namespace-Scoped**
    - **NamespaceId (FK, NOT NULL) is mandatory.**
@@ -176,7 +176,7 @@ Key fields:
 - **NamespaceId (FK, NOT NULL)** *(Changed in v1.9 - was WorkspaceId)*
 - **PrimaryWorkspaceId (FK, NULLABLE)** *(New in v1.9 - optional "home" workspace for filtering)*
 - IndividualId (FK)
-- **WorkspaceRole** (Admin, Editor, Steward, ReadOnly, Restricted)
+- **WorkspaceRole** (Admin, Editor, Steward, Viewer, Restricted)
 - DisplayNameOverride (optional)
 - JobTitle (workspace-specific)
 - ContactCategory (optional: InternalStaff, Vendor, Contractor, Customer, Other)
@@ -190,7 +190,7 @@ Key fields:
 | Admin | Full CRUD, user management, settings | Editor |
 | Editor | Create entities, edit in assigned Portfolios | Editor |
 | Steward | Edit Business Fit + business data on owned Applications only | None (all tiers) |
-| ReadOnly | View all, no edit | None |
+| Viewer | View all, no edit | None |
 | Restricted | View assigned Portfolios only | None |
 
 Characteristics:
@@ -200,7 +200,7 @@ Characteristics:
 - All domain objects inside a Namespace (Applications, DPs, IT Services, Integrations, ProductContracts, etc.) reference ContactId.
 - A single Individual can have many Contacts (one per Namespace, potentially multiple if MSP scenario).
 - **WorkspaceRole determines what the user can do.** The role may be workspace-specific in future implementations.
-- **A user can have different WorkspaceRoles in different Workspaces** (e.g., Editor in Justice, ReadOnly in Health).
+- **A user can have different WorkspaceRoles in different Workspaces** (e.g., Editor in Justice, Viewer in Health).
 
 ### 3.2.1 Contact RLS Policies *(New in v1.9)*
 
