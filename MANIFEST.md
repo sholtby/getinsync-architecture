@@ -57,7 +57,7 @@ Every document is tagged with its relationship to the production system:
 | core/composite-application.md | v1.1 | 🟡 | Composite applications (Supabase-native) |
 | core/composite-application-erd.md | v1.0 | 🟡 | Composite application ERD |
 | core/deployment-profile.md | v1.8 | 🟢 | DP-centric assessment, clone/move, naming |
-| core/workspace-group.md | v1.6 | 🟠 | Workspace groups (3 AWS refs) |
+| core/workspace-group.md | v1.6 | 🟢 | Workspace groups — stack-agnostic, no AWS refs found |
 | features/technology-health/technology-stack-erd.md | v1.0 | 🟢 | CSDM-aligned ERD — SP, TP, IT Services parallel to DPs |
 | features/technology-health/technology-stack-erd-addendum.md | v1.1 | 🟢 | **Two-path model: inventory tags vs IT Service cost/blast radius — DEPLOYED** |
 | catalogs/application-reference-model.md | v2.0 | ☪ | Reference model methodology |
@@ -78,9 +78,9 @@ Every document is tagged with its relationship to the production system:
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/cost-budget/cost-model.md | v2.5 | 🟠 | Cost flow, allocation, TBM-lite (2 AWS refs) |
+| features/cost-budget/cost-model.md | v2.5 | 🟢 | Cost flow, allocation, TBM-lite — stack-agnostic, no AWS refs found |
 | features/cost-budget/cost-model-addendum.md | v2.5.1 | 🟢 | **Confirms zero cost model impact from Path 1 technology tagging — DEPLOYED** |
-| features/cost-budget/budget-management.md | v1.3 | 🟠 | Application and workspace budgets (8 AWS refs, tables built) |
+| features/cost-budget/budget-management.md | v1.3 | 🟢 | Application and workspace budgets — stack-agnostic, no AWS refs found (tables built) |
 | features/cost-budget/budget-alerts.md | v1.0 | 🟢 | Budget health monitoring |
 | features/cost-budget/vendor-cost.md | v1.0 | 🟢 | Vendor management, contracts |
 | features/cost-budget/software-contract.md | v1.0 | 🟡 | Software contract lifecycle management |
@@ -93,7 +93,7 @@ Every document is tagged with its relationship to the production system:
 | identity-security/rls-policy.md | v2.3 | 🟠 | RLS policies — **stale: 307 policies documented, now 347** |
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
 | identity-security/rbac-permissions.md | v1.0 | 🟢 | RBAC permission matrix — role-action mapping for all entities |
-| core/involved-party.md | v1.9 | 🟠 | Contacts, organizations (10 AWS refs, tables built) |
+| core/involved-party.md | v1.9 | 🟠 | Contacts, organizations — tier names fixed, ReadOnly→viewer still pending |
 | planning/super-admin-provisioning.md | v0.2 | 🟢 | Platform admin namespace provisioning |
 | identity-security/user-registration.md | v1.0 | 🟢 | Signup and invitation flows |
 
@@ -113,7 +113,7 @@ Every document is tagged with its relationship to the production system:
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/integrations/servicenow-alignment.md | v1.2 | 🟠 | CSDM mapping, sync strategy (9 AWS refs, core mapping valid) |
+| features/integrations/servicenow-alignment.md | v1.2 | 🟢 | CSDM mapping, sync strategy — stack-agnostic, no AWS refs found |
 | features/integrations/architecture.md | v1.2 | ☪ | External integrations (stack-agnostic) |
 | features/integrations/itsm-api-research.md | **v1.0** | 🟡 | **ITSM API research — ServiceNow + HaloITSM publish/subscribe patterns. Phase 37 scoping.** |
 
@@ -554,12 +554,12 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 35 |
-| 🟡 AS-DESIGNED | 8 |
-| 🟠 NEEDS UPDATE | 14 |
-| ☪ REFERENCE | 17 |
+| 🟢 AS-BUILT | 45 |
+| 🟡 AS-DESIGNED | 7 |
+| 🟠 NEEDS UPDATE | 3 |
+| ☪ REFERENCE | 15 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **85** |
+| **Total tracked** | **84** |
 
 ---
 

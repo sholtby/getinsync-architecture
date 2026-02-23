@@ -82,7 +82,7 @@ For pricing and tier details, see **marketing/pricing-model.md**.
 8. **Steward Rights: Derived from Contact Assignment**
    - Steward is a special role for Application/IT Service Owners.
    - Steward rights are granted automatically when a user is assigned as Owner or Delegate contact on an Application or IT Service.
-   - **Steward is available on all tiers** (Free, Pro, Enterprise, Full) — it's a workflow feature, not a capacity gate. *(Changed in v1.8)*
+   - **Steward is available on all tiers** (trial, essentials, plus, enterprise) — it's a workflow feature, not a capacity gate. *(Changed in v1.8)*
    - See Section 3.11 for details.
 
 ### 2.2 Goals
@@ -473,7 +473,7 @@ For each Contact with an existing "Company" or Supplier field:
 | Version | Date | Changes |
 |---------|------|---------|
 | **v1.9** | **2026-01-11** | **BREAKING CHANGE: Contacts are now Namespace-Scoped.** Renamed `workspace_id` to `primary_workspace_id` (nullable). Added `namespace_id` (required). Updated RLS policies. Added Section 2.3 (Rationale). Added Section 3.2.1 (RLS Policies). Added Section 3.2.2 (UI Filtering). Added Section 4 (Application Contacts). Updated entity diagrams. This change supports the Publisher/Consumer model where shared applications need visible contacts across workspaces. |
-| v1.8 | 2025-12-26 | Expanded Steward scope: Added annual licensing cost, vendor contact to editable fields. **Steward now available on all tiers** (Free, Pro, Enterprise, Full) — it's a workflow feature, not a capacity gate. Updated tier user limits: Free=1, Pro=3, Enterprise/Full=Unlimited. Added rationale explaining Steward as derived permissions. |
+| v1.8 | 2025-12-26 | Expanded Steward scope: Added annual licensing cost, vendor contact to editable fields. **Steward now available on all tiers** (trial, essentials, plus, enterprise) — it's a workflow feature, not a capacity gate. Updated tier user limits: trial=1, essentials=3, plus/enterprise=Unlimited. Added rationale explaining Steward as derived permissions. |
 | v1.7 | 2025-12-19 | Added Section 3.3.1 UI Presentation (Filtered Views). Organizations appear as "Vendors" and "Manufacturers" in UI based on boolean flags. Unfiltered "Organizations" view is admin-only. Contextual field labels (Vendor on contracts, Manufacturer on products). Validated with City of Garland feedback. |
 | v1.6 | 2025-12-14 | Added licensing model (Editor Pool at Namespace level). Added Steward rights (derived from Owner/Delegate contacts). Added WorkspaceRole to Contact entity. Cross-references to identity-security/identity-security.md and marketing/pricing-model.md. |
 | v1.5 | 2025-12-12 | Clarified Organization is Namespace-Scoped with mandatory NamespaceId. Added explicit visibility rules for Organizations. Removed references to undefined "WorkspaceGroup admin" role - only Namespace Admins can use WorkspaceGroup views. Added note that IntegrationContactRole is defined in features/integrations/architecture.md. |
