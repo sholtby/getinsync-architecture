@@ -1,6 +1,6 @@
 # identity-security/identity-security.md
 GetInSync Identity, Security, and Compliance Architecture
-Last updated: 2025-12-26
+Last updated: 2026-02-23
 
 ---
 
@@ -11,7 +11,7 @@ This document defines the identity, authentication, authorization, and security 
 - Multi-region SaaS deployment model
 - Multi-IdP authentication (Entra ID, Saskatchewan Account, future providers)
 - Role-Based Access Control (RBAC) across Platform, Namespace, Workspace, and WorkspaceGroup
-- Analytics authorization (QuickSight integration)
+- Analytics authorization (Frontend React dashboards)
 - SOC 2 compliance controls
 - Audit logging and data residency requirements
 
@@ -43,15 +43,16 @@ GetInSync is deployed as **regional instances** to satisfy data residency requir
 │                    GetInSync Global                             │
 │  (Customer Registration, Billing, License Management,           │
 │   Region Selection, Support Portal)                             │
-│  Hosted: Single region (e.g., AWS us-east-1)                    │
-│  Data: No customer content - only billing/license metadata      │
+│  Frontend: Netlify (Global CDN)                                 │
+│  Data: No customer content — only billing/license metadata      │
 └─────────────────────────────────────────────────────────────────┘
                               │
             ┌─────────────────┼─────────────────┐
             ▼                 ▼                 ▼
 ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────┐
 │ GetInSync Canada  │ │  GetInSync US     │ │ GetInSync EU      │
-│ (AWS ca-central-1)│ │ (AWS us-east-1)   │ │ (AWS eu-west-1)   │
+│ (Supabase         │ │ (Supabase         │ │ (Supabase         │
+│  ca-central-1)    │ │  us-east-1)       │ │  eu-west-1)       │
 │                   │ │                   │ │                   │
 │ ┌───────────────┐ │ │ ┌───────────────┐ │ │ ┌───────────────┐ │
 │ │ Namespace:GoS │ │ │ │ Namespace:X   │ │ │ │ Namespace:Y   │ │
@@ -59,8 +60,8 @@ GetInSync is deployed as **regional instances** to satisfy data residency requir
 │ └───────────────┘ │ │ └───────────────┘ │ │ └───────────────┘ │
 │                   │ │                   │ │                   │
 │ ┌───────────────┐ │ │ ┌───────────────┐ │ │ ┌───────────────┐ │
-│ │  QuickSight   │ │ │ │  QuickSight   │ │ │ │  QuickSight   │ │
-│ │ (ca-central)  │ │ │ │ (us-east)     │ │ │ │ (eu-west)     │ │
+│ │ React Charts  │ │ │ │ React Charts  │ │ │ │ React Charts  │ │
+│ │ (frontend)    │ │ │ │ (frontend)    │ │ │ │ (frontend)    │ │
 │ └───────────────┘ │ │ └───────────────┘ │ │ └───────────────┘ │
 │                   │ │                   │ │                   │
 │ All data stays    │ │ All data stays    │ │ All data stays    │
@@ -109,15 +110,15 @@ GetInSync is deployed as **regional instances** to satisfy data residency requir
 
 ```
 ┌──────────┐     ┌──────────────┐     ┌─────────────────┐     ┌──────────────┐
-│  User    │────▶│  GetInSync   │────▶│  Namespace IdP  │────▶│  MFA Check   │
-│ Browser  │     │  Login Page  │     │  (Entra ID)     │     │  (Entra/MFA) │
+│  User    │────▶│  GetInSync   │────▶│  Supabase Auth  │────▶│  External    │
+│ Browser  │     │  Login Page  │     │  (OAuth/SAML)   │     │  IdP + MFA   │
 └──────────┘     └──────────────┘     └─────────────────┘     └──────────────┘
                                                                       │
      ┌────────────────────────────────────────────────────────────────┘
      │
      ▼
 ┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│  IdP Returns    │────▶│  GetInSync       │────▶│  Session Created │
+│  IdP Returns    │────▶│  Supabase Auth   │────▶│  Session Created │
 │  Token + Claims │     │  Token Validation │     │  User Logged In  │
 └─────────────────┘     └──────────────────┘     └──────────────────┘
 ```
@@ -127,19 +128,19 @@ GetInSync is deployed as **regional instances** to satisfy data residency requir
 Each Namespace stores its IdP configuration:
 
 ```
-NamespaceIdentityProvider
-├── NamespaceIdentityProviderId (PK)
-├── NamespaceId (FK)
-├── ProviderType (EntraID, SaskatchewanAccount, SAML, OIDC)
-├── DisplayName
-├── ClientId
-├── TenantId (for Entra ID)
-├── Authority / MetadataUrl
-├── ClientSecret (encrypted)
-├── IsEnabled
-├── IsPrimary (one primary per Namespace)
-├── AllowedDomains (e.g., "gov.sk.ca")
-└── CreatedDate / ModifiedDate
+namespace_identity_providers
+├── id (uuid, PK)
+├── namespace_id (uuid, FK)
+├── provider_type (text: entra_id, saskatchewan_account, saml, oidc)
+├── display_name (text)
+├── client_id (text)
+├── tenant_id (text, for Entra ID)
+├── authority_url / metadata_url (text)
+├── client_secret (text, encrypted)
+├── is_enabled (boolean)
+├── is_primary (boolean, one primary per namespace)
+├── allowed_domains (text[], e.g., '{gov.sk.ca}')
+└── created_at / updated_at (timestamptz)
 ```
 
 **Multi-IdP per Namespace:**
@@ -184,7 +185,7 @@ When a user authenticates:
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │                    INDIVIDUAL                             │  │
 │  │         (Platform-Scoped within Region)                   │  │
-│  │  Stuart Holtby, ExternalIdentityKey = Entra OID          │  │
+│  │  Stuart Holtby, ExternalIdentityKey = IdP ID (e.g., Entra OID) │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                           │                                     │
 │           ┌───────────────┼───────────────┐                     │
@@ -202,7 +203,7 @@ When a user authenticates:
 
 | Entity | Scope | Purpose |
 |--------|-------|---------|
-| **Individual** | Region (Platform) | Real person identity; Entra ID anchor |
+| **Individual** | Region (Platform) | Real person identity; External IdP anchor (e.g., Entra ID) |
 | **Contact** | Workspace | Person as seen in a Workspace; holds WorkspaceRole |
 | **Organization** | Namespace | Companies, vendors, agencies |
 
@@ -266,10 +267,10 @@ Restricted
 
 | Tier | Users | Workspaces | Notes |
 |------|-------|------------|-------|
-| **Free** | 1 | 2 | Solo evaluator |
-| **Pro** | 3 | 5 | Small team |
-| **Enterprise** | Unlimited | Unlimited | Organization-wide |
-| **Full** | Unlimited | Unlimited | Full platform |
+| **Trial** | 1 | 2 | Solo evaluator |
+| **Essentials** | 3 | 5 | Small team |
+| **Plus** | Unlimited | Unlimited | Organization-wide |
+| **Enterprise** | Unlimited | Unlimited | Full platform |
 
 ### 5.10 Billing Model
 
@@ -394,24 +395,22 @@ Application: "CAD System"
 
 ```sql
 -- Contact Types that grant Steward rights
-ALTER TABLE RefContactTypes ADD
-  GrantsStewardRights bit NOT NULL DEFAULT 0
+ALTER TABLE ref_contact_types ADD COLUMN
+  grants_steward_rights boolean NOT NULL DEFAULT false;
 
 -- Default: Only "Owner" and "Delegate" grant Steward rights
-UPDATE RefContactTypes SET GrantsStewardRights = 1 WHERE Name IN ('Owner', 'Delegate')
+UPDATE ref_contact_types SET grants_steward_rights = true WHERE name IN ('Owner', 'Delegate');
 
 -- Delegation support
-ALTER TABLE Contacts ADD
-  DelegatedByContactId uniqueidentifier NULL,
-  DelegationExpiresAt datetime NULL,
-  CONSTRAINT FK_Contact_DelegatedBy 
-    FOREIGN KEY (DelegatedByContactId) REFERENCES Contacts(ContactId)
+ALTER TABLE contacts ADD COLUMN
+  delegated_by_contact_id uuid NULL REFERENCES contacts(id),
+  delegation_expires_at timestamptz NULL;
 
 -- Workspace settings for Steward limits
-ALTER TABLE Accounts ADD
-  MaxOwnersPerApplication int NOT NULL DEFAULT 1,
-  MaxDelegatesPerOwner int NOT NULL DEFAULT 2,
-  MaxApplicationsPerStewardOwner int NOT NULL DEFAULT 10
+ALTER TABLE workspaces ADD COLUMN
+  max_owners_per_application int NOT NULL DEFAULT 1,
+  max_delegates_per_owner int NOT NULL DEFAULT 2,
+  max_applications_per_steward_owner int NOT NULL DEFAULT 10;
 ```
 
 #### 5.12.6 The Facilitator Pattern
@@ -442,16 +441,16 @@ Ministry of Justice:
 
 | Tier | Steward Available | Rationale |
 |------|-------------------|-----------|
-| Free | ✓ | Workflow feature, not capacity (moot with 1 user) |
-| Pro | ✓ | Enables 3-user teams with distributed ownership |
-| Enterprise | ✓ | Full organizational scale |
-| Full | ✓ | Full platform |
+| Trial | ✓ | Workflow feature, not capacity (moot with 1 user) |
+| Essentials | ✓ | Enables 3-user teams with distributed ownership |
+| Plus | ✓ | Full organizational scale |
+| Enterprise | ✓ | Full platform |
 
 **Rationale for all-tier availability:**
 - Steward rights are *derived* from ownership, not explicitly licensed
 - Gating derived permissions feels artificially punitive
 - The *problem* Steward solves exists at every scale
-- Pro/Enterprise differentiation is elsewhere (user count, workspaces, SSO, API)
+- Tier differentiation is elsewhere (user count, workspaces, SSO, API)
 
 #### 5.12.8 Quick Entry Form (v1 Feature)
 
@@ -536,8 +535,8 @@ All security-relevant events:
 
 | Environment | Retention | Storage |
 |-------------|-----------|---------|
-| Production | 1 year | S3 + Glacier |
-| Non-Production | 90 days | S3 |
+| Production | 1 year | Supabase Storage + archive |
+| Non-Production | 90 days | Supabase Storage |
 
 ### 9.4 Export for Compliance
 
@@ -561,7 +560,7 @@ GoS and other customers can export audit logs:
 | CC6.3 | Security | API authentication, rate limiting |
 | CC6.6 | Security | Audit logging, session management |
 | CC6.7 | Security | Vulnerability scanning, patching |
-| CC7.1 | Security | Intrusion detection (AWS GuardDuty) |
+| CC7.1 | Security | Intrusion detection (Supabase security monitoring) |
 | CC7.2 | Security | Security event monitoring |
 | A1.1 | Availability | Multi-AZ deployment, auto-scaling |
 | A1.2 | Availability | Backup and recovery (30-day retention) |
@@ -571,7 +570,7 @@ GoS and other customers can export audit logs:
 ### 10.2 Key Controls Detail
 
 **CC6.1 - Logical Access:**
-- All users authenticate via customer IdP (Entra ID)
+- All users authenticate via customer IdP (e.g., Entra ID) through Supabase Auth
 - MFA required for all accounts
 - RBAC enforced at Workspace level
 - No shared accounts permitted
@@ -590,7 +589,7 @@ GoS and other customers can export audit logs:
 - RTO: 4 hours, RPO: 1 hour
 
 **C1.2 - Data Protection:**
-- Data encrypted at rest (AWS KMS, AES-256)
+- Data encrypted at rest (Supabase/PostgreSQL encryption, AES-256)
 - Data encrypted in transit (TLS 1.2+)
 - Regional data residency enforced
 - No cross-region data transfer
@@ -601,8 +600,8 @@ GoS and other customers can export audit logs:
 
 ### 11.1 Regional Data Boundaries
 
-| Region | AWS Region | Data Types |
-|--------|------------|------------|
+| Region | Supabase Region | Data Types |
+|--------|-----------------|------------|
 | Canada | ca-central-1 | All customer data for Canadian customers |
 | US | us-east-1 | All customer data for US customers |
 | EU | eu-west-1 | All customer data for EU customers (future) |
@@ -613,7 +612,7 @@ GoS and other customers can export audit logs:
 - Customer selects region at Namespace creation
 - Region cannot be changed after creation
 - All data (DB, files, backups, logs) stays in region
-- QuickSight instance in same region as data
+- Frontend dashboards query data from regional Supabase instance
 
 ### 11.3 Compliance Certifications by Region
 
@@ -631,9 +630,9 @@ GoS and other customers can export audit logs:
 
 For partner organizations accessing GetInSync:
 
-- Azure AD B2B delegation
-- Partner users authenticate via their own IdP
-- GetInSync trusts GoS Azure AD, which trusts partner IdP
+- Multi-IdP federation via Supabase Auth
+- Partner users authenticate via their own IdP (e.g., Entra ID, Okta)
+- GetInSync trusts the customer's IdP, which trusts the partner IdP
 - Partner users mapped to specific Workspace with limited role
 
 ### 12.2 B2C (Citizen Access)
@@ -710,7 +709,8 @@ For security monitoring:
 | v1.0 | 2025-12-12 | Finalized RBAC model: 5 Workspace roles (Admin, Editor, Read-Only, Restricted) + 3 Portfolio roles (Owner, Contributor, Viewer); Ceiling/Scope permission model; Transparency by default; Restricted users get no dashboard access; Program/Project Owner model with IsRestricted flag; Entra ID group-to-Workspace-role mapping |
 | v1.0 | 2025-12-14 | Added Steward role for Application/IT Service Owners; Business Fit edit only; Owner/Delegate model with limits (max 10 apps as Owner, unlimited as Delegate, max 2 Delegates per Owner); Quick Entry Form for TIME data collection; Steward is Enterprise-only (unlimited) |
 | v1.0 | 2025-12-14 | Separated pricing into marketing/pricing-model.md; This document now focuses on technical architecture only |
-| **v1.1** | **2025-12-26** | **Expanded Steward scope:** Added annual licensing cost, vendor contact to editable fields. **Steward now available on all tiers** (Free, Pro, Enterprise, Full) — it's a workflow feature, not a capacity gate. Updated tier user limits: Free=1, Pro=3, Enterprise/Full=Unlimited. Updated rationale explaining Steward as derived permissions that shouldn't be tier-gated. |
+| **v1.1** | **2025-12-26** | **Expanded Steward scope:** Added annual licensing cost, vendor contact to editable fields. **Steward now available on all tiers** (trial, essentials, plus, enterprise) — it's a workflow feature, not a capacity gate. Updated tier user limits: trial=1, essentials=3, plus/enterprise=Unlimited. Updated rationale explaining Steward as derived permissions that shouldn't be tier-gated. |
+| **v1.2** | **2026-02-23** | **Stack cleanup:** Replaced all AWS/QuickSight/.NET references with Supabase/Netlify/React equivalents. Updated architecture diagram, auth flow, SQL examples to PostgreSQL conventions. Fixed tier names (Free/Pro/Full → trial/essentials/plus/enterprise). Generalized Entra ID refs to "External IdP" where appropriate (Entra retained as supported IdP option). |
 
 ---
 

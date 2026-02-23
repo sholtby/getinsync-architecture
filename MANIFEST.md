@@ -52,8 +52,8 @@ Every document is tagged with its relationship to the production system:
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/core-architecture.md | v2.4 | 🟠 | Core architecture (14 AWS refs, Supabase-aligned) |
-| core/conceptual-erd.md | v1.2 | 🟠 | Conceptual ERD (Supabase-aligned, 8 AWS refs) |
+| core/core-architecture.md | v2.4 | 🟢 | Core architecture — conceptual data model (AWS refs are customer infrastructure examples, not GetInSync stack) |
+| core/conceptual-erd.md | v1.2 | 🟢 | Conceptual ERD — stack-agnostic entity model (AWS/Azure in CloudProvider enum only) |
 | core/composite-application.md | v1.1 | 🟡 | Composite applications (Supabase-native) |
 | core/composite-application-erd.md | v1.0 | 🟡 | Composite application ERD |
 | core/deployment-profile.md | v1.8 | 🟢 | DP-centric assessment, clone/move, naming |
@@ -89,7 +89,7 @@ Every document is tagged with its relationship to the production system:
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| identity-security/identity-security.md | v1.1 | 🟠 | **MAJOR REWRITE NEEDED** — Entra ID/QuickSight refs throughout. RBAC concepts valid, implementation wrong. |
+| identity-security/identity-security.md | v1.2 | 🟢 | Identity, auth, RBAC, Steward role, SOC 2 controls, data residency — cleaned Feb 23 |
 | identity-security/rls-policy.md | v2.3 | 🟠 | RLS policies — **stale: 307 policies documented, now 347** |
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
 | identity-security/rbac-permissions.md | v1.0 | 🟢 | RBAC permission matrix — role-action mapping for all entities |
