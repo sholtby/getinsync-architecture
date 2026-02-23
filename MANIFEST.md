@@ -25,24 +25,33 @@ Every document is tagged with its relationship to the production system:
 
 Architecture docs are maintained in a **git repo** (`~/getinsync-architecture`). This is the single source of truth — version history is tracked by git, not by filename suffixes.
 
-Stuart keeps a subset of key files synced to the **Claude Opus project** for context. These are the project files Opus can read:
+Stuart keeps a subset of key files synced to the **Claude Opus project** for context. These are the 9 project files Opus can read:
 
-| Project File | Repo Source | Purpose |
-|-------------|-------------|---------|
-| MANIFEST.md | `MANIFEST.md` | This file — document index |
-| CLAUDE.md | `CLAUDE.md` | Claude Code rules (auto-read) |
-| development-rules | `operations/development-rules.md` | Dev workflow rules |
-| session-end-checklist | `operations/session-end-checklist.md` | Session-end validation |
-| open-items-priority-matrix | `planning/open-items-priority-matrix.md` | Current backlog |
-| schema SQL | `schema/nextgen-schema-current.sql` | Latest schema reference |
-| session summary | `sessions/YYYY-MM-DD-complete.md` | Latest session context |
-| it-value-creation mockup | `features/it-value-creation/` | Active UI mockup |
+| Opus Project Filename | Repo Source | Purpose |
+|----------------------|-------------|---------|
+| `MANIFEST.md` | `MANIFEST.md` | This file — document index |
+| `CLAUDE.md` | `CLAUDE.md` | Claude Code rules (auto-read) |
+| `development-rules.md` | `operations/development-rules.md` | Dev workflow rules |
+| `session-end-checklist.md` | `operations/session-end-checklist.md` | Session-end validation |
+| `open-items-priority-matrix.md` | `planning/open-items-priority-matrix.md` | Living backlog |
+| `nextgen-schema-current.sql` | `schema/nextgen-schema-current.sql` | Latest schema reference |
+| `session-summary-current.md` | `sessions/YYYY-MM-DD-complete.md` | Latest session context |
+| `it-value-creation-v2.jsx` | `features/it-value-creation/` | Active UI mockup |
+| `Q1-2026-Gantt-v2.xlsx` | `planning/q1-2026-master-plan.md` | Project timeline |
+
+**Retired filenames** (do not reference these):
+- `gis-architecture-manifest-v1_25.md` → now `MANIFEST.md`
+- `getinsync-development-rules-v1_4.md` → now `development-rules.md`
+- `gis-session-end-checklist-v1_3.md` / `v1_4` → now `session-end-checklist.md`
+- `gis-open-items-priority-matrix.md` → now `open-items-priority-matrix.md`
+- `getinsync-nextgen-schema-2026-02-22.sql` → now `nextgen-schema-current.sql`
+- `session-summary-2026-02-22-complete.md` → now `session-summary-current.md`
 
 **Rules:**
 - The **repo** is always authoritative. If a project file conflicts with the repo, the repo wins.
 - Stuart syncs project files manually after Claude Code sessions.
-- Do not reference versioned filenames (e.g. `gis-architecture-manifest-v1_25.md`) — those are retired.
-- The full document library (84 docs) lives in the repo. Opus sees only the subset above.
+- Version history is tracked by git. Project filenames do not carry version numbers or dates.
+- The full document library (84 docs) lives in the repo. Opus sees only the 9 files above.
 
 ---
 
