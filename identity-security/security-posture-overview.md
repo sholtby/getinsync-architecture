@@ -1,7 +1,7 @@
 # GetInSync NextGen — Security Posture & Automated Compliance Validation
 
-**Version:** 1.1  
-**Date:** February 10, 2026  
+**Version:** 1.2
+**Date:** February 23, 2026
 **Status:** 🟢 AS-BUILT  
 **Audience:** Prospects (security review), SOC2 auditors, internal reference
 
@@ -34,9 +34,9 @@ Every query against every table is filtered by the database engine itself — no
 
 | Metric | Value |
 |--------|-------|
-| Tables with RLS policies | 70 |
-| Total RLS policies | 286+ |
-| Views with security_invoker | 19/19 (RLS enforced through views) |
+| Tables with RLS policies | 90 |
+| Total RLS policies | 347 |
+| Views with security_invoker | 27/27 (RLS enforced through views) |
 | Policy pattern | Granular 4-policy (SELECT, INSERT, UPDATE, DELETE) |
 | Isolation boundary | Namespace (organization) |
 | Admin override | Explicit platform admin check, logged |
@@ -62,7 +62,7 @@ Every data change and access control event is captured by database triggers — 
 
 | Metric | Value |
 |--------|-------|
-| Audit triggers | 16 (all critical tables) |
+| Audit triggers | 37 (all critical tables) |
 | Event categories | 4 |
 | Trigger type | SECURITY DEFINER (bypasses RLS for write to audit log) |
 | Noise reduction | Skips updates where only timestamps changed |
@@ -121,7 +121,7 @@ We maintain a suite of validation queries that verify our security controls are 
 |----------|----------|-------------------|
 | CC6.1 | Logical Access | RBAC at namespace + workspace level, database-enforced via RLS |
 | CC6.2 | Encryption | TLS 1.2+ in transit, AES-256 at rest (Supabase managed) |
-| CC6.6 | Audit Logging | 16 database triggers, 4 event categories, 365-day retention |
+| CC6.6 | Audit Logging | 37 database triggers, 4 event categories, 365-day retention |
 | CC7.1 | Security Monitoring | Automated validation queries, evidence snapshots |
 | CC7.2 | Security Events | Audit log search RPC, monthly evidence collection |
 | C1.1 | Confidentiality | Namespace isolation enforced at database level |
@@ -155,7 +155,7 @@ For any SOC2 auditor or enterprise security review, we can produce the following
 
 | Control | Typical Startup | GetInSync |
 |---------|----------------|-----------|
-| Data isolation | Application-layer WHERE clauses | Database-enforced RLS (286+ policies) |
+| Data isolation | Application-layer WHERE clauses | Database-enforced RLS (347 policies) |
 | View security | Default (bypasses isolation) | security_invoker on all views |
 | Audit logging | Application code writes logs (gaps possible) | Database triggers (gaps impossible) |
 | Compliance validation | Manual checklist before audit | Automated validation queries, every session |
@@ -195,7 +195,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 
 | Document | Description |
 |----------|-------------|
-| RLS Policy Architecture v2.4 | Complete policy inventory for all 70 tables |
+| RLS Policy Architecture v2.4 | Complete policy inventory for all 90 tables |
 | Security Validation Runbook | Operational SQL queries for security posture checks |
 | Audit Logging DDL | Table schema, indexes, RLS on audit_logs itself |
 | Audit Logging Functions | Trigger function, evidence collection RPCs |
@@ -212,10 +212,10 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 
 | Date | Milestone |
 |------|-----------|
-| Feb 2026 | RLS policies complete (70 tables, 286+ policies) |
-| Feb 2026 | Audit logging deployed (16 triggers, 4 categories) |
+| Feb 2026 | RLS policies complete (90 tables, 347 policies) |
+| Feb 2026 | Audit logging deployed (37 triggers, 4 categories) |
 | Feb 2026 | Automated validation suite operational |
-| Feb 2026 | View security hardened (19/19 views security_invoker) |
+| Feb 2026 | View security hardened (27/27 views security_invoker) |
 | Feb 2026 | First evidence snapshot collected (EV-001) |
 | Aug 2026 | 6-month evidence threshold (SOC2 minimum) |
 | Q4 2026 | Target SOC2 Type II audit |
@@ -236,6 +236,7 @@ When your security team asks "how do you know your controls work?" — we don't 
 |---------|------|---------|
 | v1.0 | 2026-02-09 | Initial document. 70 tables, 286+ RLS policies, 16 audit triggers, automated validation suite, 4 audit event categories. |
 | v1.1 | 2026-02-10 | Added view-level security (security_invoker) to Layer 1 metrics, Layer 3 validation checks, evidence list, competitive differentiation, and timeline. Added Security Validation Runbook to architecture documents list. |
+| v1.2 | 2026-02-23 | Updated all stats from database: 90 tables (was 70), 347 RLS policies (was 286+), 37 audit triggers (was 16), 27/27 views with security_invoker (was 19/19). |
 
 ---
 

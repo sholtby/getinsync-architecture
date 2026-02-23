@@ -101,7 +101,7 @@ Every document is tagged with its relationship to the production system:
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| identity-security/security-posture-overview.md | v1.1 | 🟠 | Security posture overview — **stats stale (72→90 tables, 17→37 triggers, 307→347 RLS)** |
+| identity-security/security-posture-overview.md | v1.2 | 🟢 | Security posture overview — 90 tables, 347 RLS, 37 triggers, 27 views (updated Feb 23) |
 | identity-security/security-validation-runbook.md | v1.0 | 🟢 | Operational SQL queries for security validation |
 | operations/database-change-validation.md | v1.0 | 🟢 | Session-end database validation skill |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
