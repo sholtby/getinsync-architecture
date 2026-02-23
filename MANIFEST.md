@@ -21,6 +21,31 @@ Every document is tagged with its relationship to the production system:
 
 ---
 
+## Document Sources — Two Environments
+
+Architecture docs are maintained in a **git repo** (`~/getinsync-architecture`). This is the single source of truth — version history is tracked by git, not by filename suffixes.
+
+Stuart keeps a subset of key files synced to the **Claude Opus project** for context. These are the project files Opus can read:
+
+| Project File | Repo Source | Purpose |
+|-------------|-------------|---------|
+| MANIFEST.md | `MANIFEST.md` | This file — document index |
+| CLAUDE.md | `CLAUDE.md` | Claude Code rules (auto-read) |
+| development-rules | `operations/development-rules.md` | Dev workflow rules |
+| session-end-checklist | `operations/session-end-checklist.md` | Session-end validation |
+| open-items-priority-matrix | `planning/open-items-priority-matrix.md` | Current backlog |
+| schema SQL | `schema/nextgen-schema-current.sql` | Latest schema reference |
+| session summary | `sessions/YYYY-MM-DD-complete.md` | Latest session context |
+| it-value-creation mockup | `features/it-value-creation/` | Active UI mockup |
+
+**Rules:**
+- The **repo** is always authoritative. If a project file conflicts with the repo, the repo wins.
+- Stuart syncs project files manually after Claude Code sessions.
+- Do not reference versioned filenames (e.g. `gis-architecture-manifest-v1_25.md`) — those are retired.
+- The full document library (84 docs) lives in the repo. Opus sees only the subset above.
+
+---
+
 ## Technology Stack
 
 | Component | Technology | Region |
