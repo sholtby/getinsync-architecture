@@ -1,7 +1,7 @@
 # GetInSync Development Rules & Workflow Standards
 
-**Version:** 1.4  
-**Date:** February 17, 2026  
+**Version:** 1.5  
+**Date:** February 23, 2026  
 **Status:** 🟢 ACTIVE  
 **Purpose:** Codified rules for Claude Project ↔ Stuart ↔ Claude Code collaboration
 
@@ -156,18 +156,40 @@ SELECT trigger_name FROM information_schema.triggers
 WHERE event_object_table = 'new_table' AND trigger_name LIKE '%audit%';
 ```
 
+### 2.3 pgTAP Security Regression Suite
+After any session with database changes, run the pgTAP security regression suite to verify no regressions across all tables. This supplements (not replaces) the manual validation in §2.2.
+
+**Test suite location:** `testing/pgtap-rls-coverage.sql` in the architecture repo.
+
+**What it tests (391 assertions):**
+- RLS enabled on all 90 tables
+- GRANT SELECT to `authenticated` on all 90 tables
+- GRANT SELECT to `service_role` on all 90 tables
+- Audit trigger present on 37 designated tables
+- `security_invoker=true` on all 27 views
+- GRANT SELECT to `authenticated` on all 27 views
+- GRANT SELECT to `service_role` on all 27 views
+- Sentinel checks: flags any new table/view added without test coverage
+
+**Quick alternative:** `testing/security-posture-validation.sql` — standalone version requiring no extensions. Produces a single PASS/FAIL results table.
+
+**When to update the test suite:**
+- After adding a new table → add RLS + GRANT tests, update sentinel count
+- After adding a new view → add security_invoker + GRANT tests, update sentinel count
+- After adding a new audit trigger → add audit trigger test, update sentinel count
+
 ---
 
 ## 3. Schema Awareness
 
 ### 3.1 Always Read the Latest Schema
-Before designing any feature that touches the database, read the current schema dump from project files. The file follows this naming convention:
+Before designing any feature that touches the database, read the current schema dump from project files:
 
 ```
-getinsync-nextgen-schema-YYYY-MM-DD.sql
+nextgen-schema-current.sql
 ```
 
-Search project files for the most recent version. Never assume column names, types, or constraints from memory — verify against the schema.
+Never assume column names, types, or constraints from memory — verify against the schema.
 
 ---
 
@@ -202,6 +224,8 @@ At the end of every session with database changes, execute the master checklist:
 
 This checklist determines which checks apply based on what changed, dispatches to the correct validation skills, and produces a pass/fail report in the session summary.
 
+**Includes:** pgTAP security regression suite (§2.3) or standalone validation — run after any session with DB changes.
+
 ---
 
 ## 5. Quick Reference
@@ -216,7 +240,8 @@ This checklist determines which checks apply based on what changed, dispatches t
 | Review complex plans | New pages, multi-component features | Implementation plan before coding |
 | Chunk SQL as code blocks | Every migration | Sequential blocks + validation after each |
 | Validate SQL | After RLS/GRANT/table/security changes | Run validation queries |
-| Read latest schema | Before any DB design | `getinsync-nextgen-schema-YYYY-MM-DD.sql` |
+| **pgTAP regression** | **After any DB changes** | **Run `testing/pgtap-rls-coverage.sql` or standalone — all green** |
+| Read latest schema | Before any DB design | `nextgen-schema-current.sql` |
 | Handover document | Session end / low tokens | Full context for next session |
 | Commit/push/deploy | After UI changes for production | dev → main → Netlify verify |
 | Session-end checklist | Session end (if DB changes) | `operations/session-end-checklist.md` |
@@ -245,6 +270,7 @@ This checklist determines which checks apply based on what changed, dispatches t
 | v1.2 | 2026-02-10 | Fixed section 4.3: compliance pass references runbook instead of overview. |
 | v1.3 | 2026-02-10 | Replaced section 4.3 inline logic with dispatch to `operations/session-end-checklist.md`. Single source of truth for session-end process. |
 | v1.4 | 2026-02-17 | **Claude Code replaces AG as primary frontend tool.** Section 1 rewritten for Claude Code workflow (impact analysis, view contracts, clean compile). AG rules moved to Section 1A as fallback. Added Section 6 (Tool Roles). Updated reference table list (+8 integration tables). Updated session-end checklist ref to v1_2. Updated session management language (AG → Claude Code). |
+| v1.5 | 2026-02-23 | **Automated testing.** Added §2.3 (pgTAP security regression suite — 391 assertions across 90 tables, 27 views, 37 audit triggers). Updated §3.1 schema filename to stable name (no date suffix). Updated §4.3 to include pgTAP in session-end compliance pass. Added pgTAP regression row to Quick Reference table. Explicit GRANTs applied to all 90 tables (authenticated + service_role) — converted implicit schema defaults to auditable per-table grants. |
 
 ---
 

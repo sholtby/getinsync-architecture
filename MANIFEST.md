@@ -51,7 +51,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 - The **repo** is always authoritative. If a project file conflicts with the repo, the repo wins.
 - Stuart syncs project files manually after Claude Code sessions.
 - Version history is tracked by git. Project filenames do not carry version numbers or dates.
-- The full document library (84 docs) lives in the repo. Opus sees only the 9 files above.
+- The full document library (86 docs) lives in the repo. Opus sees only the 9 files above.
 
 ---
 
@@ -141,7 +141,14 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
 | identity-security/soc2-evidence-collection.md | v1.1 | 🟢 | SOC2 monthly evidence collection — 37 triggers, 90 tables (updated Feb 23) |
 | identity-security/soc2-evidence-index.md | v1.2 | 🟢 | SOC2 evidence index — 90 tables, 347 RLS, 37 triggers, identity-security flags cleared (updated Feb 23) |
-| operations/session-end-checklist.md | **v1.4** | 🟢 | **Master session-end compliance checklist — v1.4 adds Section 6c architecture repo sync, dual-repo commit verification, AG→Claude Code language updates** |
+| operations/session-end-checklist.md | **v1.5** | 🟢 | **Master session-end compliance checklist — v1.5 adds §6d automated security regression (pgTAP/standalone)** |
+
+### Testing
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| testing/pgtap-rls-coverage.sql | v1.1 | 🟢 | pgTAP security regression — 391 assertions: RLS, GRANTs (tables + views), audit triggers, view security, sentinel checks |
+| testing/security-posture-validation.sql | v1.1 | 🟢 | Standalone security validation — no extensions needed, PASS/FAIL output for all 90 tables + 27 views (incl. view GRANTs) |
 
 ### Integration & Alignment
 
@@ -217,7 +224,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| operations/development-rules.md | **v1.4** | 🟢 | **Development rules — Claude Code as primary, AG as fallback. Impact analysis, view contracts, clean compile.** |
+| operations/development-rules.md | **v1.5** | 🟢 | **Development rules — added §2.3 pgTAP regression suite (391 assertions), explicit GRANTs on all 90 tables** |
 | operations/team-workflow.md | v2.0 | 🟢 | Team workflow — Stuart + Claude Code two-role model, dual-repo commits, impact analysis (rewritten Feb 23) |
 | CLAUDE.md | v1.0 | 🟢 | **Claude Code auto-read rules file — architecture rules, impact analysis, do-not list, DB access** |
 
@@ -235,7 +242,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.25** | 🟢 | **Architecture manifest** |
+| **THIS FILE: MANIFEST.md** | **v1.26** | 🟢 | **Architecture manifest** |
 
 ---
 
@@ -258,7 +265,7 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-02-22)
+## Schema Statistics (as of 2026-02-23)
 
 | Category | Count |
 |----------|-------|
@@ -267,6 +274,7 @@ The following documents were removed during the architecture audit. They describ
 | **Functions (RPCs)** | 53 |
 | **RLS Policies** | 347 |
 | **Audit Triggers** | 37 |
+| **Explicit GRANTs** | 90 tables × 2 roles (authenticated + service_role) |
 | **Schema backup** | schema/nextgen-schema-current.sql (PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
@@ -407,7 +415,33 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Recent Changes (v1.24 → v1.25)
+## Recent Changes (v1.25 → v1.26)
+
+### Automated Testing & Explicit GRANTs (Feb 23, 2026)
+
+**Database changes (no schema, GRANTs only):**
+- Explicit `GRANT SELECT, INSERT, UPDATE, DELETE` applied to all 90 tables for both `authenticated` and `service_role` roles
+- Previously relied on implicit schema-level default privileges — now explicit and auditable per SOC2 requirements
+- Baseline validated: 297/297 checks PASS (90 RLS + 90 auth GRANTs + 90 service_role GRANTs + 37 audit triggers + 27 security_invoker views)
+
+**New documents (2):**
+- `testing/pgtap-rls-coverage.sql` — **NEW (🟢).** Full pgTAP regression suite: 391 assertions covering RLS, GRANTs, audit triggers, view security, sentinel checks for drift detection.
+- `testing/security-posture-validation.sql` — **NEW (🟢).** Standalone validator requiring no extensions. Paste into Supabase SQL Editor, produces PASS/FAIL table with failures sorted to top.
+
+**Document updates (3):**
+- `operations/development-rules.md` — **v1.4 → v1.5.** Added §2.3 (pgTAP security regression suite). Updated §3.1 schema filename to stable name. Updated §4.3 to include pgTAP in session-end compliance pass. Added pgTAP row to Quick Reference table.
+- `operations/session-end-checklist.md` — **v1.4 → v1.5.** Added §6d automated security regression step (pgTAP or standalone).
+- `MANIFEST.md` — **v1.25 → v1.26.** New "Testing" section. Updated dev-rules + checklist entries. Updated document count.
+
+**New manifest section:** "Testing" added between "Security & Operations" and "Integration & Alignment".
+
+**Schema statistics:** No table/view/function changes. Explicit GRANTs row added to stats table.
+
+**Document count:** 84 → 86 (+2 test files).
+
+---
+
+## Previous Changes (v1.24 → v1.25)
 
 ### IT Value Creation Deployed + Technology Health Deployed (Feb 18–22, 2026)
 
@@ -588,12 +622,12 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 48 |
+| 🟢 AS-BUILT | 50 |
 | 🟡 AS-DESIGNED | 7 |
 | 🟠 NEEDS UPDATE | 0 |
 | ☪ REFERENCE | 15 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **84** |
+| **Total tracked** | **86** |
 
 ---
 
@@ -615,7 +649,7 @@ The following documents were removed during the architecture audit. They describ
 
 **Document Owner:** Stuart Holtby
 **Review Frequency:** Monthly
-**Last Review:** 2026-02-22
+**Last Review:** 2026-02-23
 **Next Review:** 2026-03-10
 
 **Change Process:**
@@ -631,6 +665,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.26 | 2026-02-23 | Automated testing. New "Testing" section (2 files: pgTAP regression + standalone validator). development-rules v1.4→v1.5 (§2.3 pgTAP). session-end-checklist v1.4→v1.5 (§6d regression step). Explicit GRANTs on all 90 tables (authenticated + service_role). Document count: 84→86. |
 | v1.25 | 2026-02-22 | Technology Health Dashboard + IT Value Creation Phase 21 both DEPLOYED. Schema: 80→90 tables, 307→347 RLS, 25→37 triggers, 19→27 views. IT Value Creation v1.3 (🟢) — 8 tables, 4 views, self-organizing scoping, Gantt/Kanban/Grid UI. New "IT Value Creation" manifest section. ITSM API Research v1.0 added. Principle 13 (Self-Organizing Scoping). 5 docs 🟡→🟢, 2 docs 🟢→🟠 (stale stats). Pending schema cleaned (17 items deployed). v1.0–v1.2 IT Value archived. Session-end checklist v1.2→v1.3. Document count: 83→85. |
 | v1.24 | 2026-02-17 | Claude Code replaces AG as primary UI dev tool. Phase 28 all 13 bugs closed. 8 reference tables (80 tables, 25 triggers, 307 policies). Budget view rewrite. view-contracts.ts + Principle 12. New "Development Workflow" section. 3 docs marked stale. Document count: 80→83. |
 | v1.23 | 2026-02-14 | Added Infrastructure Boundary Rubric v1.0 (new doc). Lifecycle Intelligence v1.0→v1.1 (two-path model). server_name correction: ADD not DROP. 2 new pending views. technology_products.lifecycle_reference_id FK added to pending. Document count: 79→80. |
