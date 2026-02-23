@@ -1,7 +1,7 @@
 # identity-security/soc2-evidence-collection
 GetInSync NextGen — SOC2 Evidence Collection Procedure  
-Version: 1.0  
-Date: 2026-02-08  
+Version: 1.1
+Date: 2026-02-23  
 Status: 🟢 AS-BUILT  
 SOC2 Controls: CC6.1, CC6.2, CC6.6, CC7.1, C1.1, A1.2
 
@@ -214,11 +214,11 @@ Every evidence JSON file has this structure:
 
 These metrics tell the SOC2 story month over month:
 
-| Metric | Baseline (EV-001) | Expected Trend |
-|--------|-------------------|----------------|
-| `total_tables` | 67 | Gradual increase (new features) |
-| `tables_with_rls` | 67 | Must equal total_tables (100%) |
-| `total_rls_policies` | 282 | Increases with tables |
+| Metric | Current | Expected Trend |
+|--------|---------|----------------|
+| `total_tables` | 90 | Gradual increase (new features) |
+| `tables_with_rls` | 90 | Must equal total_tables (100%) |
+| `total_rls_policies` | 347 | Increases with tables |
 | `total_users` | 19 | Grows with customers |
 | `platform_admins` | 3 | Stable (changes = investigate) |
 | `total_audit_entries` | 1 | Monotonically increasing |
@@ -237,11 +237,17 @@ These metrics tell the SOC2 story month over month:
 | `search_audit_logs()` | RPC | Filtered audit log queries for review |
 | `audit_log_cleanup()` | RPC | Retention management (365-day minimum enforced) |
 
-### Triggers Attached (11 tables)
+### Triggers Attached (37 tables)
 
-**Core Business (7):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services
+**Core Business (10):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services, deployment_profile_technology_products, findings, technology_products
 
-**Security (4):** workspace_users, namespace_users, user_sessions, platform_admins
+**Integrations (6):** application_integrations, integration_contacts, integration_direction_types, integration_frequency_types, integration_method_types, integration_status_types
+
+**Reference Data (8):** criticality_types, data_classification_types, data_format_types, data_tag_types, operational_statuses, sensitivity_types, technology_lifecycle_reference, vendor_lifecycle_sources
+
+**Programs & Initiatives (6):** programs, initiatives, initiative_dependencies, initiative_deployment_profiles, initiative_it_services, program_initiatives
+
+**Access Control (7):** workspace_users, namespace_users, user_sessions, platform_admins, invitations, users, ideas
 
 ---
 
@@ -252,7 +258,7 @@ These metrics tell the SOC2 story month over month:
 | identity-security/soc2-evidence-index.md | Maps trust criteria to evidence sources |
 | identity-security/security-posture-overview.md | Customer-facing security overview (sales collateral) |
 | identity-security/rls-policy.md | Complete RLS policy documentation |
-| identity-security/identity-security.md | Identity/security architecture (needs v2.0 rewrite) |
+| identity-security/identity-security.md | Identity/security architecture (v1.2 — cleaned Feb 23) |
 | MANIFEST.md | Master document index with status tags |
 
 ---
@@ -262,6 +268,7 @@ These metrics tell the SOC2 story month over month:
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-02-08 | Initial skill. Audit logging deployed. Baseline snapshot EV-001 collected. Naming convention, collection procedure, variance analysis, and quarterly access review defined. |
+| v1.1 | 2026-02-23 | Updated trigger coverage: 11 → 37 tables. Updated key metrics: 67 → 90 tables, 282 → 347 RLS policies. Updated identity-security.md reference (v1.2 cleaned). |
 
 ---
 

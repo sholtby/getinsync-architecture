@@ -105,7 +105,7 @@ Every document is tagged with its relationship to the production system:
 | identity-security/security-validation-runbook.md | v1.0 | 🟢 | Operational SQL queries for security validation |
 | operations/database-change-validation.md | v1.0 | 🟢 | Session-end database validation skill |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
-| identity-security/soc2-evidence-collection.md | v1.0 | 🟠 | SOC2 monthly evidence collection — **trigger list stale (11→37 tables), stats stale** |
+| identity-security/soc2-evidence-collection.md | v1.1 | 🟢 | SOC2 monthly evidence collection — 37 triggers, 90 tables (updated Feb 23) |
 | identity-security/soc2-evidence-index.md | v1.1 | 🟠 | SOC2 evidence index — **stats stale (307→347 policies, 25→37 triggers)** |
 | operations/session-end-checklist.md | **v1.3** | 🟢 | **Master session-end compliance checklist — v1.3 adds Claude Code .env reminder** |
 
