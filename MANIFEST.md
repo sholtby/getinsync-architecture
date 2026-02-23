@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-02-22
+Last updated: 2026-02-23
 
 ---
 
@@ -107,7 +107,7 @@ Every document is tagged with its relationship to the production system:
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
 | identity-security/soc2-evidence-collection.md | v1.1 | 🟢 | SOC2 monthly evidence collection — 37 triggers, 90 tables (updated Feb 23) |
 | identity-security/soc2-evidence-index.md | v1.2 | 🟢 | SOC2 evidence index — 90 tables, 347 RLS, 37 triggers, identity-security flags cleared (updated Feb 23) |
-| operations/session-end-checklist.md | **v1.3** | 🟢 | **Master session-end compliance checklist — v1.3 adds Claude Code .env reminder** |
+| operations/session-end-checklist.md | **v1.4** | 🟢 | **Master session-end compliance checklist — v1.4 adds Section 6c architecture repo sync, dual-repo commit verification, AG→Claude Code language updates** |
 
 ### Integration & Alignment
 
