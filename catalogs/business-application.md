@@ -82,7 +82,7 @@ Fields:
 Notes:
 - A BusinessApplication may have multiple Contacts with different roles.
 - **Identity Link:** `ContactId` refers to a **Workspace-scoped Contact**.
-  - That Contact is linked to a **Platform-scoped Individual** (where the Entra ID OID lives).
+  - That Contact is linked to a **Platform-scoped Individual** (where the external IdP identifier lives, e.g., Entra OID).
   - This ensures that "Stuart (Global)" can be the Owner in Workspace A and a Vendor Contact in Workspace B without duplicating identity data.
 
 ---
@@ -190,7 +190,7 @@ Application -> Owner/SME (Contact -> Individual)
 |          Contact           | ----> |       Individual        |
 +----------------------------+       +-------------------------+
 | ContactId (PK)             |       | IndividualId (PK)       |
-| WorkspaceId (FK)           |       | ExternalIdentityKey     | (Entra ID OID)
+| WorkspaceId (FK)           |       | ExternalIdentityKey     | (IdP identifier, e.g., Entra OID)
 | IndividualId (FK)          |       | PrimaryEmail            |
 +----------------------------+       +-------------------------+
   (Workspace-Scoped)                   (Platform-Scoped)
@@ -241,7 +241,7 @@ Deployment structure:
 - Note: EstimatedAnnualCost is ADDITIVE to Contract and ITService allocations.
 
 ### 6.3 Normalize Application Ownership (Identity Migration)
-To preserve Entra ID compatibility, legacy user fields (e.g., `owned_by` text or `sys_user` refs) must be migrated in three steps:
+To preserve external IdP compatibility (Entra ID, Google, SAML), legacy user fields (e.g., `owned_by` text or `sys_user` refs) must be migrated in three steps:
 
 1. **Resolve Individual (Platform-Scoped):**
    - Extract the email from the legacy owner field.

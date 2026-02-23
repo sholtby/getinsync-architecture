@@ -35,7 +35,7 @@ IT Services become a **logical technology catalogue**.
 They describe:
 - Shared Platforms (e.g., "Central SQL Cluster 01")
 - Standard Technologies (e.g., "Windows Server 2022 Standard")
-- Identity Platforms (e.g., "Entra ID Tenant")
+- Identity Platforms (e.g., "Entra ID Tenant", "Google Workspace")
 
 **Visibility Model:**
 - IT Services are **Workspace-Owned**.
@@ -85,7 +85,7 @@ Required classification.
 Values:
 - PlatformService (e.g., SQL Cluster, Private Cloud)
 - TechnologyProduct (e.g., Windows Server Standard)
-- IdentityService (e.g., Entra ID)
+- IdentityService (e.g., Entra ID, Google Workspace, Okta)
 - IntegrationService
 - EndUserPlatform
 

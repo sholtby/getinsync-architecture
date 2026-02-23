@@ -67,9 +67,9 @@ Every document is tagged with its relationship to the production system:
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| catalogs/software-product.md | v2.1 | 🟠 | Software Product Catalog (10 AWS refs, tables built) |
-| catalogs/it-service.md | v1.3 | 🟠 | IT Services — shared infrastructure (13 AWS refs, tables built) |
-| catalogs/business-application.md | v1.2 | 🟠 | Business Application entity (4 AWS refs) |
+| catalogs/software-product.md | v2.1 | 🟢 | Software Product Catalog — no stale refs (originally flagged 10 AWS, none found) |
+| catalogs/it-service.md | v1.3 | 🟢 | IT Services — shared infrastructure. Entra ID generalized as customer IdP example |
+| catalogs/business-application.md | v1.2 | 🟢 | Business Application entity — IdP refs generalized (Entra as example, not only) |
 | catalogs/business-application-identification.md | v1.0 | ☪ | Criteria for business apps vs tech services |
 | catalogs/csdm-application-attributes.md | v1.0 | ☪ | CSDM mandatory fields alignment |
 | catalogs/technology-catalog.md | v1.0 | 🟢 | Technology product catalog structure |
