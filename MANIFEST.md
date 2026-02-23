@@ -174,7 +174,7 @@ Every document is tagged with its relationship to the production system:
 | marketing/pricing-model.md | v1.0 | ☪ | Tier structure, licensing |
 | marketing/executive-presentation.md | v1.0 | ☪ | Executive presentation |
 | planning/q1-2026-master-plan.md | v1.4 → **v2.0** | 🟢 | Q1 2026 strategic roadmap — **v2.0 xlsx replaces markdown** |
-| archive/superseded/marketing-explainer-v1_5.md | v1.5 → **v1.7** | ☪ | **Product explainer — Technology Health, Risk Boundary, buyer personas, Data Governance** |
+| marketing/explainer.md | v1.7.1 | ☪ | **Product explainer — merged v1.5 base + v1.7 additions. Tenancy, identity, licensing, cost, CSDM, technology health, risk boundary, data governance, buyer personas** |
 | marketing/positioning-statements.md | v1.0 | ☪ | Positioning statements |
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
 | gis-phase-work-plan-23-25.md | v1.0 | ☪ | Historical work plan |
