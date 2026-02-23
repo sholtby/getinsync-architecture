@@ -27,17 +27,17 @@ Architecture docs are maintained in a **git repo** (`~/getinsync-architecture`).
 
 Stuart keeps a subset of key files synced to the **Claude Opus project** for context. These are the 9 project files Opus can read:
 
-| Opus Project Filename | Repo Source | Purpose |
-|----------------------|-------------|---------|
+| Opus Project Filename | Grab From (~/getinsync-architecture/) | Purpose |
+|----------------------|----------------------------------------|---------|
 | `MANIFEST.md` | `MANIFEST.md` | This file — document index |
 | `CLAUDE.md` | `CLAUDE.md` | Claude Code rules (auto-read) |
 | `development-rules.md` | `operations/development-rules.md` | Dev workflow rules |
 | `session-end-checklist.md` | `operations/session-end-checklist.md` | Session-end validation |
 | `open-items-priority-matrix.md` | `planning/open-items-priority-matrix.md` | Living backlog |
 | `nextgen-schema-current.sql` | `schema/nextgen-schema-current.sql` | Latest schema reference |
-| `session-summary-current.md` | `sessions/YYYY-MM-DD-complete.md` | Latest session context |
-| `it-value-creation-v2.jsx` | `features/it-value-creation/` | Active UI mockup |
-| `Q1-2026-Gantt-v2.xlsx` | `planning/q1-2026-master-plan.md` | Project timeline |
+| `session-summary-current.md` | `sessions/2026-02-23-complete.md` | Latest session context |
+| `it-value-creation-v2.jsx` | `features/it-value-creation/mockup-v2.jsx` | Active UI mockup |
+| `Q1-2026-Gantt-v2.xlsx` | `planning/q1-2026-gantt-v2.xlsx` | Project timeline |
 
 **Retired filenames** (do not reference these):
 - `gis-architecture-manifest-v1_25.md` → now `MANIFEST.md`
