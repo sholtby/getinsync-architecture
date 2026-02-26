@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-02-23
+Last updated: 2026-02-25
 
 ---
 
@@ -107,6 +107,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | catalogs/business-application-identification.md | v1.0 | ☪ | Criteria for business apps vs tech services |
 | catalogs/csdm-application-attributes.md | v1.0 | ☪ | CSDM mandatory fields alignment |
 | catalogs/technology-catalog.md | v1.0 | 🟢 | Technology product catalog structure |
+| catalogs/business-capability.md | v1.0 | 🟡 | Business Capabilities (Phase 1, build) + Business Services (Phase 2, design only). Seed taxonomy: 13 generic + 12 government L1s. |
 
 ### Cost & Budget Management
 
