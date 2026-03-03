@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** February 26, 2026 (Dashboard Refresh session)
+**As of:** March 2, 2026 (Filter Persistence + Charts Fixes session)
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -63,11 +63,20 @@
 | 51 | Feature | Surface Technology Health on Application Detail page | Option C: General tab gets summary badge (worst lifecycle status + tag count line). Deployments tab gets per-DP OS/DB/Web columns with LifecycleBadge. Data from vw_application_infrastructure_report filtered by application_id. ~1-2 days. | -- | Stuart + Claude Code |
 | 52 | Feature | Workspace-scoped Technology Health dashboard | Same components as namespace-wide dashboard but filtered to single workspace. Now accessible via tab bar (promoted from Settings). Workspace filter in built-in filter drawer handles this — may be partially resolved. Confirm. ~0.5-1 day. | -- | Stuart + Claude Code |
 | 56 | UX | Back arrow fix — TechnologyHealthPage.tsx | Back arrow navigates to home. Should use `navigate(-1)`. One-liner. May need revisiting now that Tech Health is in tab bar instead of Settings route. | -- | Stuart + Claude Code |
-| 59 | Bug | ChartsView duplicate key warning | Console warning: "Encountered two children with the same key b1000006-...". Pre-existing, not caused by dashboard refresh. Cosmetic — no data loss. | -- | Stuart + Claude Code |
+| 60 | Refactoring | ChartsView.tsx decomposition (984 lines) | Over 800-line threshold. Grew with filter drawer integration, DP labels, bubble fixes, and getEntryKey() helper. Candidates: extract BubbleChart sub-component, extract filter logic into a hook, extract Priority Backlog table section. ~0.5-1 day. | -- | Stuart + Claude Code |
 
 ---
 
-## Completed This Session (Feb 26)
+## Completed This Session (Mar 2)
+
+| Item | Resolution |
+|------|------------|
+| #59 ChartsView duplicate key warning | ✅ FIXED. Root cause: `application.id` used as React key, but multiple portfolio assignments share the same app. Solution: `getEntryKey()` helper using `portfolioAssignment.id` as unique key. Also fixed wrong DP links and tooltips. |
+| Filter persistence Dashboard → Charts | ✅ COMPLETE. `AppHealthFilterState` snapshot captured on "View full analysis" click, passed as `initialFilters` to ChartsView. ChartsView renders its own filter drawer for in-place modification. 4 files modified. |
+| PAID filter label fix | ✅ FIXED. "Improve" → "Ignore", "Divest" → "Delay" in `AppHealthFilterDrawer.tsx` PAID_OPTIONS array. |
+| Warning badge indentation | ✅ FIXED. AlertTriangle moved from leading flex item to inline after app name. Eliminates row alignment mismatch. |
+
+## Completed Prior Sessions
 
 | Item | Resolution |
 |------|------------|
@@ -98,9 +107,9 @@
 |----------|-------|-------|
 | **HIGH** | 6 | 3 SOC2 policies + RBAC UI gating + grouped table + KPI reframe |
 | **MEDIUM** | 20 | Identity rewrite, compliance, Delta enablement, demo data, website, RBAC enforcement, filter drawer, scope indicator, Cost Analysis bug |
-| **LOW** | 16 | Doc cleanup, OAuth cosmetic, polish, security doc updates, RBAC naming, cron job, back arrow, ChartsView key warning |
+| **LOW** | 16 | Doc cleanup, OAuth cosmetic, polish, security doc updates, RBAC naming, cron job, back arrow, ChartsView decomposition |
 | **Pending Validation** | 4 | #53 pagination, #54 KPI reframe, #56 back arrow, #52 workspace Tech Health |
-| **Total Open** | 42 | +5 new (#57, #58, #59, plus updated #52, #55), -1 closed (#35), +2 net |
+| **Total Open** | 42 | Closed #59 (ChartsView key warning), added #60 (ChartsView decomposition). Net zero change. |
 
 ### SOC2 Policy Scorecard
 
@@ -126,4 +135,4 @@
 ---
 
 *Document: planning/open-items-priority-matrix.md*
-*Replaces: February 21, 2026 version*
+*Replaces: February 26, 2026 version*
