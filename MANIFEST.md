@@ -120,6 +120,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/cost-budget/vendor-cost.md | v1.1 | 🟢 | Vendor management, contracts — reconciled Mar 4 (vw_run_rate_by_vendor bugs documented) |
 | features/cost-budget/software-contract.md | v1.1 | 🟢 | Software contract lifecycle — reconciled Mar 4 (partial deployment documented) |
 | features/cost-budget/cost-model-validation-2026-03-04.md | — | 🟢 | **Cost model validation report — schema debt, view bugs, frontend audit, refactoring plan** |
+| features/cost-budget/cost-model-primer.md (.docx) | v1.0 | 🟢 | **Cost model primer — end-to-end guide for internal team: 3 channels, data flow, UI, maturity levels** |
 
 ### Identity, Security & Access
 
@@ -631,12 +632,12 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 53 |
+| 🟢 AS-BUILT | 54 |
 | 🟡 AS-DESIGNED | 7 |
 | 🟠 NEEDS UPDATE | 0 |
 | ☪ REFERENCE | 15 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **89** |
+| **Total tracked** | **90** |
 
 ---
 
@@ -674,6 +675,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.34 | 2026-03-04 | Cost model primer v1.0 (.md + .docx). Internal team guide: 3 cost channels, data flow diagram, UI locations, maturity levels, legacy fields, quick reference. Document count 89→90. |
 | v1.33 | 2026-03-04 | Cost model reconciliation (SOC2 CC2.3). 5 docs updated against schema dump 2026-03-03: cost-model v2.5→v2.6 (legacy columns documented as LEGACY not REMOVED, dpis marked DEPLOYED, cost override formula added), budget-management v1.3→v1.4 (workspace_budgets table reality, thresholds updated to 80/100/110%, as-built views documented), vendor-cost v1.0→v1.1 (vw_run_rate_by_vendor bugs C.1/C.2 documented with corrective SQL), software-contract v1.0→v1.1 (partial deployment documented, missing updated_at/constraint noted). budget-alerts confirmed Phase 1 DEPLOYED. New doc: cost-model-validation-2026-03-04.md (validation report with refactoring plan). software-contract 🟡→🟢. Document count 88→89. |
 | v1.32 | 2026-03-04 | AppHeader common element. screen-building-guidelines v1.0→v1.1: §9 updated with AppHeader global header bar for edit/detail pages. New shared component `src/components/shared/AppHeader.tsx` renders logo, search (⌘K), static workspace/portfolio context pills, UserMenu. Applied to ApplicationPage. |
 | v1.31 | 2026-03-03 | Validation consolidation. session-end-checklist v1.10→v1.11: §2.1 unified bulk safety net (6 checks: GRANTs, RLS, views, functions), Section 4 removed, Section 3 narrowed. security-validation-runbook 🟢→🟠 DEPRECATED (superseded by §2.1 + §6d). database-change-validation §1 noted as superseded. |
