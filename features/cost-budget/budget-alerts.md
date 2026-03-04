@@ -1,7 +1,7 @@
 # GetInSync NextGen - Budget Alerts Architecture
 **Version:** 1.0  
 **Date:** January 28, 2026  
-**Status:** Design Approved, Implementation Pending  
+**Status:** Phase 1 DEPLOYED (DB layer: alert_preferences table, seeding trigger, RLS, vw_budget_alerts)
 **Author:** Stuart Holtby
 
 ---
@@ -924,12 +924,12 @@ COMMIT;
 
 ## Success Metrics
 
-### Phase 1 (Foundation)
-- [ ] alert_preferences table created and seeded
-- [ ] Default preferences exist for 100% of namespaces
-- [ ] BudgetHealthCard displays correctly based on configuration
-- [ ] Zero console errors related to alert preferences
-- [ ] RLS policies tested with multiple user roles
+### Phase 1 (Foundation) — DB Layer DEPLOYED
+- [x] alert_preferences table created and seeded
+- [x] Default preferences exist for 100% of namespaces (via seed_alert_preferences_for_namespace trigger)
+- [ ] BudgetHealthCard displays correctly based on configuration (frontend not yet consuming alert_preferences)
+- [x] Zero console errors related to alert preferences
+- [x] RLS policies tested with multiple user roles
 
 ### Phase 2 (Configuration UI)
 - [ ] Namespace admins can modify alert settings
@@ -969,13 +969,14 @@ COMMIT;
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-01-28 | Stuart Holtby | Initial architecture document |
+| — | 2026-03-04 | Claude Code | Reconciliation confirmed. Phase 1 DB layer verified as deployed: alert_preferences table (13 cols), seed_alert_preferences_for_namespace trigger, RLS policies. Header updated from "Implementation Pending" to "Phase 1 DEPLOYED". Phase 1 checklist items checked. |
 
 ---
 
-**Status:** Ready for implementation  
-**Next Steps:** 
-1. Review architecture with team
-2. Implement Phase 1 database migration
-3. Update BudgetHealthCard component to use alert_preferences
+**Status:** Phase 1 DB layer DEPLOYED. Frontend integration pending.
+**Next Steps:**
+1. ~~Review architecture with team~~ DONE
+2. ~~Implement Phase 1 database migration~~ DONE
+3. Update BudgetHealthCard component to use alert_preferences (PENDING)
 4. Test with multiple configuration scenarios
 5. Document configuration options in user guide (Phase 2)

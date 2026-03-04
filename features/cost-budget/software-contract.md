@@ -1,6 +1,6 @@
 # features/cost-budget/software-contract.md
 Software Product Contracts & Vendor Management
-Last updated: 2026-01-22
+Last updated: 2026-03-04
 
 ---
 
@@ -186,24 +186,30 @@ COMMENT ON COLUMN deployment_profile_software_products.renewal_notice_days IS
 
 ### Full Column List (After Enhancement)
 
-| Column | Type | Nullable | Default | Purpose |
-|--------|------|----------|---------|---------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| deployment_profile_id | UUID | NO | — | FK to DP |
-| software_product_id | UUID | NO | — | FK to catalog |
-| vendor_org_id | UUID | YES | NULL | Who you pay |
-| annual_cost | DECIMAL(12,2) | YES | NULL | Override catalog price |
-| quantity | INTEGER | YES | NULL | Reference (seats/licenses) |
-| allocation_percent | DECIMAL(5,2) | YES | NULL | Stubbed: cost split |
-| allocation_basis | TEXT | YES | NULL | Stubbed: 'users', 'estimate', etc. |
-| contract_reference | TEXT | YES | NULL | PO#, Contract ID, Agreement# |
-| contract_start_date | DATE | YES | NULL | Contract effective date |
-| contract_end_date | DATE | YES | NULL | Contract expiration |
-| renewal_notice_days | INTEGER | YES | 90 | Alert threshold |
-| cost_confidence | TEXT | YES | 'estimated' | Data quality flag |
-| notes | TEXT | YES | NULL | Free text |
-| created_at | TIMESTAMPTZ | YES | now() | Audit |
-| updated_at | TIMESTAMPTZ | YES | now() | Audit |
+> **Deployment Status (2026-03-04):** All SAM-lite columns are DEPLOYED on the junction table. Two items from the spec are MISSING in production:
+> - `updated_at` — column does NOT exist (created_at exists but no update trigger). Audit gap.
+> - `chk_dpsp_allocation_percent` constraint — NOT applied. allocation_percent has no range validation.
+> - `allocation_percent` and `allocation_basis` — exist but are stubbed (not used in cost calculations).
+
+| Column | Type | Nullable | Default | Purpose | Status |
+|--------|------|----------|---------|---------|--------|
+| id | UUID | NO | gen_random_uuid() | PK | DEPLOYED |
+| deployment_profile_id | UUID | NO | — | FK to DP | DEPLOYED |
+| software_product_id | UUID | NO | — | FK to catalog | DEPLOYED |
+| deployed_version | TEXT | YES | NULL | Version tracking | DEPLOYED (not in original spec) |
+| vendor_org_id | UUID | YES | NULL | Who you pay | DEPLOYED |
+| annual_cost | DECIMAL(12,2) | YES | NULL | Override catalog price | DEPLOYED |
+| quantity | INTEGER | YES | NULL | Reference (seats/licenses) | DEPLOYED |
+| allocation_percent | DECIMAL(5,2) | YES | NULL | Stubbed: cost split | DEPLOYED (no constraint) |
+| allocation_basis | TEXT | YES | NULL | Stubbed: 'users', 'estimate', etc. | DEPLOYED |
+| contract_reference | TEXT | YES | NULL | PO#, Contract ID, Agreement# | DEPLOYED |
+| contract_start_date | DATE | YES | NULL | Contract effective date | DEPLOYED |
+| contract_end_date | DATE | YES | NULL | Contract expiration | DEPLOYED |
+| renewal_notice_days | INTEGER | YES | 90 | Alert threshold | DEPLOYED |
+| cost_confidence | TEXT | YES | 'estimated' | Data quality flag | DEPLOYED |
+| notes | TEXT | YES | NULL | Free text | DEPLOYED |
+| created_at | TIMESTAMPTZ | YES | now() | Audit | DEPLOYED |
+| updated_at | TIMESTAMPTZ | YES | now() | Audit | **MISSING** |
 
 ---
 
@@ -424,7 +430,9 @@ LEFT JOIN organizations v ON v.id = dps.vendor_org_id
 WHERE dp.dp_type = 'application';
 ```
 
-### New View: vw_vendor_spend
+### New View: vw_vendor_spend — NOT BUILT
+
+> **Status (2026-03-04):** This view has NOT been created in the database. No frontend consumer exists yet.
 
 ```sql
 CREATE OR REPLACE VIEW vw_vendor_spend AS
@@ -544,15 +552,15 @@ When syncing to ServiceNow:
 
 ## 14. Implementation Phases
 
-| Phase | Scope | Effort |
-|-------|-------|--------|
-| **23-pre** | Junction schema enhancement (this doc) | 1 hr |
-| **23-pre** | View updates (vw_deployment_profile_costs) | 30 min |
-| **23-pre** | New views (contract_expiry, vendor_spend) | 30 min |
-| **23a** | CSDM attributes on applications (minus vendor) | 30 min |
-| **23b** | CSDM attributes on deployment_profiles | 30 min |
-| **UI** | Software link dialog enhancement | 2 hrs |
-| **UI** | Contract expiry report | 2 hrs |
+| Phase | Scope | Effort | Status |
+|-------|-------|--------|--------|
+| **23-pre** | Junction schema enhancement (this doc) | 1 hr | DEPLOYED (missing updated_at, constraint) |
+| **23-pre** | View updates (vw_deployment_profile_costs) | 30 min | DEPLOYED |
+| **23-pre** | New views (contract_expiry, vendor_spend) | 30 min | PARTIAL (contract_expiry DEPLOYED, vendor_spend NOT BUILT) |
+| **23a** | CSDM attributes on applications (minus vendor) | 30 min | DEPLOYED |
+| **23b** | CSDM attributes on deployment_profiles | 30 min | DEPLOYED |
+| **UI** | Software link dialog enhancement | 2 hrs | DEPLOYED |
+| **UI** | Contract expiry report | 2 hrs | NOT STARTED |
 
 ---
 
@@ -560,6 +568,7 @@ When syncing to ServiceNow:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.1 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §4: deployment status added — updated_at MISSING, chk_dpsp_allocation_percent MISSING, deployed_version column noted. §9: vw_vendor_spend marked NOT BUILT. §14: implementation status column added. |
 | v1.0 | 2026-01-22 | Initial version — junction enhancement, SAM-lite scope, cost override logic |
 
 ---

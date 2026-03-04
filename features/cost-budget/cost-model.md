@@ -1,6 +1,6 @@
 # features/cost-budget/cost-model.md
 GetInSync Cost Model Architecture
-Last updated: 2026-01-20
+Last updated: 2026-03-04
 
 ## 1. Purpose
 
@@ -31,7 +31,8 @@ Goals:
 `software_products.annual_cost` is the home for licensing and subscription costs.
 
 - **Behavior:** Cost flows to DeploymentProfiles via `deployment_profile_software_products` junction.
-- **Calculation:** `DP_Licensing = SUM(linked software_products.annual_cost)`
+- **Cost Override:** The junction supports a per-deployment cost override via `dpsp.annual_cost`. When set, it takes precedence over the catalog price.
+- **Calculation:** `DP_Licensing = SUM(COALESCE(dpsp.annual_cost, sp.annual_cost))`
 
 **Simple Rule:** Different price = different catalog entry. If a workspace has negotiated pricing, create a separate catalog entry (e.g., "Sage 300 (Ministry X Agreement)").
 
@@ -58,17 +59,19 @@ Use for:
 
 **Fields:** `name`, `annual_cost`, `cost_confidence`, `notes`
 
-### 3.4 Removed from Deployment Profile
+**Legacy note:** `applications.annual_cost` still exists as a calculated field derived from `annual_licensing_cost + annual_tech_cost` on the primary DP. It predates the three-channel model and is used by `useApplications.ts`. It will be deprecated when the frontend migration (see §10.4) is complete.
 
-The following fields are **removed** from `deployment_profiles`:
+### 3.4 Legacy Fields on Deployment Profile
 
-| Field | Replacement |
-|-------|-------------|
-| `annual_licensing_cost` | Use Software Product `annual_cost` |
-| `annual_tech_cost` | Use IT Service allocation or Cost Bundle |
-| `estimated_annual_cost` | Use Cost Bundle DP |
+> **Reconciliation (2026-03-04):** These fields were originally targeted for removal in v2.5 but remain in production with heavy frontend usage (16 files). They are architecturally superseded by the three-channel cost model but cannot be dropped until a data migration and frontend refactor are complete.
 
-**Rationale:** These were "mystery costs" with no traceability. All costs must now flow through proper channels.
+| Field | Status | Replacement Channel | Frontend Consumers | Migration Risk |
+|-------|--------|--------------------|--------------------|----------------|
+| `annual_licensing_cost` | LEGACY | Software Product channel | 16 files | HIGH — CSV import/export depends on it |
+| `annual_tech_cost` | LEGACY | IT Service allocation or Cost Bundle | 16 files | HIGH — same |
+| `estimated_tech_debt` | LEGACY | Cost Bundle or dedicated field TBD | TechDebtModal, CSV, Charts | MEDIUM — active feature |
+
+**Rationale:** These were "mystery costs" with no traceability. All NEW costs must flow through proper channels. Legacy data will be migrated in a future session (see §10.4 for prerequisites).
 
 ## 4. DP Cost Calculation
 
@@ -78,10 +81,12 @@ The following fields are **removed** from `deployment_profiles`:
 DP_Total = DP_Licensing + DP_Infrastructure + DP_Other
 
 Where:
-  DP_Licensing      = SUM(linked software_products.annual_cost)
+  DP_Licensing      = SUM(COALESCE(dpsp.annual_cost, sp.annual_cost))
   DP_Infrastructure = SUM(it_service allocations via deployment_profile_it_services)
   DP_Other          = SUM(linked cost_bundle DPs.annual_cost)
 ```
+
+> **Note:** `dpsp.annual_cost` is the junction-level cost override. When present, it takes precedence over the catalog price (`sp.annual_cost`). This is implemented in `vw_deployment_profile_costs`.
 
 ### 4.2 Linking Cost Bundles to Application DPs
 
@@ -238,7 +243,9 @@ Cost Bundle DP: "Sage 300 - Estimated Costs"
 
 | Field | Table | Values |
 |-------|-------|--------|
-| `cost_confidence` | `deployment_profiles` (for cost bundles) | `estimated`, `verified` |
+| `cost_confidence` | `deployment_profile_software_products` | `estimated`, `verified` |
+
+> **As-built (2026-03-04):** `cost_confidence` exists on the `deployment_profile_software_products` junction table, not on `deployment_profiles` directly. Cost Bundle DPs do not yet have a `cost_confidence` field (see §10.3 — deferred).
 
 ### 9.2 Dashboard Indicator
 
@@ -268,40 +275,60 @@ ADD COLUMN cost_allocation_basis TEXT DEFAULT NULL,
 ADD COLUMN cost_allocation_notes TEXT DEFAULT NULL;
 ```
 
-### 10.3 Add to `deployment_profiles` (for cost bundles)
+### 10.3 Add to `deployment_profiles` (for cost bundles) — DEFERRED
 
 ```sql
+-- NOT IMPLEMENTED
 ALTER TABLE deployment_profiles
 ADD COLUMN cost_confidence TEXT DEFAULT 'estimated';
 ```
 
-### 10.4 Remove from `deployment_profiles`
+> **Status (2026-03-04):** This ALTER has not been applied. `cost_confidence` was added to `deployment_profile_software_products` instead (see §9.1). Adding DP-level `cost_confidence` for cost bundles remains a future enhancement — cost bundles currently rely on the `notes` field to communicate data quality.
+
+### 10.4 Remove from `deployment_profiles` — BLOCKED
 
 ```sql
+-- NOT IMPLEMENTED — blocked by frontend migration
 ALTER TABLE deployment_profiles
 DROP COLUMN annual_licensing_cost,
 DROP COLUMN annual_tech_cost;
 ```
 
-**Note:** Migrate existing data to Cost Bundles before dropping columns.
+> **Status (2026-03-04):** These columns CANNOT be dropped until the frontend migration is complete. 16 files reference these columns including the DeploymentProfile TypeScript interface, CSV import/export, tech debt dashboard, and cost utilities. See `cost-model-validation-2026-03-04.md` Category A for the full file list.
+>
+> **Prerequisites before dropping:**
+> 1. Data migration script moves existing values into Cost Bundle DPs
+> 2. Frontend refactor replaces all 16 file references with `vw_deployment_profile_costs.total_cost`
+> 3. CSV import/export updated to use cost channels
+> 4. `vw_dashboard_summary` updated to use channel-based cost aggregates
+> 5. Migration tested on demo namespace first
 
-### 10.5 IT Service Allocation (Future)
+### 10.5 IT Service Allocation — DEPLOYED
 
 Table: `deployment_profile_it_services`
 
 ```sql
+-- AS-BUILT (8 columns)
 CREATE TABLE deployment_profile_it_services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   deployment_profile_id UUID REFERENCES deployment_profiles(id),
   it_service_id UUID REFERENCES it_services(id),
-  allocation_basis TEXT,  -- 'percent', 'flat', 'per_unit'
+  relationship_type TEXT NOT NULL,  -- as-built addition (not in original spec)
+  allocation_basis TEXT,  -- 'percent' or 'fixed' (not 'flat'/'per_unit' as originally spec'd)
   allocation_value DECIMAL(12,2),  -- The recovered amount
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
+  -- NOTE: updated_at is MISSING (audit gap — see validation report B.3)
   UNIQUE(deployment_profile_id, it_service_id)
 );
 ```
+
+> **Deployment status (2026-03-04):** This table is live and used by `vw_deployment_profile_costs`, `vw_run_rate_by_vendor`, `vw_it_service_budget_status`, and the budget management UI.
+>
+> **As-built differences from spec:**
+> - `relationship_type` column added (NOT NULL) — not in original spec
+> - `allocation_basis` values are `percent`/`fixed` (not `percent`/`flat`/`per_unit`)
+> - `updated_at` column is MISSING — no audit trail on junction modifications
 
 ## 11. Out of Scope
 
@@ -328,11 +355,11 @@ Cost Sources                           Consumer Allocation
 +-------------------------------+       +-------------------------+
 |      DeploymentProfile        |       |   portfolio_assignments |
 +-------------------------------+       +-------------------------+
-| (no direct cost fields)       |<------| cost_allocation_percent |
-| Receives cost from:           |       | cost_allocation_basis   |
-|  - Software Products          |       | cost_allocation_notes   |
-|  - IT Service allocations     |       +-------------------------+
-|  - Cost Bundle DPs            |
+| (legacy: annual_licensing_cost|<------| cost_allocation_percent |
+|  annual_tech_cost,            |       | cost_allocation_basis   |
+|  estimated_tech_debt          |       | cost_allocation_notes   |
+|  — pending migration)         |       +-------------------------+
+| Receives cost from channels:  |
 +-------------------------------+
            ^
            |
@@ -358,6 +385,7 @@ Stranded Cost = IT Service Pool - SUM(Recovered)
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.6 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §3.1: added cost override note (COALESCE(dpsp, sp)). §3.4: legacy columns documented as LEGACY not REMOVED (16 frontend consumers). §4.1: formula updated with cost override. §9.1: cost_confidence corrected to dpsp junction table. §10.3: marked DEFERRED. §10.4: marked BLOCKED with prerequisites. §10.5: marked DEPLOYED with as-built differences (relationship_type, missing updated_at). §12 ERD: updated to show legacy fields pending migration. |
 | v2.5 | 2026-01-20 | Major simplification. Removed direct cost fields from DP. Three cost channels only (Software Product, IT Service, Cost Bundle). Added consumer allocation via portfolio_assignments. Added cost tracking maturity levels. Added cost confidence flag. Deferred ProductContract. |
 | v2.4 | 2025-12-12 | Previous version with ProductContract model and EstimatedAnnualCost on DP. |
 

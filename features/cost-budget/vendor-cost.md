@@ -1,6 +1,6 @@
 # features/cost-budget/vendor-cost.md
 Vendor Attribution & Run Rate Architecture
-Last updated: 2026-01-22
+Last updated: 2026-03-04
 
 ---
 
@@ -432,11 +432,21 @@ WHERE a.operational_status IN ('operational', 'pipeline');
 
 ### 9.3 vw_run_rate_by_vendor
 
+> **KNOWN BUGS (2026-03-04):**
+>
+> **Bug C.1 (Software channel):** The as-built view uses `sum(COALESCE(sp.annual_cost, 0))` — reads from catalog price only, ignoring `dpsp.annual_cost` junction override. Should use `sum(COALESCE(dpsp.annual_cost, sp.annual_cost, 0))` to match `vw_deployment_profile_costs`. Vendor spend is understated when junction cost overrides exist.
+>
+> **Bug C.2 (IT Service channel):** The as-built view uses raw `sum(COALESCE(dpis.allocation_value, 0))` without the percent-vs-fixed allocation logic. Should apply the same CASE expression as `vw_deployment_profile_costs`. IT service vendor spend is misreported for percentage-based allocations.
+>
+> **Fix pending** — see `cost-model-validation-2026-03-04.md` Category C for corrective SQL.
+
+**Spec SQL (correct logic — as-built differs):**
+
 ```sql
 CREATE OR REPLACE VIEW vw_run_rate_by_vendor AS
 
 -- Software Product spend by vendor
-SELECT 
+SELECT
   'Software' AS cost_type,
   COALESCE(v.name, '(No Vendor)') AS vendor_name,
   v.id AS vendor_id,
@@ -457,12 +467,19 @@ GROUP BY v.id, v.name, a.workspace_id
 UNION ALL
 
 -- IT Service spend by vendor
-SELECT 
+SELECT
   'IT Service',
   COALESCE(v.name, '(Internal)') AS vendor_name,
   v.id,
   a.workspace_id,
-  SUM(dpis.allocation_value)
+  SUM(
+    CASE
+      WHEN dpis.allocation_basis = 'fixed' THEN COALESCE(dpis.allocation_value, 0)
+      WHEN dpis.allocation_basis = 'percent' AND dpis.allocation_value > 100 THEN COALESCE(dpis.allocation_value, 0)
+      WHEN dpis.allocation_basis = 'percent' THEN COALESCE(its.annual_cost * dpis.allocation_value / 100, 0)
+      ELSE COALESCE(dpis.allocation_value, 0)
+    END
+  )
 FROM deployment_profile_it_services dpis
 JOIN it_services its ON its.id = dpis.it_service_id
 JOIN deployment_profiles dp ON dp.id = dpis.deployment_profile_id
@@ -475,7 +492,7 @@ GROUP BY v.id, v.name, a.workspace_id
 UNION ALL
 
 -- Cost Bundle spend by vendor (recurring only)
-SELECT 
+SELECT
   'Other Recurring',
   COALESCE(v.name, '(Unattributed)'),
   v.id,
@@ -530,7 +547,9 @@ LEFT JOIN organizations v ON v.id = dps.vendor_org_id
 WHERE dp.dp_type = 'application';
 ```
 
-### 9.5 vw_vendor_spend_summary
+### 9.5 vw_vendor_spend_summary — NOT BUILT
+
+> **Status (2026-03-04):** This view has NOT been created in the database. It depends on `vw_run_rate_by_vendor` which has bugs C.1 and C.2. Build after fixing the parent view.
 
 ```sql
 CREATE OR REPLACE VIEW vw_vendor_spend_summary AS
@@ -680,21 +699,21 @@ GRANT SELECT ON vw_vendor_spend_summary TO authenticated;
 
 ## 14. Implementation Phases
 
-| Phase | Scope | Effort |
-|-------|-------|--------|
-| **24a** | Vendor on all 3 channels (schema) | 2 hrs |
-| **24b** | Cost recurrence on deployment_profiles | 30 min |
-| **24c** | vw_deployment_profile_costs update | 1 hr |
-| **24d** | vw_application_run_rate | 30 min |
-| **24e** | vw_run_rate_by_vendor | 30 min |
-| **24f** | vw_software_contract_expiry | 30 min |
-| **24g** | SAM-lite fields on junction | 1 hr |
-| **UI** | Software link dialog enhancement | 3 hrs |
-| **UI** | Cost bundle vendor/recurrence | 1 hr |
-| **UI** | Vendor spend report | 2 hrs |
-| **UI** | Contract expiry report | 2 hrs |
+| Phase | Scope | Effort | Status |
+|-------|-------|--------|--------|
+| **24a** | Vendor on all 3 channels (schema) | 2 hrs | DEPLOYED |
+| **24b** | Cost recurrence on deployment_profiles | 30 min | DEPLOYED |
+| **24c** | vw_deployment_profile_costs update | 1 hr | DEPLOYED |
+| **24d** | vw_application_run_rate | 30 min | DEPLOYED |
+| **24e** | vw_run_rate_by_vendor | 30 min | DEPLOYED (bugs C.1, C.2 — see §9.3) |
+| **24f** | vw_software_contract_expiry | 30 min | DEPLOYED |
+| **24g** | SAM-lite fields on junction | 1 hr | DEPLOYED (missing updated_at, constraint) |
+| **UI** | Software link dialog enhancement | 3 hrs | DEPLOYED |
+| **UI** | Cost bundle vendor/recurrence | 1 hr | DEPLOYED |
+| **UI** | Vendor spend report | 2 hrs | NOT STARTED |
+| **UI** | Contract expiry report | 2 hrs | NOT STARTED |
 
-**Total:** ~14 hours
+**Total:** ~14 hours (~10 hrs deployed, ~4 hrs remaining)
 
 ---
 
@@ -702,6 +721,7 @@ GRANT SELECT ON vw_vendor_spend_summary TO authenticated;
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.1 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §9.3: BUG callout for vw_run_rate_by_vendor — Software channel ignores junction cost override (uses sp.annual_cost not COALESCE), IT Service channel missing percent-vs-fixed allocation logic. Corrective SQL added. §9.5: vw_vendor_spend_summary marked NOT BUILT. §14: implementation status column added (10/14 hrs deployed). |
 | v1.0 | 2026-01-22 | Initial version — vendor attribution on all 3 cost channels, run rate definition, unified views |
 
 ---
