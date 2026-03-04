@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-02-28
+Last updated: 2026-03-03
 
 ---
 
@@ -142,7 +142,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
 | identity-security/soc2-evidence-collection.md | v1.1 | 🟢 | SOC2 monthly evidence collection — 37 triggers, 90 tables (updated Feb 23) |
 | identity-security/soc2-evidence-index.md | v1.2 | 🟢 | SOC2 evidence index — 90 tables, 347 RLS, 37 triggers, identity-security flags cleared (updated Feb 23) |
-| operations/session-end-checklist.md | **v1.5** | 🟢 | **Master session-end compliance checklist — v1.5 adds §6d automated security regression (pgTAP/standalone)** |
+| operations/session-end-checklist.md | **v1.9** | 🟢 | **Master session-end compliance checklist — v1.9: §6e Code Quality Gate, §6f Bulletproof React Spot Check, §6g Data Quality (14 checks), §9.1 functions query fix** |
 
 ### Testing
 
@@ -250,7 +250,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.28** | 🟢 | **Architecture manifest** |
+| **THIS FILE: MANIFEST.md** | **v1.29** | 🟢 | **Architecture manifest** |
 
 ---
 
@@ -273,13 +273,13 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-02-28)
+## Schema Statistics (as of 2026-03-03)
 
 | Category | Count |
 |----------|-------|
 | **Tables** | 90 |
-| **Views** | 29 |
-| **Functions (RPCs)** | 53 |
+| **Views** | 31 |
+| **Functions (RPCs)** | 54 |
 | **RLS Policies** | 347 |
 | **Audit Triggers** | 37 |
 | **Explicit GRANTs** | 90 tables × 2 roles (authenticated + service_role) |
@@ -673,6 +673,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.29 | 2026-03-03 | Stats alignment: session-end-checklist v1.5→v1.9 in manifest. Schema stats corrected: Views 29→31, Functions 53→54. §9.1 functions query now excludes extension-owned functions. |
 | v1.28 | 2026-03-03 | Added 1 document: Screen-Building Guidelines v1.0 (🟢). Defines page layout zones, workspace banner, toolbar, sub-tabs, KPI card variants (A/B), data tables (default 10 rows), typography scale, button hierarchy, icon rules, color system, spacing, empty/loading states. Resolves UX inconsistencies across Overview/App Health/Tech Health/Roadmap pages. Repo path: operations/screen-building-guidelines.md. Document count: 87→88. |
 | v1.27 | 2026-02-28 | Added 1 document: Global Search Architecture v1.0 (🟡). New "Global Search" manifest section. Ctrl+K overlay, 12 searchable entity types, categorized results with workspace breadcrumbs, ILIKE→FTS→semantic progressive upgrade path, AI chat integration handoff. Repo path: features/global-search/architecture.md. Document count: 86→87. |
 | v1.26 | 2026-02-23 | Automated testing. New "Testing" section (2 files: pgTAP regression + standalone validator). development-rules v1.4→v1.5 (§2.3 pgTAP). session-end-checklist v1.4→v1.5 (§6d regression step). Explicit GRANTs on all 90 tables (authenticated + service_role). Document count: 84→86. |
