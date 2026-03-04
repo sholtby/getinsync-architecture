@@ -444,33 +444,44 @@ Footer link:   text-sm text-teal-600 hover:text-teal-700 font-medium flex items-
 
 ## 9. Form / Edit Pages
 
-Edit pages follow a different layout from dashboards. They are full-width detail views.
+Edit pages follow a different layout from dashboards. They are full-width detail views. Every edit page renders the shared `AppHeader` component at the top to maintain navigation consistency with the main dashboard.
 
 **Page structure:**
 ```
-┌─────────────────────────────────────────────┐
-│  ← Back   Edit Time Tracker    [Start Asmt] │  ← Header
-│           📍 GOS Workspace → Central IT      │  ← Breadcrumb
-├─────────────────────────────────────────────┤
-│  General · Deployments · Costs · ...         │  ← Tab bar
-├─────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────┐    │
-│  │  ABOUT THIS APPLICATION             │    │  ← Section heading
-│  │  ─────────────────────────          │    │
-│  │  Application Name *                 │    │
-│  │  [________________________]         │    │
-│  │                                     │    │
-│  │  Description         Generate w/ AI │    │
-│  │  [________________________]         │    │
-│  └─────────────────────────────────────┘    │
-│                                             │
-│  ┌────────────────────┐                     │
-│  │       Cancel  Save │                     │  ← Footer
-│  └────────────────────┘                     │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  [Logo] GetInSync NextGen  |  🔍  | Workspace | Portfolio | User ▾  │  ← AppHeader (sticky)
+├─────────────────────────────────────────────────────────┤
+│  ← Back   Edit Time Tracker    [Start Asmt]             │  ← Page header card
+│           📍 GOS Workspace → Central IT                  │  ← Breadcrumb
+├─────────────────────────────────────────────────────────┤
+│  General · Deployments & Costs · Integrations · Visual   │  ← Tab bar
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────┐                │
+│  │  ABOUT THIS APPLICATION             │                │  ← Section heading
+│  │  ─────────────────────────          │                │
+│  │  Application Name *                 │                │
+│  │  [________________________]         │                │
+│  │                                     │                │
+│  │  Description         Generate w/ AI │                │
+│  │  [________________________]         │                │
+│  └─────────────────────────────────────┘                │
+│                                                         │
+│  ┌────────────────────┐                                 │
+│  │       Cancel  Save │                                 │  ← Footer
+│  └────────────────────┘                                 │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**Header:**
+**AppHeader** (global navigation bar):
+```
+Component:      <AppHeader workspaceName="..." portfolioName="..." />
+Styling:        bg-white border-b border-gray-200 sticky top-0 z-40
+Inner:          max-w-7xl mx-auto px-6 py-4
+Context pills:  px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 opacity-60
+```
+On edit pages, workspace/portfolio are static (non-interactive) pills showing the current context. Logo click navigates home. Search (⌘K) and UserMenu are fully functional.
+
+**Page header card:**
 ```
 Back button:    p-2 text-gray-400 hover:text-gray-600 (ArrowLeft icon, w-5 h-5)
 Page title:     text-2xl font-semibold text-gray-900
@@ -511,7 +522,8 @@ Save:           Primary button (disabled while saving, shows Loader2 spinner)
 
 | Canonical File | Notes |
 |---|---|
-| `src/pages/ApplicationPage.tsx` | Edit page header + tab bar |
+| `src/components/shared/AppHeader.tsx` | Shared global header bar (logo, search, context, user menu) |
+| `src/pages/ApplicationPage.tsx` | Edit page: AppHeader + page header card + tab bar |
 | `src/components/ApplicationForm.tsx` | Form sections, fields, footer |
 
 ---

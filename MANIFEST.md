@@ -233,7 +233,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | operations/development-rules.md | **v1.5** | 🟢 | **Development rules — added §2.3 pgTAP regression suite (391 assertions), explicit GRANTs on all 90 tables** |
 | operations/team-workflow.md | v2.0 | 🟢 | Team workflow — Stuart + Claude Code two-role model, dual-repo commits, impact analysis (rewritten Feb 23) |
-| operations/screen-building-guidelines.md | v1.0 | 🟢 | **Screen-building guidelines — page layout zones, typography, buttons, KPI cards, tables, forms, spacing, icons, colors** |
+| operations/screen-building-guidelines.md | v1.1 | 🟢 | **Screen-building guidelines — page layout zones, AppHeader common element, typography, buttons, KPI cards, tables, forms, spacing, icons, colors** |
 | CLAUDE.md | v1.0 | 🟢 | **Claude Code auto-read rules file — architecture rules, impact analysis, do-not list, DB access** |
 
 ### Demo & Testing
@@ -673,6 +673,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.32 | 2026-03-04 | AppHeader common element. screen-building-guidelines v1.0→v1.1: §9 updated with AppHeader global header bar for edit/detail pages. New shared component `src/components/shared/AppHeader.tsx` renders logo, search (⌘K), static workspace/portfolio context pills, UserMenu. Applied to ApplicationPage. |
 | v1.31 | 2026-03-03 | Validation consolidation. session-end-checklist v1.10→v1.11: §2.1 unified bulk safety net (6 checks: GRANTs, RLS, views, functions), Section 4 removed, Section 3 narrowed. security-validation-runbook 🟢→🟠 DEPRECATED (superseded by §2.1 + §6d). database-change-validation §1 noted as superseded. |
 | v1.30 | 2026-03-03 | Audit trigger expansion 37→48. Stats alignment across 6 docs: security-posture-overview, soc2-evidence-collection, soc2-evidence-index, pgTAP regression (397→408 assertions), session-end-checklist v1.9→v1.10 (§2 bulk table security posture validation). |
 | v1.29 | 2026-03-03 | Stats alignment: session-end-checklist v1.5→v1.9 in manifest. Schema stats corrected: Views 29→31, Functions 53→54. §9.1 functions query now excludes extension-owned functions. |
