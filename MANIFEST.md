@@ -127,7 +127,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | identity-security/identity-security.md | v1.2 | 🟢 | Identity, auth, RBAC, Steward role, SOC 2 controls, data residency — cleaned Feb 23 |
-| identity-security/rls-policy.md | v2.3 | 🟢 | RLS policies — 90 tables, 347 policies. Header stats updated Feb 23 (detail catalog covers Phase 25.9 tables) |
+| identity-security/rls-policy.md | v2.3 | 🟢 | RLS policies — 92 tables, 357 policies. Header stats updated Mar 4 (detail catalog covers Phase 25.9 tables) |
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
 | identity-security/rbac-permissions.md | v1.0 | 🟢 | RBAC permission matrix — role-action mapping for all entities |
 | core/involved-party.md | v1.9 | 🟢 | Contacts, organizations — tier names + role names corrected (updated Feb 23) |
@@ -138,20 +138,20 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| identity-security/security-posture-overview.md | v1.2 | 🟢 | Security posture overview — 90 tables, 347 RLS, 48 triggers, 31 views (updated Mar 3) |
+| identity-security/security-posture-overview.md | v1.3 | 🟢 | Security posture overview — 92 tables, 357 RLS, 50 triggers, 31 views (updated Mar 4) |
 | identity-security/security-validation-runbook.md | v1.1 | 🟠 | ~~Security validation~~ — DEPRECATED, superseded by session-end-checklist §2.1 + §6d. Retained for INC-001 history. |
 | operations/database-change-validation.md | v1.1 | 🟢 | Deep database validation (CHECK constraints, roles, FKs, namespaces). Section 1 superseded by session-end-checklist §2.1. |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
-| identity-security/soc2-evidence-collection.md | v1.1 | 🟢 | SOC2 monthly evidence collection — 48 triggers, 90 tables (updated Mar 3) |
-| identity-security/soc2-evidence-index.md | v1.2 | 🟢 | SOC2 evidence index — 90 tables, 347 RLS, 48 triggers, identity-security flags cleared (updated Mar 3) |
+| identity-security/soc2-evidence-collection.md | v1.2 | 🟢 | SOC2 monthly evidence collection — 50 triggers, 92 tables (updated Mar 4) |
+| identity-security/soc2-evidence-index.md | v1.3 | 🟢 | SOC2 evidence index — 92 tables, 357 RLS, 50 triggers, identity-security flags cleared (updated Mar 4) |
 | operations/session-end-checklist.md | **v1.11** | 🟢 | **Master session-end compliance checklist — v1.11: §2.1 unified bulk safety net (6 checks), Section 4 removed, Section 3 narrowed** |
 
 ### Testing
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.3 | 🟢 | pgTAP security regression — 408 assertions: RLS, GRANTs (tables + views), audit triggers (48), view security, sentinel checks |
-| testing/security-posture-validation.sql | v1.2 | 🟢 | Standalone security validation — no extensions needed, PASS/FAIL output for all 90 tables + 29 views (incl. view GRANTs) |
+| testing/pgtap-rls-coverage.sql | v1.3 | 🟠 | pgTAP security regression — 408 assertions: sentinel checks STALE (expects 90 tables/48 triggers, now 92/50). Needs sentinel update. |
+| testing/security-posture-validation.sql | v1.2 | 🟠 | Standalone security validation — sentinel checks STALE (expects 90 tables, now 92). Needs sentinel update. |
 
 ### Integration & Alignment
 
@@ -275,16 +275,16 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-03-03)
+## Schema Statistics (as of 2026-03-04)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 90 |
+| **Tables** | 92 |
 | **Views** | 31 |
-| **Functions (RPCs)** | 54 |
-| **RLS Policies** | 347 |
-| **Audit Triggers** | 48 |
-| **Explicit GRANTs** | 90 tables × 2 roles (authenticated + service_role) |
+| **Functions (RPCs)** | 55 |
+| **RLS Policies** | 357 |
+| **Audit Triggers** | 50 |
+| **Explicit GRANTs** | 92 tables × 2 roles (authenticated + service_role) |
 | **Schema backup** | schema/nextgen-schema-current.sql (PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
@@ -677,6 +677,7 @@ The following documents were removed during the architecture audit. They describ
 |---------|------|---------|
 | v1.35 | 2026-03-04 | Feature rename: "IT Value Creation" → "Roadmap". Updated section heading, file paths (it-value-creation → roadmap), component references, route paths across 10 architecture docs. Lexicon change only — no database or schema changes. |
 | v1.34 | 2026-03-04 | Cost model primer v1.0 (.md + .docx). Internal team guide: 3 cost channels, data flow diagram, UI locations, maturity levels, legacy fields, quick reference. Document count 89→90. |
+| v1.34 | 2026-03-04 | Stats alignment: 90→92 tables, 347→357 RLS, 48→50 triggers, 54→55 functions. New tables: application_categories, application_category_assignments (Application Categories feature). Updated 4 docs: security-posture-overview v1.2→v1.3, soc2-evidence-collection v1.1→v1.2, soc2-evidence-index v1.2→v1.3. pgTAP + security-posture-validation marked 🟠 (sentinel checks stale). |
 | v1.33 | 2026-03-04 | Cost model reconciliation (SOC2 CC2.3). 5 docs updated against schema dump 2026-03-03: cost-model v2.5→v2.6 (legacy columns documented as LEGACY not REMOVED, dpis marked DEPLOYED, cost override formula added), budget-management v1.3→v1.4 (workspace_budgets table reality, thresholds updated to 80/100/110%, as-built views documented), vendor-cost v1.0→v1.1 (vw_run_rate_by_vendor bugs C.1/C.2 documented with corrective SQL), software-contract v1.0→v1.1 (partial deployment documented, missing updated_at/constraint noted). budget-alerts confirmed Phase 1 DEPLOYED. New doc: cost-model-validation-2026-03-04.md (validation report with refactoring plan). software-contract 🟡→🟢. Document count 88→89. |
 | v1.32 | 2026-03-04 | AppHeader common element. screen-building-guidelines v1.0→v1.1: §9 updated with AppHeader global header bar for edit/detail pages. New shared component `src/components/shared/AppHeader.tsx` renders logo, search (⌘K), static workspace/portfolio context pills, UserMenu. Applied to ApplicationPage. |
 | v1.31 | 2026-03-03 | Validation consolidation. session-end-checklist v1.10→v1.11: §2.1 unified bulk safety net (6 checks: GRANTs, RLS, views, functions), Section 4 removed, Section 3 narrowed. security-validation-runbook 🟢→🟠 DEPRECATED (superseded by §2.1 + §6d). database-change-validation §1 noted as superseded. |

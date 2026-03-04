@@ -216,9 +216,9 @@ These metrics tell the SOC2 story month over month:
 
 | Metric | Current | Expected Trend |
 |--------|---------|----------------|
-| `total_tables` | 90 | Gradual increase (new features) |
-| `tables_with_rls` | 90 | Must equal total_tables (100%) |
-| `total_rls_policies` | 347 | Increases with tables |
+| `total_tables` | 92 | Gradual increase (new features) |
+| `tables_with_rls` | 92 | Must equal total_tables (100%) |
+| `total_rls_policies` | 357 | Increases with tables |
 | `total_users` | 19 | Grows with customers |
 | `platform_admins` | 3 | Stable (changes = investigate) |
 | `total_audit_entries` | 1 | Monotonically increasing |
@@ -237,9 +237,9 @@ These metrics tell the SOC2 story month over month:
 | `search_audit_logs()` | RPC | Filtered audit log queries for review |
 | `audit_log_cleanup()` | RPC | Retention management (365-day minimum enforced) |
 
-### Triggers Attached (48 tables)
+### Triggers Attached (50 tables)
 
-**Core Business (13):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services, deployment_profile_technology_products, findings, technology_products, software_products, data_centers, it_service_providers
+**Core Business (15):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services, deployment_profile_technology_products, findings, technology_products, software_products, data_centers, it_service_providers, application_categories, application_category_assignments
 
 **Core Entities (4):** namespaces, workspaces, workspace_budgets, workspace_groups
 
@@ -275,6 +275,7 @@ These metrics tell the SOC2 story month over month:
 |---------|------|---------|
 | v1.0 | 2026-02-08 | Initial skill. Audit logging deployed. Baseline snapshot EV-001 collected. Naming convention, collection procedure, variance analysis, and quarterly access review defined. |
 | v1.1 | 2026-02-23 | Updated trigger coverage: 11 → 37 tables. Updated key metrics: 67 → 90 tables, 282 → 347 RLS policies. Updated identity-security.md reference (v1.2 cleaned). |
+| v1.2 | 2026-03-04 | Stats updated: 92 tables (was 90), 357 RLS (was 347), 50 triggers (was 48). Added application_categories + application_category_assignments to Core Business triggers. |
 
 ---
 

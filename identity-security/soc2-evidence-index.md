@@ -55,7 +55,7 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 
 | # | Type | Evidence | Location |
 |---|------|----------|----------|
-| 1 | 📄 | RLS Policy Architecture — 347 policies across 90 tables | identity-security/rls-policy.md + v2_4-addendum |
+| 1 | 📄 | RLS Policy Architecture — 357 policies across 92 tables | identity-security/rls-policy.md + v2_4-addendum |
 | 2 | 📄 | Access Control Matrix (5 roles × 5 operations) | identity-security/rls-policy.md § SOC2 Compliance |
 | 3 | 📄 | RBAC model (namespace_role + workspace role) | identity-security/identity-security.md (v1.2 — rewritten Feb 23) |
 | 4 | ðŸ” | All tables have RLS enabled | `SELECT count(DISTINCT tablename) FROM pg_policies WHERE schemaname = 'public';` → should match table count |
@@ -120,7 +120,7 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 
 | # | Type | Evidence | Location |
 |---|------|----------|----------|
-| 1 | 📄 | Application audit logging (48 tables with triggers) | public.audit_logs table (created Feb 8, 2026) |
+| 1 | 📄 | Application audit logging (50 tables with triggers) | public.audit_logs table (created Feb 8, 2026) |
 | 2 | 📄 | Authentication audit logging | auth.audit_log_entries (Supabase built-in) |
 | 3 | 📄 | Audit log schema design | identity-security/identity-security.md § 9.2 |
 | 4 | ðŸ” | Audit trail evidence accumulation | `SELECT min(created_at), max(created_at), count(*) FROM audit_logs;` |
@@ -348,6 +348,7 @@ Quick reference: which architecture doc evidences which control.
 |---------|------|---------|
 | v1.0 | 2026-02-08 | Initial SOC2 Evidence Index. Audit logging migration created. Trust criteria mapped to existing docs and queries. Gaps identified. Readiness scored at ~50%. |
 | v1.2 | 2026-02-23 | Stats updated: 90 tables (was 72), 347 RLS policies (was 282), 37 audit triggers (was 17). Identity-security rewrite ⚠️ flags cleared (v1.2 done). CC6.1 readiness bumped 75%→80%. |
+| v1.3 | 2026-03-04 | Stats updated: 92 tables (was 90), 357 RLS (was 347), 50 audit triggers (was 48). New: application_categories + application_category_assignments. |
 | v1.1 | 2026-02-12 | Stats corrected: 72 tables (was 66), 17 audit triggers (was 11), 282+ RLS policies (was 279). Manifest ref v1.18→v1.20. Schema backup ref Feb 8→Feb 11. Added 9 docs to control mapping (Security & Operations section + user registration + RLS v2.4 addendum). Policy docs assigned to Delta via Jira (8 tickets). |
 
 ---

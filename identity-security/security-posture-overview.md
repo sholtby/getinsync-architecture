@@ -34,8 +34,8 @@ Every query against every table is filtered by the database engine itself — no
 
 | Metric | Value |
 |--------|-------|
-| Tables with RLS policies | 90 |
-| Total RLS policies | 347 |
+| Tables with RLS policies | 92 |
+| Total RLS policies | 357 |
 | Views with security_invoker | 29/29 (RLS enforced through views) |
 | Policy pattern | Granular 4-policy (SELECT, INSERT, UPDATE, DELETE) |
 | Isolation boundary | Namespace (organization) |
@@ -62,7 +62,7 @@ Every data change and access control event is captured by database triggers — 
 
 | Metric | Value |
 |--------|-------|
-| Audit triggers | 48 (all critical tables) |
+| Audit triggers | 50 (all critical tables) |
 | Event categories | 4 |
 | Trigger type | SECURITY DEFINER (bypasses RLS for write to audit log) |
 | Noise reduction | Skips updates where only timestamps changed |
@@ -155,7 +155,7 @@ For any SOC2 auditor or enterprise security review, we can produce the following
 
 | Control | Typical Startup | GetInSync |
 |---------|----------------|-----------|
-| Data isolation | Application-layer WHERE clauses | Database-enforced RLS (347 policies) |
+| Data isolation | Application-layer WHERE clauses | Database-enforced RLS (357 policies) |
 | View security | Default (bypasses isolation) | security_invoker on all views |
 | Audit logging | Application code writes logs (gaps possible) | Database triggers (gaps impossible) |
 | Compliance validation | Manual checklist before audit | Automated validation queries, every session |
@@ -195,7 +195,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 
 | Document | Description |
 |----------|-------------|
-| RLS Policy Architecture v2.4 | Complete policy inventory for all 90 tables |
+| RLS Policy Architecture v2.4 | Complete policy inventory for all 92 tables |
 | Security Validation Runbook | Operational SQL queries for security posture checks |
 | Audit Logging DDL | Table schema, indexes, RLS on audit_logs itself |
 | Audit Logging Functions | Trigger function, evidence collection RPCs |
@@ -213,7 +213,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 | Date | Milestone |
 |------|-----------|
 | Feb 2026 | RLS policies complete (90 tables, 347 policies) |
-| Mar 2026 | Audit logging expanded (48 triggers, 4 categories) |
+| Mar 2026 | Application Categories deployed (92 tables, 357 policies, 50 triggers) |
 | Feb 2026 | Automated validation suite operational |
 | Feb 2026 | View security hardened (29/29 custom views security_invoker; 2 extension views excluded) |
 | Feb 2026 | First evidence snapshot collected (EV-001) |
@@ -237,6 +237,7 @@ When your security team asks "how do you know your controls work?" — we don't 
 | v1.0 | 2026-02-09 | Initial document. 70 tables, 286+ RLS policies, 16 audit triggers, automated validation suite, 4 audit event categories. |
 | v1.1 | 2026-02-10 | Added view-level security (security_invoker) to Layer 1 metrics, Layer 3 validation checks, evidence list, competitive differentiation, and timeline. Added Security Validation Runbook to architecture documents list. |
 | v1.2 | 2026-02-23 | Updated all stats from database: 90 tables (was 70), 347 RLS policies (was 286+), 37 audit triggers (was 16), 27/27 views with security_invoker (was 19/19). |
+| v1.3 | 2026-03-04 | Stats updated: 92 tables (was 90), 357 RLS (was 347), 50 audit triggers (was 48). New: application_categories + application_category_assignments tables. |
 
 ---
 
