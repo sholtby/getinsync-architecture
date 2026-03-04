@@ -1,7 +1,7 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.11
-**Date:** March 3, 2026
+**Version:** 1.12
+**Date:** March 4, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
 **Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
@@ -295,43 +295,58 @@ This Claude Project chat cannot push to git. When architecture docs are created 
 
 ## Section 6d: Automated Security Regression
 
-**When:** Any database changes this session (tables, columns, RLS, GRANTs, triggers, views).  
-**Test files:** `testing/pgtap-rls-coverage.sql` or `testing/security-posture-validation.sql`  
+**When:** Any database changes this session (tables, columns, RLS, GRANTs, triggers, views).
+**Test files:** `testing/pgtap-rls-coverage.sql` and `testing/security-posture-validation.sql`
 **Rule reference:** `operations/development-rules.md` §2.3
 
 Run the security regression suite to verify no regressions across all tables, views, and triggers.
 
-### Option A — Standalone (no extension required)
+### Default — Claude Code runs both scripts directly
 
-Paste `testing/security-posture-validation.sql` into Supabase SQL Editor.
+Both scripts are read-only (SELECT queries + pgTAP assertions). Claude Code MUST run both via `$DATABASE_READONLY_URL` as part of every session with database changes:
 
-- Expected: All rows show `PASS`, zero `FAIL` rows.
-- Failures sort to top — investigate any before closing session.
+**Important:** Use `export $(grep DATABASE_READONLY_URL .env | xargs)` to load the env var (not `source .env` which doesn't export).
 
-### Option B — pgTAP (if extension enabled)
-
-Paste `testing/pgtap-rls-coverage.sql` into Supabase SQL Editor.
-
-- Expected: `Looks like you passed all 408 tests.`
-- Any `not ok` line = FAIL → investigate before closing session.
-
-### Option C — Via Claude Code read-only connection
+**Script 1 — Standalone security validation:**
 
 ```bash
+cd ~/Dev/getinsync-nextgen-ag
+export $(grep DATABASE_READONLY_URL .env | xargs)
 psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/security-posture-validation.sql
 ```
 
-If psql cannot run the file directly, use the §2.1 bulk query instead — it covers the same core checks.
+- Expected: All rows show `PASS`, zero `FAIL` rows.
+- Failures sort to top — investigate any before closing session.
+- Verify: `grep -c "FAIL" output` should be 0.
+
+**Script 2 — pgTAP regression suite:**
+
+```bash
+cd ~/Dev/getinsync-nextgen-ag
+export $(grep DATABASE_READONLY_URL .env | xargs)
+sed '25d' ./docs-architecture/testing/pgtap-rls-coverage.sql > /tmp/pgtap-noext.sql
+psql "$DATABASE_READONLY_URL" -f /tmp/pgtap-noext.sql
+```
+
+- Line 25 (`CREATE EXTENSION`) is stripped because it's DDL that fails on read-only. pgTAP is already installed (v1.2.0).
+- Expected: All assertions show `ok N`, zero `not ok` lines.
+- Verify: `grep -c "not ok" output` should be 0.
+- Sentinel checks (last 3 assertions) confirm table/view/trigger counts match expectations.
+
+### Fallback — Supabase SQL Editor
+
+If psql is unavailable or scripts fail to execute via read-only connection, Stuart pastes scripts into Supabase SQL Editor manually.
 
 ### If Sentinel Checks Fail
 
-Sentinel checks detect new tables or views added without updating the test suite. If sentinel count mismatches appear, update the test files before committing — see development-rules.md §2.3 for the update procedure.
+Sentinel checks detect new tables or views added without updating the test suite. If sentinel count mismatches appear, Claude Code MUST update the sentinel values in both test files before committing — see development-rules.md §2.3 for the update procedure. Claude Code can edit these files directly since they live in the architecture repo (symlinked at `./docs-architecture/`).
 
 | Check | Result |
 |-------|--------|
-| Security regression (Option A or B) | ☐ All PASS |
+| Security posture validation | ☐ All PASS |
+| pgTAP regression suite | ☐ All PASS |
 
-**Pass criteria:** Zero failures across all checks.
+**Pass criteria:** Zero failures across both scripts.
 
 ---
 
@@ -708,6 +723,7 @@ If items were added or completed, produce an updated open items priority matrix 
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.12 | 2026-03-04 | **§6d rewrite: Claude Code runs both test scripts directly.** Replaced Options A/B/C with single "Default" approach: Claude Code runs both `security-posture-validation.sql` and `pgtap-rls-coverage.sql` via `$DATABASE_READONLY_URL` every session with DB changes. pgTAP: strip line 25 (`CREATE EXTENSION`) via `sed`, write to temp file, run with `psql -f`. Added `export` note (source .env doesn't export). Sentinel check failures: Claude Code now updates test files directly instead of deferring to Stuart. Fallback: Supabase SQL Editor. |
 | v1.11 | 2026-03-03 | **Consolidation.** §2.1 expanded: added view security_invoker + DEFINER function search_path checks to bulk safety net (6 checks total). Section 4 removed (all checks now in §2.1). Section 3 narrowed to deep/niche validation only (CHECK constraints, roles, FKs, namespaces). Section 1 triggers simplified. §6d pgTAP count updated 391→408. Deprecated `security-validation-runbook.md` — fully superseded by §2.1 + §6d. |
 | v1.10 | 2026-03-03 | **Section 2 rewrite:** Renamed to "Table Security Posture Validation". §2.1 adds bulk safety-net query (GRANTs, RLS enabled, RLS policies) that runs on ANY database change — not just new tables. Returns only violations. §2.2 retains per-table audit/updated_at trigger checks for new tables only, with guidance on when triggers are expected. Updated Section 1 trigger: "Any database changes" now includes Section 2. Bulk catch-up validation run against all 90 tables: checks 1-4 PASS, checks 5-6 have expected gaps (reference/junction tables). |
 | v1.9 | 2026-03-03 | **Section 9.1:** Fixed functions count query to exclude extension-owned functions (`pg_depend.deptype = 'e'`). Previous query returned ~1,128 (including Supabase/PostGIS built-ins); now returns ~54 (custom functions only). |

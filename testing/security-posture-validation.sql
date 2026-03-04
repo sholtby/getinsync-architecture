@@ -9,6 +9,7 @@
 WITH expected_tables AS (
   SELECT unnest(ARRAY[
     'alert_preferences','application_compliance','application_contacts',
+    'application_categories','application_category_assignments',
     'application_data_assets','application_documents','application_integrations',
     'application_roadmap','application_services','applications',
     'assessment_factor_options','assessment_factors','assessment_history',
@@ -45,6 +46,7 @@ WITH expected_tables AS (
 
 expected_audit_tables AS (
   SELECT unnest(ARRAY[
+    'application_categories','application_category_assignments',
     'application_integrations','applications','contacts',
     'criticality_types','data_classification_types','data_format_types',
     'data_tag_types','deployment_profile_technology_products','deployment_profiles',

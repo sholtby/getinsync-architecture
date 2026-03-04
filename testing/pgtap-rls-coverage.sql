@@ -33,17 +33,17 @@ BEGIN;
 -- Every public table must have RLS enabled. A table without RLS
 -- is a multi-tenant data leak waiting to happen.
 
-SELECT plan(90 + 90 + 90 + 48 + 29 + 29 + 29 + 3);
--- 90 = RLS enabled checks
--- 90 = authenticated GRANT checks (tables)
--- 90 = service_role GRANT checks (tables)
--- 48 = audit trigger checks
+SELECT plan(92 + 92 + 92 + 50 + 29 + 29 + 29 + 3);
+-- 92 = RLS enabled checks
+-- 92 = authenticated GRANT checks (tables)
+-- 92 = service_role GRANT checks (tables)
+-- 50 = audit trigger checks
 -- 27 = view security_invoker checks
 -- 27 = authenticated GRANT checks (views)
 -- 27 = service_role GRANT checks (views)
 --  3 = summary/sentinel checks
 
--- RLS enabled on all 90 tables
+-- RLS enabled on all 92 tables
 SELECT is(
   (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'alert_preferences'),
   true,
@@ -66,6 +66,18 @@ SELECT is(
   (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'application_data_assets'),
   true,
   'RLS enabled: application_data_assets'
+);
+
+SELECT is(
+  (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'application_categories'),
+  true,
+  'RLS enabled: application_categories'
+);
+
+SELECT is(
+  (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'application_category_assignments'),
+  true,
+  'RLS enabled: application_category_assignments'
 );
 
 SELECT is(
@@ -621,6 +633,22 @@ SELECT isnt(
    AND grantee='authenticated' AND privilege_type='SELECT'),
   0,
   'GRANT SELECT to authenticated: application_data_assets'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='application_categories'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: application_categories'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='application_category_assignments'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: application_category_assignments'
 );
 
 SELECT isnt(
@@ -1351,6 +1379,22 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='application_categories'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: application_categories'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='application_category_assignments'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: application_category_assignments'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
    WHERE table_schema='public' AND table_name='application_documents'
    AND grantee='service_role' AND privilege_type='SELECT'),
   0,
@@ -2039,11 +2083,27 @@ SELECT isnt(
 
 
 -- ============================================================
--- SECTION 4: AUDIT TRIGGER CHECKS (48 tables)
+-- SECTION 4: AUDIT TRIGGER CHECKS (50 tables)
 -- ============================================================
--- These 48 tables must have an audit trigger. The trigger name
+-- These 50 tables must have an audit trigger. The trigger name
 -- follows the pattern: audit_{tablename} or {tablename}_audit_trigger
 -- We check for ANY trigger containing 'audit' on the table.
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='application_categories'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: application_categories'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='application_category_assignments'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: application_category_assignments'
+);
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
@@ -3210,11 +3270,11 @@ SELECT isnt(
 -- updating the test suite. If these fail, a new table or view
 -- was added and needs security coverage.
 
--- Expected: 90 public tables
+-- Expected: 92 public tables
 SELECT is(
   (SELECT count(*)::int FROM pg_tables WHERE schemaname = 'public'),
-  90,
-  'SENTINEL: Expected 90 public tables (update test suite if this changes)'
+  92,
+  'SENTINEL: Expected 92 public tables (update test suite if this changes)'
 );
 
 -- Expected: 29 public views (excluding pgTAP internal views)
@@ -3225,12 +3285,12 @@ SELECT is(
   'SENTINEL: Expected 29 public views (update test suite if this changes)'
 );
 
--- Expected: 48 audit triggers (count distinct tables with audit triggers)
+-- Expected: 50 audit triggers (count distinct tables with audit triggers)
 SELECT is(
   (SELECT count(DISTINCT event_object_table)::int FROM information_schema.triggers
    WHERE event_object_schema = 'public' AND trigger_name LIKE '%audit%'),
-  48,
-  'SENTINEL: Expected 48 tables with audit triggers (update test suite if this changes)'
+  50,
+  'SENTINEL: Expected 50 tables with audit triggers (update test suite if this changes)'
 );
 
 

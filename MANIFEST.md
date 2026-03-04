@@ -150,8 +150,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.3 | 🟠 | pgTAP security regression — 408 assertions: sentinel checks STALE (expects 90 tables/48 triggers, now 92/50). Needs sentinel update. |
-| testing/security-posture-validation.sql | v1.2 | 🟠 | Standalone security validation — sentinel checks STALE (expects 90 tables, now 92). Needs sentinel update. |
+| testing/pgtap-rls-coverage.sql | v1.4 | 🟢 | pgTAP security regression — 416 assertions: RLS, GRANTs (92 tables + 29 views), audit triggers (50), view security, sentinel checks |
+| testing/security-posture-validation.sql | v1.3 | 🟢 | Standalone security validation — PASS/FAIL output for all 92 tables + 29 views (incl. view GRANTs) |
 
 ### Integration & Alignment
 
