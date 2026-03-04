@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-02-25
+Last updated: 2026-02-28
 
 ---
 
@@ -136,7 +136,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| identity-security/security-posture-overview.md | v1.2 | 🟢 | Security posture overview — 90 tables, 347 RLS, 37 triggers, 27 views (updated Feb 23) |
+| identity-security/security-posture-overview.md | v1.2 | 🟢 | Security posture overview — 90 tables, 347 RLS, 37 triggers, 29 views (updated Feb 28) |
 | identity-security/security-validation-runbook.md | v1.0 | 🟢 | Operational SQL queries for security validation |
 | operations/database-change-validation.md | v1.0 | 🟢 | Session-end database validation skill |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
@@ -148,8 +148,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.1 | 🟢 | pgTAP security regression — 391 assertions: RLS, GRANTs (tables + views), audit triggers, view security, sentinel checks |
-| testing/security-posture-validation.sql | v1.1 | 🟢 | Standalone security validation — no extensions needed, PASS/FAIL output for all 90 tables + 27 views (incl. view GRANTs) |
+| testing/pgtap-rls-coverage.sql | v1.2 | 🟢 | pgTAP security regression — 397 assertions: RLS, GRANTs (tables + views), audit triggers, view security, sentinel checks |
+| testing/security-posture-validation.sql | v1.2 | 🟢 | Standalone security validation — no extensions needed, PASS/FAIL output for all 90 tables + 29 views (incl. view GRANTs) |
 
 ### Integration & Alignment
 
@@ -194,6 +194,12 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | core/namespace-management-ui.md | v1.0 | 🟢 | Phase 25.10 namespace management UI |
 | core/namespace-workspace-ui.md | v1.0 | ☪ | Namespace/Workspace UI patterns |
 
+### Global Search
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| features/global-search/architecture.md | v1.0 | 🟡 | **Global search — Ctrl+K overlay, 12 entity types, categorized results, cascading to AI chat. Prerequisite for AI chat UX.** |
+
 ### AI & Technology Intelligence (Future)
 
 | Document | Version | Status | Description |
@@ -227,6 +233,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | operations/development-rules.md | **v1.5** | 🟢 | **Development rules — added §2.3 pgTAP regression suite (391 assertions), explicit GRANTs on all 90 tables** |
 | operations/team-workflow.md | v2.0 | 🟢 | Team workflow — Stuart + Claude Code two-role model, dual-repo commits, impact analysis (rewritten Feb 23) |
+| operations/screen-building-guidelines.md | v1.0 | 🟢 | **Screen-building guidelines — page layout zones, typography, buttons, KPI cards, tables, forms, spacing, icons, colors** |
 | CLAUDE.md | v1.0 | 🟢 | **Claude Code auto-read rules file — architecture rules, impact analysis, do-not list, DB access** |
 
 ### Demo & Testing
@@ -243,7 +250,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.26** | 🟢 | **Architecture manifest** |
+| **THIS FILE: MANIFEST.md** | **v1.28** | 🟢 | **Architecture manifest** |
 
 ---
 
@@ -266,12 +273,12 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-02-23)
+## Schema Statistics (as of 2026-02-28)
 
 | Category | Count |
 |----------|-------|
 | **Tables** | 90 |
-| **Views** | 27 |
+| **Views** | 29 |
 | **Functions (RPCs)** | 53 |
 | **RLS Policies** | 347 |
 | **Audit Triggers** | 37 |
@@ -623,12 +630,12 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 50 |
-| 🟡 AS-DESIGNED | 7 |
+| 🟢 AS-BUILT | 51 |
+| 🟡 AS-DESIGNED | 8 |
 | 🟠 NEEDS UPDATE | 0 |
 | ☪ REFERENCE | 15 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **86** |
+| **Total tracked** | **88** |
 
 ---
 
@@ -650,8 +657,8 @@ The following documents were removed during the architecture audit. They describ
 
 **Document Owner:** Stuart Holtby
 **Review Frequency:** Monthly
-**Last Review:** 2026-02-23
-**Next Review:** 2026-03-10
+**Last Review:** 2026-02-28
+**Next Review:** 2026-03-15
 
 **Change Process:**
 1. Implement feature/change
@@ -666,6 +673,8 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.28 | 2026-03-03 | Added 1 document: Screen-Building Guidelines v1.0 (🟢). Defines page layout zones, workspace banner, toolbar, sub-tabs, KPI card variants (A/B), data tables (default 10 rows), typography scale, button hierarchy, icon rules, color system, spacing, empty/loading states. Resolves UX inconsistencies across Overview/App Health/Tech Health/Roadmap pages. Repo path: operations/screen-building-guidelines.md. Document count: 87→88. |
+| v1.27 | 2026-02-28 | Added 1 document: Global Search Architecture v1.0 (🟡). New "Global Search" manifest section. Ctrl+K overlay, 12 searchable entity types, categorized results with workspace breadcrumbs, ILIKE→FTS→semantic progressive upgrade path, AI chat integration handoff. Repo path: features/global-search/architecture.md. Document count: 86→87. |
 | v1.26 | 2026-02-23 | Automated testing. New "Testing" section (2 files: pgTAP regression + standalone validator). development-rules v1.4→v1.5 (§2.3 pgTAP). session-end-checklist v1.4→v1.5 (§6d regression step). Explicit GRANTs on all 90 tables (authenticated + service_role). Document count: 84→86. |
 | v1.25 | 2026-02-22 | Technology Health Dashboard + IT Value Creation Phase 21 both DEPLOYED. Schema: 80→90 tables, 307→347 RLS, 25→37 triggers, 19→27 views. IT Value Creation v1.3 (🟢) — 8 tables, 4 views, self-organizing scoping, Gantt/Kanban/Grid UI. New "IT Value Creation" manifest section. ITSM API Research v1.0 added. Principle 13 (Self-Organizing Scoping). 5 docs 🟡→🟢, 2 docs 🟢→🟠 (stale stats). Pending schema cleaned (17 items deployed). v1.0–v1.2 IT Value archived. Session-end checklist v1.2→v1.3. Document count: 83→85. |
 | v1.24 | 2026-02-17 | Claude Code replaces AG as primary UI dev tool. Phase 28 all 13 bugs closed. 8 reference tables (80 tables, 25 triggers, 307 policies). Budget view rewrite. view-contracts.ts + Principle 12. New "Development Workflow" section. 3 docs marked stale. Document count: 80→83. |

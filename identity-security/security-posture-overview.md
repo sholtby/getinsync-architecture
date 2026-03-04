@@ -36,7 +36,7 @@ Every query against every table is filtered by the database engine itself — no
 |--------|-------|
 | Tables with RLS policies | 90 |
 | Total RLS policies | 347 |
-| Views with security_invoker | 27/27 (RLS enforced through views) |
+| Views with security_invoker | 29/29 (RLS enforced through views) |
 | Policy pattern | Granular 4-policy (SELECT, INSERT, UPDATE, DELETE) |
 | Isolation boundary | Namespace (organization) |
 | Admin override | Explicit platform admin check, logged |
@@ -215,7 +215,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 | Feb 2026 | RLS policies complete (90 tables, 347 policies) |
 | Feb 2026 | Audit logging deployed (37 triggers, 4 categories) |
 | Feb 2026 | Automated validation suite operational |
-| Feb 2026 | View security hardened (27/27 views security_invoker) |
+| Feb 2026 | View security hardened (29/29 views security_invoker) |
 | Feb 2026 | First evidence snapshot collected (EV-001) |
 | Aug 2026 | 6-month evidence threshold (SOC2 minimum) |
 | Q4 2026 | Target SOC2 Type II audit |

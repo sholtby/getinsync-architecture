@@ -1,7 +1,7 @@
 # GetInSync NextGen — Database Change Validation Skill
 
-**Version:** 1.0  
-**Date:** February 9, 2026  
+**Version:** 1.1
+**Date:** March 3, 2026
 **Status:** 🟢 AS-BUILT  
 **Purpose:** Session-end validation — run against all database changes to get a clear ✅/❌ signal
 
@@ -459,6 +459,8 @@ CREATE TRIGGER audit_{table}
 | 8 | audit_logs FK to auth.users | User deletion blocked | FK without ON DELETE SET NULL | Fix FK to ON DELETE SET NULL |
 | 9 | Parameter name change | RPC 404 from frontend | DROP + CREATE changed param name | Coordinate frontend update with backend |
 | 10 | Trigger fires during RPC | Duplicate audit entries | Both frontend and trigger log same event | Frontend: session/usage only. Trigger: data/access only |
+| 11 | Enum casing mismatch | Frontend filter/comparison silently fails | Database has `'Not Started'` but code compares against `'not_started'`. `.toLowerCase()` produces `'not started'` (space) not `'not_started'` (underscore). | Run `testing/data-quality-validation.sql` Check 1. Repair with UPDATE to snake_case values. Ensure seed scripts and UI writes use the exact same casing. |
+| 12 | DP naming convention violation | Deployment profile label shows app name instead of env/region | `dp.name = app.name` (no suffix). `InlineChartPreview` strips `"{app} - "` prefix — when there's no prefix, the full app name passes through unchanged. | Run `testing/data-quality-validation.sql` Check 2. Repair: `UPDATE deployment_profiles SET name = app.name || ' - ' || environment || ' - ' || region`. |
 
 ---
 
@@ -520,6 +522,7 @@ END $$;
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-02-09 | Initial skill. 7 validation sections, 15 queries, templates, pitfall registry. Born from repeated GRANT/RLS/CHECK bugs during invitation signup, role tables, and integration management. |
+| v1.1 | 2026-03-03 | Added Pitfalls #11 (enum casing mismatch) and #12 (DP naming convention violation). Cross-reference to `testing/data-quality-validation.sql`. |
 
 ---
 

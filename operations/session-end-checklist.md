@@ -1,10 +1,10 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.5  
-**Date:** February 23, 2026  
+**Version:** 1.9
+**Date:** March 3, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
-**Trigger:** End of every session with database changes, or on request
+**Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
 
 ---
 
@@ -33,8 +33,9 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 | ☐ | New functions created | → Run Section 4 (Security Validation) |
 | ☐ | Audit triggers added | → Run Section 3 (Database Validation) + Section 6d (Security Regression) |
 | ☐ | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
-| ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) |
-| ☐ | Any database changes at all | → Run Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 9 (Stats Alignment) |
+| ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) |
+| ☐ | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
+| ☐ | Any database changes at all | → Run Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
 | ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
 | ☐ | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
 
@@ -255,6 +256,35 @@ Paste `testing/pgtap-rls-coverage.sql` into Supabase SQL Editor.
 - Expected: `Looks like you passed all 391 tests.`
 - Any `not ok` line = FAIL → investigate before closing session.
 
+### Option C — Via Claude Code read-only connection
+
+```bash
+psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/security-posture-validation.sql
+```
+
+If the SQL file cannot run directly via psql, run the core checks individually:
+
+```sql
+-- RLS enabled on all tables
+SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT rowsecurity;
+
+-- Views without security_invoker
+SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind = 'v'
+AND (c.reloptions IS NULL OR NOT c.reloptions::text[] @> ARRAY['security_invoker=true']);
+
+-- Tables missing GRANT to authenticated
+SELECT t.tablename FROM pg_tables t
+WHERE t.schemaname = 'public'
+AND NOT EXISTS (
+  SELECT 1 FROM information_schema.table_privileges tp
+  WHERE tp.table_schema = 'public' AND tp.table_name = t.tablename
+  AND tp.grantee = 'authenticated' AND tp.privilege_type = 'SELECT'
+);
+```
+
+All three queries must return **empty results** = PASS.
+
 ### If Sentinel Checks Fail
 
 Sentinel checks detect new tables or views added without updating the test suite. If sentinel count mismatches appear, update the test files before committing — see development-rules.md §2.3 for the update procedure.
@@ -264,6 +294,203 @@ Sentinel checks detect new tables or views added without updating the test suite
 | Security regression (Option A or B) | ☐ All PASS |
 
 **Pass criteria:** Zero failures across all checks.
+
+---
+
+## Section 6e: Code Quality Gate
+
+**When:** Any session that modified frontend code (components, hooks, pages, utilities).
+
+### 6e.1 — TypeScript Check
+
+```bash
+npx tsc --noEmit
+```
+
+**Expected:** Zero errors. This is the primary defense against type regressions.
+
+### 6e.2 — ESLint Check
+
+```bash
+npm run lint
+```
+
+**Expected:** Zero errors. Warnings are tracked (baseline: 513 as of Feb 28, 2026) — new sessions must not increase the warning count.
+
+| Rule | Severity | Baseline | Notes |
+|------|----------|----------|-------|
+| `no-debugger` | error | 0 | Never ship debugger statements |
+| `no-var` | error | 0 | Use const/let |
+| `prefer-const` | error | 0 | Use const when not reassigned |
+| `no-console` (log only) | warn | 33 | Replace with proper logging over time |
+| `no-alert` | warn | 32 | Replace with toast/modal (CLAUDE.md rule) |
+| `eqeqeq` | warn | 42 | Should be === everywhere |
+| `@typescript-eslint/no-explicit-any` | warn | 239 | Type properly over time |
+| `@typescript-eslint/no-non-null-assertion` | warn | 86 | Add proper null checks |
+| `react-hooks/exhaustive-deps` | warn | 79 | Fix dependency arrays |
+
+### 6e.3 — Production Build
+
+```bash
+npm run build
+```
+
+**Expected:** Build succeeds. Catches Vite-specific issues that tsc alone misses.
+
+### 6e.4 — File Size Check
+
+If you modified a file this session, check if it's getting too large:
+
+```bash
+wc -l [modified files]
+```
+
+| Threshold | Action |
+|-----------|--------|
+| Under 500 lines | ✅ Fine |
+| 500–800 lines | ⚠️ Consider splitting on next touch |
+| Over 800 lines | ❌ Flag for refactoring — add to open items |
+
+### 6e.5 — Impact Scan (repeat of CLAUDE.md cardinal rule)
+
+If you changed a shared type, interface, view, or component:
+
+```bash
+grep -r "ChangedName" src/ --include="*.ts" --include="*.tsx"
+```
+
+Verify all consumers were updated. This prevents the "silent undefined" class of bug.
+
+### Summary
+
+| # | Check | Command | Pass Criteria |
+|---|-------|---------|---------------|
+| 1 | TypeScript | `npx tsc --noEmit` | Zero errors |
+| 2 | ESLint | `npm run lint` | Zero errors, warnings ≤ baseline |
+| 3 | Build | `npm run build` | Succeeds |
+| 4 | File size | `wc -l` on modified files | No file > 800 lines without flagging |
+| 5 | Impact scan | `grep` shared changes | All consumers updated |
+
+**Pass criteria:** Checks 1-3 pass. Check 4 flags added to open items if needed. Check 5 confirmed.
+
+---
+
+## Section 6f: Bulletproof React Spot Check
+
+**When:** Any session that modified frontend code (components, hooks, pages, utilities).
+**This is informational only** — report findings but do not block the session or start fixing them.
+
+### What to Scan
+
+Run these checks against files **modified this session only** (not the entire codebase):
+
+```bash
+# 6f.1 — New any types in files you touched?
+grep -rn ": any" [modified .ts and .tsx files]
+
+# 6f.2 — Direct supabase calls in components (should be in hooks)?
+grep -rn "supabase\.from\|supabase\.rpc" [modified .tsx files]
+
+# 6f.3 — Components over 300 lines?
+wc -l [modified .tsx files]
+```
+
+### How to Report
+
+For each finding, note:
+- **File and line number**
+- **Whether it is NEW this session or PRE-EXISTING** (check git diff to determine)
+
+Pre-existing violations are noted in the report but are not actionable. New violations are flagged for Stuart's awareness.
+
+### What NOT to Do
+
+- Do NOT fix violations unless Stuart explicitly asks
+- Do NOT refactor existing code to match these patterns
+- Do NOT block the session or delay handover for these findings
+- This is a **health check**, not a **refactoring trigger**
+
+### Summary
+
+| # | Check | What to Report |
+|---|-------|---------------|
+| 1 | New `any` types | Count + file:line for new-this-session only |
+| 2 | Direct supabase in components | Count + file:line for new-this-session only |
+| 3 | Oversized components (over 300 lines) | List files + line counts |
+
+**Pass criteria:** Report produced. No blocking — all findings are informational.
+
+---
+
+## Section 6g: Data Quality Spot Check
+
+**When:** Any session where data was seeded, migrated, or enum/status columns were touched. Also run as a periodic health check.
+**Test file:** `testing/data-quality-validation.sql`
+**Added:** March 3, 2026 — after discovering two silent data bugs: enum casing mismatch (`business_assessment_status = 'Not Started'` vs `'not_started'`) and deployment profile naming violations (`dp.name = app.name`).
+
+### Why This Exists
+
+Schema constraints (CHECK, NOT NULL, FK) validate structure but cannot catch:
+- **Casing mismatches** — `'Not Started'` passes a CHECK for `IN ('not_started', 'Not Started')` but the frontend compares against `'not_started'` only
+- **Naming convention violations** — `dp.name = app.name` is valid text but breaks the prefix-stripping display logic
+- **Placeholder values** — `'UNKNOWN'` or empty strings are valid text but produce broken UI
+
+These bugs are **silent** — no compile error, no runtime error, just wrong data on screen.
+
+### How to Run
+
+#### Option A — Supabase SQL Editor (recommended)
+
+Paste the contents of `testing/data-quality-validation.sql` into Supabase SQL Editor.
+
+- Run all statements sequentially
+- Expected: All checks show `PASS`
+- Any `FAIL` row shows the bad value and affected row count
+
+#### Option B — Via Claude Code read-only connection
+
+```bash
+psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/data-quality-validation.sql
+```
+
+#### Option C — Quick Summary Only
+
+Run just the `SUMMARY` section at the bottom of the script for a single-glance dashboard. If any row shows `FAIL`, run the individual check for details.
+
+### What It Checks
+
+| # | Check | What It Catches |
+|---|-------|-----------------|
+| 1 | Assessment status values | Casing mismatches: `'Not Started'` vs `'not_started'` |
+| 2 | DP naming convention | Primary DPs where `name = app name` (missing env/region suffix) |
+| 3 | Placeholder detection | Region/environment with `UNKNOWN`, empty string, `N/A`, `TBD` |
+| 4 | Operational status | Invalid values in `deployment_profiles` or `applications` |
+| 5 | Lifecycle status | Invalid values in `applications.lifecycle_status` |
+| 6 | Remediation effort casing | Lowercase `'xs'` instead of `'XS'` across 3 tables |
+| 7 | PAID action casing | Title-case `'Plan'` instead of `'plan'` |
+| 8 | Hosting type values | Invalid hosting types in `deployment_profiles` |
+| 9 | Namespace tier | Legacy tier names (`free`, `pro`, `full`) instead of `trial`/`essentials`/`plus`/`enterprise` |
+| 10 | Contact categories | Invalid values in `contacts.contact_category` |
+| 11 | Initiative/idea/program status | Invalid status values in value creation tables |
+| 12 | Integration status | Invalid status values in `application_integrations` |
+| 13 | DP type | Invalid `dp_type` values |
+| 14 | Role values | Invalid roles in `namespace_users` and `workspace_users` |
+
+### If Checks Fail
+
+1. Identify the bad values from the detailed check output
+2. Write a repair SQL script (UPDATE + WHERE clause targeting bad values)
+3. Run the repair in Supabase SQL Editor
+4. Re-run the validation to confirm all PASS
+5. Add the root cause to Common Pitfalls in `database-change-validation.md`
+
+### Summary
+
+| Check | Result |
+|-------|--------|
+| Data quality (14 checks) | All PASS |
+
+**Pass criteria:** All 14 checks return PASS. Zero FAIL rows.
 
 ---
 
@@ -279,7 +506,7 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 | **Database changes** | Tables created/modified, RLS policies, triggers, functions, views |
 | **Frontend changes** | Claude Code commits, components modified |
 | **Files created** | Architecture docs, skills, runbooks |
-| **Validation results** | Pass/fail for each check run from Sections 2–6d |
+| **Validation results** | Pass/fail for each check run from Sections 2–6g |
 | **Repo status** | Both repos committed and pushed? |
 | **Still open** | Bugs, next steps, pending work |
 | **Context for next session** | What the next Claude instance needs to know |
@@ -319,8 +546,12 @@ SELECT
    WHERE trigger_schema = 'public' AND trigger_name LIKE 'audit_%') as audit_triggers,
   (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace 
    WHERE n.nspname = 'public' AND c.relkind = 'v') as views,
-  (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace 
-   WHERE n.nspname = 'public') as functions;
+  (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public'
+   AND NOT EXISTS (
+     SELECT 1 FROM pg_depend d
+     WHERE d.objid = p.oid AND d.deptype = 'e'
+   )) as functions;
 ```
 
 ### 9.2 — Check for Drift
@@ -334,16 +565,26 @@ Compare the query results against these documents. If any are stale, flag for up
 | `identity-security/security-posture-overview.md` | Timeline section + body stats | table count, trigger count, policy count, view count |
 | Claude memory | SOC2 + RLS memory entries | table count, trigger count |
 
-### 9.3 — Update or Flag
+### 9.3 — Auto-Update Drifted Docs
 
 | Scenario | Action |
 |----------|--------|
-| Stats match everywhere | ✅ PASS — no action |
-| Stats drifted in 1-2 docs | Update the docs in this session if time permits, otherwise flag in open items |
-| Stats drifted in 3+ docs | **Update all docs now** — drift compounds across sessions |
+| Stats match everywhere | PASS — no action |
+| Stats drifted in any doc | **Update the doc now** with correct counts from the live query. Do not defer. |
 | Schema backup date is stale | Flag in Section 6b |
 
-**Pass criteria:** All documents reference the same table/trigger/policy counts, or drift is flagged in open items.
+After updating, commit the architecture repo:
+```bash
+cd ~/getinsync-architecture
+git add -A
+git commit -m "docs: stats alignment"
+git push
+cd ~/Dev/getinsync-nextgen-ag
+```
+
+If running in Claude Project chat (no git access), produce the updated doc sections for Stuart to copy.
+
+**Pass criteria:** All documents reference the same table/trigger/policy counts. No drift deferred.
 
 ---
 
@@ -408,6 +649,7 @@ If items were added or completed, produce an updated open items priority matrix 
 | `identity-security/rls-policy-addendum.md` | RLS policy reference | Policy changes (Section 3) |
 | `testing/pgtap-rls-coverage.sql` | pgTAP security regression (391 assertions) | Any DB change (Section 6d) |
 | `testing/security-posture-validation.sql` | Standalone security validation (no extension) | Any DB change (Section 6d) |
+| `testing/data-quality-validation.sql` | Enum casing, naming conventions, placeholder detection (14 checks) | Data seeding/migration (Section 6g) |
 | `identity-security/soc2-evidence-collection.md` | Monthly evidence procedure | Monthly (Section 8) |
 | `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4) |
 | `identity-security/security-posture-overview.md` | External security overview | Stats alignment (Section 9) |
@@ -426,9 +668,13 @@ If items were added or completed, produce an updated open items priority matrix 
 | v1.3 | 2026-02-18 | Section 6b Post-Backup: Added reminder to update Claude Code `.env` file after rolling database password. Clarified AG/Netlify not affected. |
 | v1.4 | 2026-02-23 | **Added Section 6c: Architecture Repo Sync** — dual-repo commit verification for `~/getinsync-architecture`. Covers docs produced in this chat (Stuart copies manually) and docs modified by Claude Code (via `./docs-architecture/` symlink). Includes schema backup copy step. Updated Section 1 triggers: architecture docs now trigger 6c, DB changes now trigger 6c. Updated Section 6b: added schema copy to architecture repo step. Updated Section 6 language: AG → Claude Code. Updated Section 7: added repo status row. Updated manifest reference to v1_25. Fixed mojibake throughout (CP1252 encoding artifacts). |
 | v1.5 | 2026-02-23 | **Added Section 6d: Automated Security Regression.** Dispatches to `testing/pgtap-rls-coverage.sql` (391 assertions) or `testing/security-posture-validation.sql` (standalone). Updated Section 1 triggers: all DB change categories now include Section 6d. Updated Section 7: validation results reference updated to Sections 2–6d. Updated Document Map: added both test files, modernized all document paths from versioned filenames to stable repo paths. |
+| v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
+| v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
+| v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.9 | 2026-03-03 | **Section 9.1:** Fixed functions count query to exclude extension-owned functions (`pg_depend.deptype = 'e'`). Previous query returned ~1,128 (including Supabase/PostGIS built-ins); now returns ~54 (custom functions only). |
 
 ---
 
 *Document: operations/session-end-checklist.md*  
-*Trigger: End of every productive session*  
-*February 2026*
+*Trigger: End of every productive session, or when Stuart says "run session-end checklist"*  
+*March 2026*

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- GetInSync NextGen — Security Posture Validation (No pgTAP Required)
 -- =============================================================================
--- Version: 1.1 | Date: 2026-02-23
+-- Version: 1.2 | Date: 2026-02-28
 -- Run in Supabase SQL Editor — produces a single results table
 -- No extensions needed. Read-only (no data changes).
 -- =============================================================================
@@ -65,7 +65,8 @@ expected_views AS (
   SELECT unnest(ARRAY[
     'vw_application_infrastructure_report','vw_application_integration_summary',
     'vw_application_run_rate','vw_budget_alerts','vw_budget_status',
-    'vw_budget_transfer_history','vw_deployment_profile_costs',
+    'vw_budget_transfer_history','vw_dashboard_summary',
+    'vw_dashboard_workspace_breakdown','vw_deployment_profile_costs',
     'vw_finding_summary','vw_idea_summary','vw_initiative_summary',
     'vw_integration_contacts','vw_integration_detail',
     'vw_it_service_budget_status','vw_namespace_summary',

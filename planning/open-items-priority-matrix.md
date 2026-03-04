@@ -9,7 +9,7 @@
 | # | Category | Item | Why HIGH | Blocked By | Assigned |
 |---|----------|------|----------|------------|----------|
 | 2 | SOC2 Policy | Information Security Policy | Required for SOC2 — umbrella policy covering all controls. ~2-3 hrs. | -- | Delta (GPD-528, due Feb 27) |
-| 3 | SOC2 Policy | Change Management Policy | Required for SOC2 — codify existing Git/architecture workflow. ~1-2 hrs. | -- | Delta (GPD-529, due Feb 27) |
+| 3 | SOC2 Policy | Change Management Policy | Required for SOC2 — codify existing Git/architecture workflow. ~1-2 hrs. Also enable GitHub branch protection on `main` (no force push, no deletion) as CC8.1 evidence. | -- | Delta (GPD-529, due Feb 27) + Stuart (branch protection) |
 | 4 | SOC2 Policy | Incident Response Plan | Required for SOC2 — detect > assess > contain > notify runbook. ~2-3 hrs. | -- | Delta (GPD-530, due Feb 27) |
 | 40 | RBAC | UI role gating — 13 actions lack frontend role checks | Security debt — RLS protects DB but UI shows create/delete/edit buttons to all roles. Demo risk + principle violation. See identity-security/rbac-permissions.md §8.4. ~2-3 days. | -- | Stuart + Claude Code |
 | 53 | UX | By Application grouped table + pagination | Grouped table with expandable DPs is IN. Pagination (10/25/50/100/All selector) status TBD — confirm with Stuart. Apply same pagination to By Technology and By Server. ~1-2 hrs if pagination remains. | -- | Stuart + Claude Code |
