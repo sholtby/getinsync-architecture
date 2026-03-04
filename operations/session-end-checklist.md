@@ -1,6 +1,6 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.9
+**Version:** 1.10
 **Date:** March 3, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
@@ -35,29 +35,83 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 | ☐ | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
 | ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) |
 | ☐ | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
-| ☐ | Any database changes at all | → Run Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
+| ☐ | Any database changes at all | → Run Section 2 (Table Security) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
 | ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
 | ☐ | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
 
 ---
 
-## Section 2: New Table Validation
+## Section 2: Table Security Posture Validation
 
-**When:** Any new table was created this session.  
-**Skill:** `operations/new-table-checklist.md`
+**When:** Any database changes this session (always run — not just when new tables are created).
+**Skill:** `operations/new-table-checklist.md` (reference for creation workflow)
 
-For each new table, verify:
+### 2.1 — Bulk Safety Net (run every session with DB changes)
+
+Run this single query via `$DATABASE_READONLY_URL`. It returns only violations — empty result = PASS.
+
+```sql
+-- Tables missing GRANT to authenticated
+SELECT 'MISSING_GRANT_AUTH' as violation, t.tablename
+FROM pg_tables t
+WHERE t.schemaname = 'public'
+AND NOT EXISTS (
+  SELECT 1 FROM information_schema.table_privileges tp
+  WHERE tp.table_schema = 'public' AND tp.table_name = t.tablename
+  AND tp.grantee = 'authenticated' AND tp.privilege_type = 'SELECT'
+)
+
+UNION ALL
+
+-- Tables missing GRANT to service_role
+SELECT 'MISSING_GRANT_SVC', t.tablename
+FROM pg_tables t
+WHERE t.schemaname = 'public'
+AND NOT EXISTS (
+  SELECT 1 FROM information_schema.table_privileges tp
+  WHERE tp.table_schema = 'public' AND tp.table_name = t.tablename
+  AND tp.grantee = 'service_role' AND tp.privilege_type = 'SELECT'
+)
+
+UNION ALL
+
+-- Tables with RLS disabled
+SELECT 'RLS_DISABLED', tablename
+FROM pg_tables
+WHERE schemaname = 'public' AND NOT rowsecurity
+
+UNION ALL
+
+-- Tables with RLS enabled but zero policies
+SELECT 'RLS_NO_POLICIES', t.tablename
+FROM pg_tables t
+WHERE t.schemaname = 'public' AND t.rowsecurity
+AND NOT EXISTS (
+  SELECT 1 FROM pg_policies p
+  WHERE p.schemaname = 'public' AND p.tablename = t.tablename
+)
+
+ORDER BY 1, 2;
+```
+
+**Pass criteria:** Query returns zero rows. Any row = FAIL — investigate immediately.
+
+**Why this runs every session:** Section 6d (security regression) uses sentinel counts that must be updated manually. This bulk query catches violations regardless of sentinel freshness. It also catches accidental drops (e.g., a GRANT removed during debugging).
+
+### 2.2 — Per-Table Checks (only when new tables are created)
+
+When new tables are created this session, also verify these per-table checks that cannot be validated in bulk (because not every table requires them):
 
 | # | Check | Query |
 |---|-------|-------|
-| 1 | Table exists | `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename = '{table}';` |
-| 2 | GRANTs exist | `SELECT grantee, privilege_type FROM information_schema.table_privileges WHERE table_name = '{table}' AND grantee IN ('authenticated', 'service_role');` |
-| 3 | RLS enabled | `SELECT tablename, rowsecurity FROM pg_tables WHERE tablename = '{table}';` |
-| 4 | RLS policies exist | `SELECT policyname, cmd FROM pg_policies WHERE tablename = '{table}';` |
-| 5 | Audit trigger (if applicable) | `SELECT trigger_name FROM information_schema.triggers WHERE event_object_table = '{table}' AND trigger_name LIKE '%audit%';` |
-| 6 | updated_at trigger (if applicable) | `SELECT tgname FROM pg_trigger WHERE tgrelid = 'public.{table}'::regclass AND tgname LIKE 'update_%_updated_at';` |
+| 1 | Audit trigger exists | `SELECT trigger_name FROM information_schema.triggers WHERE event_object_table = '{table}' AND trigger_name LIKE '%audit%';` |
+| 2 | updated_at trigger exists | `SELECT tgname FROM pg_trigger WHERE tgrelid = 'public.{table}'::regclass AND tgname LIKE 'update_%_updated_at';` |
 
-**Pass criteria:** All applicable checks return expected results.
+**When to expect these triggers:**
+- **Audit trigger:** Required on all business entity tables (applications, deployment_profiles, contacts, initiatives, etc.). Not required on reference tables (hosting_types, dr_statuses, etc.), system tables (audit_logs, notifications), or junction tables with no independent business meaning.
+- **updated_at trigger:** Required on tables with an `updated_at` column. Check `SELECT column_name FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'updated_at';` — if the column exists, the trigger should too.
+
+**Pass criteria:** All applicable checks return expected results. Document any intentional exclusions in the session handover.
 
 ---
 
@@ -671,6 +725,7 @@ If items were added or completed, produce an updated open items priority matrix 
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.10 | 2026-03-03 | **Section 2 rewrite:** Renamed to "Table Security Posture Validation". §2.1 adds bulk safety-net query (GRANTs, RLS enabled, RLS policies) that runs on ANY database change — not just new tables. Returns only violations. §2.2 retains per-table audit/updated_at trigger checks for new tables only, with guidance on when triggers are expected. Updated Section 1 trigger: "Any database changes" now includes Section 2. Bulk catch-up validation run against all 90 tables: checks 1-4 PASS, checks 5-6 have expected gaps (reference/junction tables). |
 | v1.9 | 2026-03-03 | **Section 9.1:** Fixed functions count query to exclude extension-owned functions (`pg_depend.deptype = 'e'`). Previous query returned ~1,128 (including Supabase/PostGIS built-ins); now returns ~54 (custom functions only). |
 
 ---
