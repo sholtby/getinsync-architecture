@@ -137,12 +137,12 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | identity-security/security-posture-overview.md | v1.2 | 🟢 | Security posture overview — 90 tables, 347 RLS, 48 triggers, 31 views (updated Mar 3) |
-| identity-security/security-validation-runbook.md | v1.0 | 🟢 | Operational SQL queries for security validation |
-| operations/database-change-validation.md | v1.0 | 🟢 | Session-end database validation skill |
+| identity-security/security-validation-runbook.md | v1.1 | 🟠 | ~~Security validation~~ — DEPRECATED, superseded by session-end-checklist §2.1 + §6d. Retained for INC-001 history. |
+| operations/database-change-validation.md | v1.1 | 🟢 | Deep database validation (CHECK constraints, roles, FKs, namespaces). Section 1 superseded by session-end-checklist §2.1. |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
 | identity-security/soc2-evidence-collection.md | v1.1 | 🟢 | SOC2 monthly evidence collection — 48 triggers, 90 tables (updated Mar 3) |
 | identity-security/soc2-evidence-index.md | v1.2 | 🟢 | SOC2 evidence index — 90 tables, 347 RLS, 48 triggers, identity-security flags cleared (updated Mar 3) |
-| operations/session-end-checklist.md | **v1.10** | 🟢 | **Master session-end compliance checklist — v1.10: §2 bulk table security posture validation, §9.1 functions query fix** |
+| operations/session-end-checklist.md | **v1.11** | 🟢 | **Master session-end compliance checklist — v1.11: §2.1 unified bulk safety net (6 checks), Section 4 removed, Section 3 narrowed** |
 
 ### Testing
 
@@ -673,6 +673,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.31 | 2026-03-03 | Validation consolidation. session-end-checklist v1.10→v1.11: §2.1 unified bulk safety net (6 checks: GRANTs, RLS, views, functions), Section 4 removed, Section 3 narrowed. security-validation-runbook 🟢→🟠 DEPRECATED (superseded by §2.1 + §6d). database-change-validation §1 noted as superseded. |
 | v1.30 | 2026-03-03 | Audit trigger expansion 37→48. Stats alignment across 6 docs: security-posture-overview, soc2-evidence-collection, soc2-evidence-index, pgTAP regression (397→408 assertions), session-end-checklist v1.9→v1.10 (§2 bulk table security posture validation). |
 | v1.29 | 2026-03-03 | Stats alignment: session-end-checklist v1.5→v1.9 in manifest. Schema stats corrected: Views 29→31, Functions 53→54. §9.1 functions query now excludes extension-owned functions. |
 | v1.28 | 2026-03-03 | Added 1 document: Screen-Building Guidelines v1.0 (🟢). Defines page layout zones, workspace banner, toolbar, sub-tabs, KPI card variants (A/B), data tables (default 10 rows), typography scale, button hierarchy, icon rules, color system, spacing, empty/loading states. Resolves UX inconsistencies across Overview/App Health/Tech Health/Roadmap pages. Repo path: operations/screen-building-guidelines.md. Document count: 87→88. |

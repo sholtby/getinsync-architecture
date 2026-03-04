@@ -1,6 +1,6 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.10
+**Version:** 1.11
 **Date:** March 3, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
@@ -25,23 +25,23 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 
 | Changed? | Category | Triggers |
 |----------|----------|----------|
-| ☐ | New tables created | → Run Section 2 (New Table) + Section 3 (Database Validation) + Section 6d (Security Regression) |
-| ☐ | Existing tables modified (columns, constraints) | → Run Section 3 (Database Validation) + Section 6d (Security Regression) |
-| ☐ | RLS policies added or changed | → Run Section 3 (Database Validation) + Section 6d (Security Regression) |
-| ☐ | GRANTs added or changed | → Run Section 3 (Database Validation) + Section 6d (Security Regression) |
-| ☐ | New views created | → Run Section 4 (Security Validation) + Section 6d (Security Regression) |
-| ☐ | New functions created | → Run Section 4 (Security Validation) |
-| ☐ | Audit triggers added | → Run Section 3 (Database Validation) + Section 6d (Security Regression) |
+| ☐ | New tables created | → Run Section 2 (Security Posture) + Section 6d (Security Regression) |
+| ☐ | Existing tables modified (columns, constraints) | → Run Section 3 (Deep Validation) + Section 6d (Security Regression) |
+| ☐ | RLS policies added or changed | → Run Section 6d (Security Regression) |
+| ☐ | GRANTs added or changed | → Run Section 6d (Security Regression) |
+| ☐ | New views or functions created | → Run Section 6d (Security Regression) |
+| ☐ | Audit triggers added | → Run Section 6d (Security Regression) |
+| ☐ | Role/enum changes, FK changes, namespace changes | → Run Section 3 (Deep Validation) |
 | ☐ | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
 | ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) |
 | ☐ | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
-| ☐ | Any database changes at all | → Run Section 2 (Table Security) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
+| ☐ | Any database changes at all | → Run Section 2 (Security Posture) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
 | ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
 | ☐ | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
 
 ---
 
-## Section 2: Table Security Posture Validation
+## Section 2: Security Posture Validation
 
 **When:** Any database changes this session (always run — not just when new tables are created).
 **Skill:** `operations/new-table-checklist.md` (reference for creation workflow)
@@ -50,9 +50,11 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 
 Run this single query via `$DATABASE_READONLY_URL`. It returns only violations — empty result = PASS.
 
+Covers: table GRANTs, RLS enablement, RLS policies, view security_invoker, DEFINER function search_path.
+
 ```sql
 -- Tables missing GRANT to authenticated
-SELECT 'MISSING_GRANT_AUTH' as violation, t.tablename
+SELECT 'MISSING_GRANT_AUTH' as violation, t.tablename as object_name
 FROM pg_tables t
 WHERE t.schemaname = 'public'
 AND NOT EXISTS (
@@ -91,12 +93,35 @@ AND NOT EXISTS (
   WHERE p.schemaname = 'public' AND p.tablename = t.tablename
 )
 
+UNION ALL
+
+-- Views missing security_invoker=true (excludes extension views)
+SELECT 'VIEW_NO_SECURITY_INVOKER', c.relname
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relkind = 'v'
+  AND c.relname NOT IN ('pg_all_foreign_keys', 'tap_funky')
+  AND (c.reloptions IS NULL OR NOT c.reloptions::text[] @> ARRAY['security_invoker=true'])
+
+UNION ALL
+
+-- SECURITY DEFINER functions missing search_path
+SELECT 'DEFINER_NO_SEARCH_PATH', p.proname
+FROM pg_proc p
+JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE n.nspname = 'public'
+  AND p.prosecdef = true
+  AND (p.proconfig IS NULL OR NOT EXISTS (
+    SELECT 1 FROM unnest(p.proconfig) AS c WHERE c LIKE 'search_path=%'
+  ))
+
 ORDER BY 1, 2;
 ```
 
 **Pass criteria:** Query returns zero rows. Any row = FAIL — investigate immediately.
 
-**Why this runs every session:** Section 6d (security regression) uses sentinel counts that must be updated manually. This bulk query catches violations regardless of sentinel freshness. It also catches accidental drops (e.g., a GRANT removed during debugging).
+**Why this runs every session:** Section 6d (security regression) uses sentinel counts that must be updated manually. This bulk query catches violations regardless of sentinel freshness. It also catches accidental drops (e.g., a GRANT removed during debugging, a view created without security_invoker).
 
 ### 2.2 — Per-Table Checks (only when new tables are created)
 
@@ -115,43 +140,23 @@ When new tables are created this session, also verify these per-table checks tha
 
 ---
 
-## Section 3: Database Change Validation
+## Section 3: Deep Database Validation (situational)
 
-**When:** Any table, column, RLS, GRANT, trigger, or constraint changes.  
+**When:** Column/constraint changes, role/enum changes, FK changes, or namespace changes.
 **Skill:** `operations/database-change-validation.md`
 
-Run the applicable sections from the validation skill:
+Section 2.1 covers the common checks (GRANTs, RLS, views, functions). For niche situations, dispatch to the validation skill:
 
 | Condition | Validation Skill Section |
 |-----------|-------------------------|
-| New tables | Section 1: Tables without GRANTs, RLS, policies, triggers |
 | Column/constraint changes | Section 2: CHECK constraint alignment |
-| RLS policy changes | Section 3: Policy inventory for affected tables |
-| Role/enum changes | Section 4: Role alignment with lookup tables |
-| FK changes | Section 5: Foreign key ON DELETE review |
+| Role/enum changes | Section 3: Role consistency with lookup tables |
+| FK changes | Section 4: Foreign key ON DELETE review |
 | Namespace changes | Section 6: Namespace default workspace check |
-| Any DB change | Section 7: Full validation summary |
 
 **Pass criteria:** All validation queries return empty result (no violations).
 
----
-
-## Section 4: Security Posture Validation
-
-**When:** New views created, new functions created, or Supabase Security Advisor email received.  
-**Skill:** `identity-security/security-validation-runbook.md`
-
-| Check | Runbook Section | Quick Query |
-|-------|----------------|-------------|
-| Views: security_invoker | Section 1.1 | All views should have `security_invoker=true` |
-| Functions: search_path | Section 2.1 | All SECURITY DEFINER functions should have `search_path` set |
-| Tables: RLS enabled | Section 3.1 | No public tables with `rowsecurity = false` |
-| Tables: RLS has policies | Section 3.2 | No tables with RLS enabled but zero policies |
-| Tables: GRANTs exist | Section 3.3 | No tables missing authenticated GRANT |
-
-**One-shot posture query:** Run Section 4 "Full Security Posture Summary" for a single-query dashboard.
-
-**Pass criteria:** All categories show ✅.
+> **Note:** Validation skill Section 1 (GRANTs, RLS, triggers) is now redundant with §2.1 above. Skip it.
 
 ---
 
@@ -307,7 +312,7 @@ Paste `testing/security-posture-validation.sql` into Supabase SQL Editor.
 
 Paste `testing/pgtap-rls-coverage.sql` into Supabase SQL Editor.
 
-- Expected: `Looks like you passed all 391 tests.`
+- Expected: `Looks like you passed all 408 tests.`
 - Any `not ok` line = FAIL → investigate before closing session.
 
 ### Option C — Via Claude Code read-only connection
@@ -316,28 +321,7 @@ Paste `testing/pgtap-rls-coverage.sql` into Supabase SQL Editor.
 psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/security-posture-validation.sql
 ```
 
-If the SQL file cannot run directly via psql, run the core checks individually:
-
-```sql
--- RLS enabled on all tables
-SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT rowsecurity;
-
--- Views without security_invoker
-SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE n.nspname = 'public' AND c.relkind = 'v'
-AND (c.reloptions IS NULL OR NOT c.reloptions::text[] @> ARRAY['security_invoker=true']);
-
--- Tables missing GRANT to authenticated
-SELECT t.tablename FROM pg_tables t
-WHERE t.schemaname = 'public'
-AND NOT EXISTS (
-  SELECT 1 FROM information_schema.table_privileges tp
-  WHERE tp.table_schema = 'public' AND tp.table_name = t.tablename
-  AND tp.grantee = 'authenticated' AND tp.privilege_type = 'SELECT'
-);
-```
-
-All three queries must return **empty results** = PASS.
+If psql cannot run the file directly, use the §2.1 bulk query instead — it covers the same core checks.
 
 ### If Sentinel Checks Fail
 
@@ -697,11 +681,10 @@ If items were added or completed, produce an updated open items priority matrix 
 | Document | What It Does | When Referenced |
 |----------|-------------|-----------------|
 | `operations/new-table-checklist.md` | Per-table creation checklist | New tables (Section 2) |
-| `operations/database-change-validation.md` | SQL validation queries for DB changes | Any DB change (Section 3) |
-| `identity-security/security-validation-runbook.md` | View/function/posture checks | New views/functions (Section 4) |
+| `operations/database-change-validation.md` | Deep validation (CHECK, roles, FKs, namespaces) | Situational (Section 3) |
 | `MANIFEST.md` | Master document catalog | New/updated docs (Section 5) |
 | `identity-security/rls-policy-addendum.md` | RLS policy reference | Policy changes (Section 3) |
-| `testing/pgtap-rls-coverage.sql` | pgTAP security regression (391 assertions) | Any DB change (Section 6d) |
+| `testing/pgtap-rls-coverage.sql` | pgTAP security regression (408 assertions) | Any DB change (Section 6d) |
 | `testing/security-posture-validation.sql` | Standalone security validation (no extension) | Any DB change (Section 6d) |
 | `testing/data-quality-validation.sql` | Enum casing, naming conventions, placeholder detection (14 checks) | Data seeding/migration (Section 6g) |
 | `identity-security/soc2-evidence-collection.md` | Monthly evidence procedure | Monthly (Section 8) |
@@ -725,6 +708,7 @@ If items were added or completed, produce an updated open items priority matrix 
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.11 | 2026-03-03 | **Consolidation.** §2.1 expanded: added view security_invoker + DEFINER function search_path checks to bulk safety net (6 checks total). Section 4 removed (all checks now in §2.1). Section 3 narrowed to deep/niche validation only (CHECK constraints, roles, FKs, namespaces). Section 1 triggers simplified. §6d pgTAP count updated 391→408. Deprecated `security-validation-runbook.md` — fully superseded by §2.1 + §6d. |
 | v1.10 | 2026-03-03 | **Section 2 rewrite:** Renamed to "Table Security Posture Validation". §2.1 adds bulk safety-net query (GRANTs, RLS enabled, RLS policies) that runs on ANY database change — not just new tables. Returns only violations. §2.2 retains per-table audit/updated_at trigger checks for new tables only, with guidance on when triggers are expected. Updated Section 1 trigger: "Any database changes" now includes Section 2. Bulk catch-up validation run against all 90 tables: checks 1-4 PASS, checks 5-6 have expected gaps (reference/junction tables). |
 | v1.9 | 2026-03-03 | **Section 9.1:** Fixed functions count query to exclude extension-owned functions (`pg_depend.deptype = 'e'`). Previous query returned ~1,128 (including Supabase/PostGIS built-ins); now returns ~54 (custom functions only). |
 

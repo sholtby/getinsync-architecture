@@ -1,33 +1,20 @@
 # GetInSync NextGen — Security Validation Runbook
 
-**Version:** 1.0  
-**Date:** February 10, 2026  
-**Status:** 🟢 AS-BUILT  
-**Purpose:** Periodic security posture validation — run against Supabase Security Advisor findings and proactive checks  
+**Version:** 1.1
+**Date:** March 3, 2026
+**Status:** 🟠 DEPRECATED
+**Purpose:** ~~Periodic security posture validation~~ — Superseded by session-end-checklist §2.1 (bulk safety net) + §6d (pgTAP/standalone regression)
 **SOC2 Controls:** CC6.1, CC6.2, CC6.6, CC7.1
 
 ---
 
-## How To Use This Skill
-
-Run these checks:
-- **After every Supabase Security Advisor email** (weekly)
-- **After creating new views** (any session)
-- **After creating new functions** (any session)
-- **Monthly** as part of SOC2 evidence collection
-
-**Workflow:**
-```
-Security Advisor email → Run all checks → Fix any ❌ → Re-run Security Advisor → Confirm 0 errors
-```
-
-**Relationship to Other Skills:**
-| Skill | Scope |
-|-------|-------|
-| `operations/database-change-validation` | Session-end — tables, GRANTs, RLS, triggers |
-| `identity-security/soc2-evidence-collection` | Monthly — evidence snapshots, audit log review |
-| `identity-security/security-posture-overview` | External — sales/prospect-facing security posture |
-| **This document** | Periodic — views, functions, Security Advisor alignment |
+> **DEPRECATED (March 3, 2026):** All checks in this document are now covered by:
+> - `operations/session-end-checklist.md` §2.1 — bulk safety net (GRANTs, RLS, views, functions)
+> - `testing/pgtap-rls-coverage.sql` — 408-assertion regression suite
+> - `testing/security-posture-validation.sql` — standalone validator
+>
+> This file is retained for incident history (INC-001) and as a reference for remediation commands.
+> **Do not use this document for validation — use the session-end checklist instead.**
 
 ---
 
@@ -320,6 +307,7 @@ When creating any new SECURITY DEFINER function:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.1 | 2026-03-03 | **DEPRECATED.** All checks superseded by session-end-checklist §2.1 (bulk safety net) + §6d (pgTAP 408 assertions). Retained for incident history (INC-001) and remediation command reference. |
 | v1.0 | 2026-02-10 | Initial document. 4 validation sections, full posture summary query, INC-001 remediation (16 views → security_invoker). Born from Supabase Security Advisor weekly email. |
 
 ---
