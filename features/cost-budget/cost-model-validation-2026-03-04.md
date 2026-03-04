@@ -48,18 +48,18 @@ Elements documented in architecture specs that do not exist in the production sc
 |---|---------|------------|--------------|----------------|
 | B.1 | `deployment_profiles.cost_confidence` | cost-model.md §10.3 | NOT on DP table. EXISTS on `deployment_profile_software_products` junction. | Doc update — mark deferred for DP-level. |
 | B.2 | `applications.budget_fiscal_year` | budget-management.md §4.1 | NOT on applications table. Fiscal year tracking is workspace-level via `workspace_budgets`. | Doc update — superseded by workspace_budgets design. |
-| B.3 | `updated_at` on dpsp and dpis | software-contract.md §4 | MISSING on both junction tables. `created_at` exists. | Stuart: ADD columns + audit triggers. Priority 2. |
-| B.4 | `chk_dpsp_allocation_percent` constraint | vendor-cost.md §6.1, software-contract.md §4 | MISSING from database. | Stuart: ADD constraint. Priority 2. |
+| B.3 | `updated_at` on dpsp and dpis | software-contract.md §4 | ✅ FIXED 2026-03-04 — `updated_at` + triggers added to both tables (R.3/R.4). | RESOLVED. |
+| B.4 | `chk_dpsp_allocation_percent` constraint | vendor-cost.md §6.1, software-contract.md §4 | ✅ FIXED 2026-03-04 — constraint added (R.5). | RESOLVED. |
 | B.5 | `vw_vendor_spend` view | software-contract.md §9 | NOT BUILT. | Defer — no frontend consumers. Build after R.1/R.2 fixed. |
 | B.6 | `vw_vendor_spend_summary` view | vendor-cost.md §9.5 | NOT BUILT. | Defer — depends on fixing vw_run_rate_by_vendor first. |
 
 **As-built junction table schemas:**
 
-`deployment_profile_software_products` (16 columns):
-id, deployment_profile_id, software_product_id, deployed_version, notes, created_at, vendor_org_id, annual_cost, quantity, allocation_percent, allocation_basis, contract_reference, contract_start_date, contract_end_date, renewal_notice_days, cost_confidence
+`deployment_profile_software_products` (17 columns):
+id, deployment_profile_id, software_product_id, deployed_version, notes, created_at, updated_at, vendor_org_id, annual_cost, quantity, allocation_percent, allocation_basis, contract_reference, contract_start_date, contract_end_date, renewal_notice_days, cost_confidence
 
-`deployment_profile_it_services` (8 columns):
-id, deployment_profile_id, it_service_id, relationship_type, allocation_basis, allocation_value, notes, created_at
+`deployment_profile_it_services` (9 columns):
+id, deployment_profile_id, it_service_id, relationship_type, allocation_basis, allocation_value, notes, created_at, updated_at
 
 ---
 
@@ -67,8 +67,8 @@ id, deployment_profile_id, it_service_id, relationship_type, allocation_basis, a
 
 | # | View | Bug | Impact | Severity | Fix |
 |---|------|-----|--------|----------|-----|
-| C.1 | `vw_run_rate_by_vendor` Software channel | Uses `sum(COALESCE(sp.annual_cost, 0))` — reads catalog price only, ignores `dpsp.annual_cost` junction override | Vendor spend understated when junction cost overrides exist | HIGH | Change to `sum(COALESCE(dpsp.annual_cost, sp.annual_cost, 0))` to match `vw_deployment_profile_costs` |
-| C.2 | `vw_run_rate_by_vendor` IT Service channel | Uses raw `sum(COALESCE(dpis.allocation_value, 0))` without percent-vs-fixed allocation logic | IT service vendor spend misreported for percentage-based allocations | HIGH | Add CASE expression matching `vw_deployment_profile_costs` pattern |
+| C.1 | `vw_run_rate_by_vendor` Software channel | ~~Uses `sum(COALESCE(sp.annual_cost, 0))`~~ | ~~Vendor spend understated~~ | ~~HIGH~~ | ✅ FIXED 2026-03-04 (R.1) — now uses `COALESCE(dpsp.annual_cost, sp.annual_cost, 0)` |
+| C.2 | `vw_run_rate_by_vendor` IT Service channel | ~~Uses raw `sum(COALESCE(dpis.allocation_value, 0))`~~ | ~~IT service vendor spend misreported~~ | ~~HIGH~~ | ✅ FIXED 2026-03-04 (R.2) — CASE logic with percent-vs-fixed + >100 guard added |
 | C.3 | `vw_budget_status` thresholds | Spec (budget-management.md §5.1): 75/90/100%. As-built: 80/100/110%. | Spec-vs-reality divergence | INFO | Spec updated to match as-built (deliberate evolution — as-built thresholds are more appropriate). |
 | C.4 | `vw_budget_transfer_history` | Ignores `from_it_service_id` / `to_it_service_id` columns on `budget_transfers` table | IT service transfers not visible in transfer history | LOW | Add joins when IT service transfers are actively used. |
 
@@ -153,20 +153,20 @@ sum(
 
 ## Prioritized Refactoring Plan
 
-### Priority 1 — Immediate (view bugs affecting data accuracy)
+### Priority 1 — Immediate (view bugs affecting data accuracy) ✅ COMPLETED 2026-03-04
 
-| ID | Action | Owner | SOC2 Relevance | Effort |
+| ID | Action | Owner | SOC2 Relevance | Status |
 |----|--------|-------|----------------|--------|
-| R.1 | Fix `vw_run_rate_by_vendor` Software channel — use `COALESCE(dpsp.annual_cost, sp.annual_cost)` | Stuart (SQL Editor) | CC7.2 data integrity — vendor spend reports show wrong numbers | 15 min |
-| R.2 | Fix `vw_run_rate_by_vendor` IT Service channel — add percent-vs-fixed CASE logic | Stuart (SQL Editor) | CC7.2 data integrity — IT service vendor spend misreported | 15 min |
+| R.1 | Fix `vw_run_rate_by_vendor` Software channel — use `COALESCE(dpsp.annual_cost, sp.annual_cost)` | Stuart (SQL Editor) | CC7.2 data integrity | ✅ DONE — validated |
+| R.2 | Fix `vw_run_rate_by_vendor` IT Service channel — add percent-vs-fixed CASE logic | Stuart (SQL Editor) | CC7.2 data integrity | ✅ DONE — validated |
 
-### Priority 2 — Short-term (missing schema elements)
+### Priority 2 — Short-term (missing schema elements) ✅ COMPLETED 2026-03-04
 
-| ID | Action | Owner | SOC2 Relevance | Effort |
+| ID | Action | Owner | SOC2 Relevance | Status |
 |----|--------|-------|----------------|--------|
-| R.3 | Add `updated_at` column + audit trigger on `deployment_profile_software_products` | Stuart (SQL Editor) | CC7.2 change tracking — no audit trail on junction modifications | 10 min |
-| R.4 | Add `updated_at` column + audit trigger on `deployment_profile_it_services` | Stuart (SQL Editor) | CC7.2 change tracking | 10 min |
-| R.5 | Add `chk_dpsp_allocation_percent` CHECK constraint (0–100 range) | Stuart (SQL Editor) | CC7.2 data integrity | 5 min |
+| R.3 | Add `updated_at` column + audit trigger on `deployment_profile_software_products` | Stuart (SQL Editor) | CC7.2 change tracking | ✅ DONE — trigger `set_updated_at_dpsp` confirmed |
+| R.4 | Add `updated_at` column + audit trigger on `deployment_profile_it_services` | Stuart (SQL Editor) | CC7.2 change tracking | ✅ DONE — trigger `set_updated_at_dpis` confirmed |
+| R.5 | Add `chk_dpsp_allocation_percent` CHECK constraint (0–100 range) | Stuart (SQL Editor) | CC7.2 data integrity | ✅ DONE — constraint `chk_dpsp_allocation_percent` confirmed |
 
 ### Priority 3 — Deferred
 
@@ -179,8 +179,8 @@ sum(
 
 ### R.8 Migration Prerequisites (do NOT attempt until all are met)
 
-1. R.1 and R.2 view bugs are fixed
-2. R.3–R.5 missing schema elements are in place
+1. ~~R.1 and R.2 view bugs are fixed~~ ✅ Done
+2. ~~R.3–R.5 missing schema elements are in place~~ ✅ Done
 3. A data migration script exists to move `annual_licensing_cost`/`annual_tech_cost` values into Cost Bundle DPs
 4. Migration tested on a demo namespace first
 5. CSV import/export paths updated to use cost channels

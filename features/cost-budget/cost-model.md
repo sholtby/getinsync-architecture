@@ -308,7 +308,7 @@ DROP COLUMN annual_tech_cost;
 Table: `deployment_profile_it_services`
 
 ```sql
--- AS-BUILT (8 columns)
+-- AS-BUILT (9 columns)
 CREATE TABLE deployment_profile_it_services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   deployment_profile_id UUID REFERENCES deployment_profiles(id),
@@ -318,7 +318,7 @@ CREATE TABLE deployment_profile_it_services (
   allocation_value DECIMAL(12,2),  -- The recovered amount
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
-  -- NOTE: updated_at is MISSING (audit gap — see validation report B.3)
+  updated_at TIMESTAMPTZ DEFAULT now(),  -- added 2026-03-04 (R.4), trigger: set_updated_at_dpis
   UNIQUE(deployment_profile_id, it_service_id)
 );
 ```
@@ -328,7 +328,6 @@ CREATE TABLE deployment_profile_it_services (
 > **As-built differences from spec:**
 > - `relationship_type` column added (NOT NULL) — not in original spec
 > - `allocation_basis` values are `percent`/`fixed` (not `percent`/`flat`/`per_unit`)
-> - `updated_at` column is MISSING — no audit trail on junction modifications
 
 ## 11. Out of Scope
 
