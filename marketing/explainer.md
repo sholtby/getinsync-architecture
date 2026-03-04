@@ -556,9 +556,9 @@ Data never leaves designated region. Namespace is pinned to Region at creation.
 
 **Database-enforced security:**
 - Row-Level Security on every table (90 tables, 347 policies)
-- Trigger-based audit logging on all critical tables (37 triggers, 365-day retention)
+- Trigger-based audit logging on all critical tables (48 triggers, 365-day retention)
 - TLS 1.2+ in transit, AES-256 at rest (Supabase managed)
-- All views configured with `security_invoker = true` (27/27 views)
+- All views configured with `security_invoker = true` (29/29 custom views)
 - Automated daily backups, schema versioned in GitHub
 
 **SOC 2 Type II roadmap:** Audit logging activated Feb 2026. Baseline evidence snapshot collected. 6-month evidence threshold Aug 2026. Target Type II audit Q4 2026.

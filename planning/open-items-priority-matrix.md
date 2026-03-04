@@ -54,8 +54,8 @@
 | 23 | SOC2 Policy | Data Retention Policy | Required for SOC2 — already enforced in code. ~30 min to document. | -- | Delta (GPD-535, due Mar 27) |
 | 24 | Architecture | Document retention policy for architecture docs | Some docs superseded but not archived. Manifest tracks status but no formal policy. | -- | Stuart |
 | 25 | Database | Orphaned portfolio_assignments cleanup | Some PAs may reference deleted DPs. Run FK integrity check. | -- | Stuart |
-| 38 | Documentation | Update security-posture-overview v1.1 > v1.2 | Add CC6.7 Dependabot detail, update stats to 90 tables / 37 triggers / 347 policies / 31 views, add Feb timeline entries. ~30 min. | -- | Stuart |
-| 39 | Documentation | Update soc2-evidence-index v1.1 > v1.2 | Mark Dependabot action done, bump CC6.7 20% > 50%, add `.github/dependabot.yml` as evidence. ~30 min. | -- | Stuart |
+| ~~38~~ | ~~Documentation~~ | ~~Update security-posture-overview v1.1 > v1.2~~ | ~~DONE 2026-03-03. Updated to 48 triggers, 29/29 custom views.~~ | -- | Stuart |
+| ~~39~~ | ~~Documentation~~ | ~~Update soc2-evidence-index v1.1 > v1.2~~ | ~~DONE 2026-03-03. Updated to 48 triggers.~~ | -- | Stuart |
 | 45 | RBAC | contacts.workspace_role naming — rename read_only to viewer | Cosmetic inconsistency. contacts uses read_only where all other tables use viewer. ~30 min migration. | -- | Stuart |
 | 46 | Documentation | Archive RBAC draft + Excel; update identity-security cross-refs | Superseded by identity-security/rbac-permissions.md. Update identity-security v1.1 §5 to point to new doc. ~30 min. | -- | Stuart |
 | 49 | Database | Drop CHECK constraints on application_integrations | criticality, direction, integration_type, frequency, status, data_format, sensitivity, data_classification columns still have CHECK constraints. Now redundant since values come from reference tables. Low risk — constraints don't hurt, but they block adding new values to reference tables. | -- | Stuart |

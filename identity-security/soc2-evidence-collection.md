@@ -237,9 +237,11 @@ These metrics tell the SOC2 story month over month:
 | `search_audit_logs()` | RPC | Filtered audit log queries for review |
 | `audit_log_cleanup()` | RPC | Retention management (365-day minimum enforced) |
 
-### Triggers Attached (37 tables)
+### Triggers Attached (48 tables)
 
-**Core Business (10):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services, deployment_profile_technology_products, findings, technology_products
+**Core Business (13):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services, deployment_profile_technology_products, findings, technology_products, software_products, data_centers, it_service_providers
+
+**Core Entities (4):** namespaces, workspaces, workspace_budgets, workspace_groups
 
 **Integrations (6):** application_integrations, integration_contacts, integration_direction_types, integration_frequency_types, integration_method_types, integration_status_types
 
@@ -247,7 +249,11 @@ These metrics tell the SOC2 story month over month:
 
 **Programs & Initiatives (6):** programs, initiatives, initiative_dependencies, initiative_deployment_profiles, initiative_it_services, program_initiatives
 
+**Assessment (2):** business_assessments, technical_assessments
+
 **Access Control (7):** workspace_users, namespace_users, user_sessions, platform_admins, invitations, users, ideas
+
+**User Data (2):** custom_field_values, individuals
 
 ---
 

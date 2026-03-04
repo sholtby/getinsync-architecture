@@ -62,7 +62,7 @@ Every data change and access control event is captured by database triggers — 
 
 | Metric | Value |
 |--------|-------|
-| Audit triggers | 37 (all critical tables) |
+| Audit triggers | 48 (all critical tables) |
 | Event categories | 4 |
 | Trigger type | SECURITY DEFINER (bypasses RLS for write to audit log) |
 | Noise reduction | Skips updates where only timestamps changed |
@@ -213,7 +213,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 | Date | Milestone |
 |------|-----------|
 | Feb 2026 | RLS policies complete (90 tables, 347 policies) |
-| Feb 2026 | Audit logging deployed (37 triggers, 4 categories) |
+| Mar 2026 | Audit logging expanded (48 triggers, 4 categories) |
 | Feb 2026 | Automated validation suite operational |
 | Feb 2026 | View security hardened (29/29 custom views security_invoker; 2 extension views excluded) |
 | Feb 2026 | First evidence snapshot collected (EV-001) |

@@ -33,11 +33,11 @@ BEGIN;
 -- Every public table must have RLS enabled. A table without RLS
 -- is a multi-tenant data leak waiting to happen.
 
-SELECT plan(90 + 90 + 90 + 37 + 29 + 29 + 29 + 3);
+SELECT plan(90 + 90 + 90 + 48 + 29 + 29 + 29 + 3);
 -- 90 = RLS enabled checks
 -- 90 = authenticated GRANT checks (tables)
 -- 90 = service_role GRANT checks (tables)
--- 37 = audit trigger checks
+-- 48 = audit trigger checks
 -- 27 = view security_invoker checks
 -- 27 = authenticated GRANT checks (views)
 -- 27 = service_role GRANT checks (views)
@@ -2039,9 +2039,9 @@ SELECT isnt(
 
 
 -- ============================================================
--- SECTION 4: AUDIT TRIGGER CHECKS (37 tables)
+-- SECTION 4: AUDIT TRIGGER CHECKS (48 tables)
 -- ============================================================
--- These 37 tables must have an audit trigger. The trigger name
+-- These 48 tables must have an audit trigger. The trigger name
 -- follows the pattern: audit_{tablename} or {tablename}_audit_trigger
 -- We check for ANY trigger containing 'audit' on the table.
 
@@ -2063,10 +2063,26 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='business_assessments'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: business_assessments'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
    WHERE event_object_schema='public' AND event_object_table='contacts'
    AND trigger_name LIKE '%audit%'),
   0,
   'Audit trigger: contacts'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='custom_field_values'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: custom_field_values'
 );
 
 SELECT isnt(
@@ -2083,6 +2099,14 @@ SELECT isnt(
    AND trigger_name LIKE '%audit%'),
   0,
   'Audit trigger: data_classification_types'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='data_centers'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: data_centers'
 );
 
 SELECT isnt(
@@ -2207,6 +2231,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='individuals'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: individuals'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
    WHERE event_object_schema='public' AND event_object_table='invitations'
    AND trigger_name LIKE '%audit%'),
   0,
@@ -2215,10 +2247,26 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='it_service_providers'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: it_service_providers'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
    WHERE event_object_schema='public' AND event_object_table='it_services'
    AND trigger_name LIKE '%audit%'),
   0,
   'Audit trigger: it_services'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='namespaces'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: namespaces'
 );
 
 SELECT isnt(
@@ -2295,6 +2343,22 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='software_products'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: software_products'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='technical_assessments'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: technical_assessments'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
    WHERE event_object_schema='public' AND event_object_table='technology_lifecycle_reference'
    AND trigger_name LIKE '%audit%'),
   0,
@@ -2331,6 +2395,30 @@ SELECT isnt(
    AND trigger_name LIKE '%audit%'),
   0,
   'Audit trigger: vendor_lifecycle_sources'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='workspace_budgets'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: workspace_budgets'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='workspace_groups'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: workspace_groups'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='workspaces'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: workspaces'
 );
 
 SELECT isnt(
@@ -3137,12 +3225,12 @@ SELECT is(
   'SENTINEL: Expected 29 public views (update test suite if this changes)'
 );
 
--- Expected: 37 audit triggers (count distinct tables with audit triggers)
+-- Expected: 48 audit triggers (count distinct tables with audit triggers)
 SELECT is(
   (SELECT count(DISTINCT event_object_table)::int FROM information_schema.triggers
    WHERE event_object_schema = 'public' AND trigger_name LIKE '%audit%'),
-  37,
-  'SENTINEL: Expected 37 tables with audit triggers (update test suite if this changes)'
+  48,
+  'SENTINEL: Expected 48 tables with audit triggers (update test suite if this changes)'
 );
 
 

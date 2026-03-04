@@ -120,7 +120,7 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 
 | # | Type | Evidence | Location |
 |---|------|----------|----------|
-| 1 | 📄 | Application audit logging (37 tables with triggers) | public.audit_logs table (created Feb 8, 2026) |
+| 1 | 📄 | Application audit logging (48 tables with triggers) | public.audit_logs table (created Feb 8, 2026) |
 | 2 | 📄 | Authentication audit logging | auth.audit_log_entries (Supabase built-in) |
 | 3 | 📄 | Audit log schema design | identity-security/identity-security.md § 9.2 |
 | 4 | ðŸ” | Audit trail evidence accumulation | `SELECT min(created_at), max(created_at), count(*) FROM audit_logs;` |
