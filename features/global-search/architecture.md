@@ -337,10 +337,10 @@ const ROUTE_MAP: Record<string, (result: SearchResult) => string> = {
   'Software Products': (r) => `/settings/software-products/${r.id}`,
   'Technology Products': (r) => `/settings/technology-products/${r.id}`,
   'Integrations': (r) => `/integrations/${r.id}`,
-  'Initiatives': (r) => `/value-creation/initiatives/${r.id}`,
-  'Findings': (r) => `/value-creation/findings/${r.id}`,
-  'Ideas': (r) => `/value-creation/ideas/${r.id}`,
-  'Programs': (r) => `/value-creation/programs/${r.id}`,
+  'Initiatives': (r) => `/roadmap/initiatives/${r.id}`,
+  'Findings': (r) => `/roadmap/findings/${r.id}`,
+  'Ideas': (r) => `/roadmap/ideas/${r.id}`,
+  'Programs': (r) => `/roadmap/programs/${r.id}`,
   'Portfolios': (r) => `/portfolios/${r.id}`,
 };
 ```

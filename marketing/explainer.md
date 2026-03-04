@@ -841,7 +841,7 @@ Now we build.
 - `standard_regions` reference table with country_code
 - Provider-specific regions (AWS, Azure, GCP, Oracle) + vendor-agnostic generic regions
 - Simple compliance query: `SELECT * FROM apps WHERE region.country_code = 'CA'`
-- Auto-generates compliance findings for IT Value Creation
+- Auto-generates compliance findings for Roadmap
 - Data residency tracking works out of the box
 
 **Sales angle:** Government and regulated industries require data sovereignty reporting. ServiceNow needs expensive ITOM discovery + consulting hours to build compliance reports. GetInSync has it built-in, day one.

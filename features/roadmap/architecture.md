@@ -1,6 +1,6 @@
-# features/it-value-creation/architecture.md
+# features/roadmap/architecture.md
 
-**GetInSync IT Value Creation Module**  
+**GetInSync Roadmap Module**
 **Phase 21 — Turning Assessment into Action**
 
 Last updated: 2026-02-22
@@ -35,7 +35,7 @@ And the APM tool has no answer. The consultant goes back to PowerPoint.
 
 ### The Solution
 
-The **IT Value Creation Module** extends GetInSync from assessment to action.
+The **Roadmap Module** extends GetInSync from assessment to action.
 
 **Entities (data model):**
 
@@ -108,7 +108,7 @@ Both pipelines feed into Initiatives. Initiatives can optionally be grouped into
 
 ### 2.1 Same Schema, Three Personas
 
-The IT Value Creation dashboard serves three distinct buyer personas using identical schema with context-dependent labels:
+The Roadmap dashboard serves three distinct buyer personas using identical schema with context-dependent labels:
 
 | Persona | Namespace | Workspace = | Dashboard Label | Key Use Case |
 |---------|-----------|-------------|-----------------|--------------|
@@ -875,7 +875,7 @@ LEFT JOIN contacts sponsor_c ON sponsor_c.id = p.sponsor_contact_id;
 
 ## 8. UI Components
 
-### 8.1 IT Value Creation Scorecard
+### 8.1 Roadmap Scorecard
 
 See v1.1 Section 8.1 — unchanged. Powered by `vw_finding_summary`.
 
@@ -917,7 +917,7 @@ See v1.1 Section 8.3, with the following v1.2 additions:
   ─────────────────────────────────────────────────────────────────
 ```
 
-### 8.4 Value Creation Dashboard
+### 8.4 Roadmap Dashboard
 
 See v1.1 Section 8.4 — enhanced with:
 - **Ideas Inbox count** in KPI row ("12 ideas pending review")
@@ -1028,7 +1028,7 @@ Dependency arrows between initiative bars:
 
 ### 8.8 Dashboard Scoping & Filter Model (v1.3)
 
-The IT Value Creation dashboard supports both namespace-wide and workspace-filtered views, following the same filter drawer pattern established by the Technology Health Dashboard (Phase 20).
+The Roadmap dashboard supports both namespace-wide and workspace-filtered views, following the same filter drawer pattern established by the Technology Health Dashboard (Phase 20).
 
 #### 8.8.1 Design Principle: Self-Organizing Visibility
 
@@ -1632,10 +1632,10 @@ GET/PUT/DELETE /api/v1/namespaces/:ns_id/initiatives/:id
 POST/DELETE    /api/v1/namespaces/:ns_id/initiatives/:id/link-dp/:dp_id
 POST/DELETE    /api/v1/namespaces/:ns_id/initiatives/:id/link-service/:svc_id
 
-GET            /api/v1/namespaces/:ns_id/value-creation/dashboard
-GET            /api/v1/namespaces/:ns_id/value-creation/scorecard
-GET            /api/v1/namespaces/:ns_id/value-creation/investment-summary
-GET            /api/v1/namespaces/:ns_id/value-creation/workspace-summary
+GET            /api/v1/namespaces/:ns_id/roadmap/dashboard
+GET            /api/v1/namespaces/:ns_id/roadmap/scorecard
+GET            /api/v1/namespaces/:ns_id/roadmap/investment-summary
+GET            /api/v1/namespaces/:ns_id/roadmap/workspace-summary
 
 -- New (v1.2)
 GET/POST       /api/v1/namespaces/:ns_id/ideas
@@ -1651,8 +1651,8 @@ POST/DELETE    /api/v1/namespaces/:ns_id/programs/:id/initiatives/:init_id
 GET/POST       /api/v1/namespaces/:ns_id/initiatives/:id/dependencies
 DELETE         /api/v1/namespaces/:ns_id/initiative-dependencies/:dep_id
 
-GET            /api/v1/namespaces/:ns_id/value-creation/idea-inbox
-GET            /api/v1/namespaces/:ns_id/value-creation/program-summary
+GET            /api/v1/namespaces/:ns_id/roadmap/idea-inbox
+GET            /api/v1/namespaces/:ns_id/roadmap/program-summary
 GET            /api/v1/namespaces/:ns_id/initiatives/:id/dependency-graph
 ```
 
@@ -1739,7 +1739,7 @@ COMMIT;
    **DEFERRED (v1.3):** Row-based Gantt adopted instead of lane-based Scenario Planner. Dependency count shown as badge on initiative row (🔗2). Full dependency detail in side panel. SVG arrow overlay deferred — high implementation cost, low incremental value given the detail panel already shows dependency chain. Revisit if customers request visual dependency mapping.
 
 10. **Should Programs have a configurable label?**
-    Future enhancement. PE firms might call them "Value Creation Tracks." Government might call them "Budget Programs." Enterprises might call them "Strategic Initiatives." Same entity, different label.
+    Future enhancement. PE firms might call them "Roadmap Tracks." Government might call them "Budget Programs." Enterprises might call them "Strategic Initiatives." Same entity, different label.
 
 11. **Should Ideas support attachments?**
     Future enhancement. "Attach a screenshot" or "link a document" to an Idea. Would use the existing `application_documents` pattern.
@@ -1756,13 +1756,13 @@ COMMIT;
 | v1.0 | 2025-12-29 | Initial draft. Defined Finding, Initiative, and junction tables. UI wireframes for Scorecard, Roadmap, Dashboard. |
 | v1.1 | 2026-02-22 | **Schema deployed.** Added `source_type` + `source_reference_id` to findings. Added `estimated_run_rate_change` + `run_rate_change_rationale` to initiatives. Multi-persona dashboard (PE/Government/Enterprise). Reporting views. ITSM field mapping. Riverside seed data (8 findings, 6 initiatives). Resolved OQ #1, #5. Stats: 86 tables, 331 RLS, 33 triggers, 25 views. |
 | v1.2 | 2026-02-22 | **Schema deployed.** OG → NextGen entity mapping (12 entities). Added Ideas table (lightweight intake, promotion workflow). Added Programs table (N:M grouping, budget envelope, business drivers as text). Added Initiative Dependencies (bidirectional: requires/enables/blocks/related_to). ALTER initiatives + source_idea_id. Reporting views (vw_idea_summary, vw_program_summary). Circular dependency prevention CTE (future). Riverside seed data (6 ideas, 2 programs, 6 assignments, 4 dependencies). Updated ERD, tier gating, API endpoints. Resolved OQ #3, #8. Stats: 90 tables, 347 RLS, 37 triggers, 27 views. |
-| v1.3 | 2026-02-22 | **Dashboard scoping model.** Added Section 8.8: Dashboard Scoping & Filter Model — workspace filtering rules for all IT Value Creation entities. Programs visible via initiative membership (self-organizing, no configuration required). Full program context shown to workspace users (not sliced). Added Section 8.9: Initiative View Modes — three views of same data (Gantt/Kanban/Grid). Row-based Gantt with drag-to-reschedule adopted as default. Kanban columns by status with drag-to-change-status. Grid with sort/filter. Shared KPI bar and detail panel across all views. Resolved OQ #9 (dependency arrows deferred). |
+| v1.3 | 2026-02-22 | **Dashboard scoping model.** Added Section 8.8: Dashboard Scoping & Filter Model — workspace filtering rules for all Roadmap entities. Programs visible via initiative membership (self-organizing, no configuration required). Full program context shown to workspace users (not sliced). Added Section 8.9: Initiative View Modes — three views of same data (Gantt/Kanban/Grid). Row-based Gantt with drag-to-reschedule adopted as default. Kanban columns by status with drag-to-change-status. Grid with sort/filter. Shared KPI bar and detail panel across all views. Resolved OQ #9 (dependency arrows deferred). |
 
 ---
 
 ## 19. Summary
 
-The IT Value Creation Module transforms GetInSync from an assessment tool into a **dependency-aware investment planning platform**. The v1.3 architecture completes the dashboard model with:
+The Roadmap Module transforms GetInSync from an assessment tool into a **dependency-aware investment planning platform**. The v1.3 architecture completes the dashboard model with:
 
 - **Two-Pipeline Model** — Expert-driven Findings (top-down) and crowd-sourced Ideas (bottom-up) both feed into Initiatives
 - **Programs** — Strategic grouping with budget envelopes, owner/sponsor accountability, and business driver justification

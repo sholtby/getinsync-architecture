@@ -17,7 +17,7 @@ Architecture docs live in a separate repo, symlinked into this project:
 - **Symlink:** `./docs-architecture/` → `~/getinsync-architecture/`
 - **Document index:** `./docs-architecture/MANIFEST.md`
 - **Schema reference:** `./docs-architecture/schema/nextgen-schema-current.sql`
-- **Feature specs:** `./docs-architecture/features/` (e.g., `it-value-creation/architecture.md`)
+- **Feature specs:** `./docs-architecture/features/` (e.g., `roadmap/architecture.md`)
 - **ERDs & data model:** `./docs-architecture/core/`
 - **RLS & security:** `./docs-architecture/identity-security/`
 

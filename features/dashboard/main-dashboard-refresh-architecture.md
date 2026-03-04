@@ -265,7 +265,7 @@ Refresh workspace view to match new design language. Same four-row layout scoped
 1. **Main Dashboard Refresh** (this document) — 3–4 days
 2. **Technology Lifecycle Intelligence** — auto-detect EOL dates, Claude API lookup — ~10 hours
 3. **Executive Roadmap One-Pager** — the deliverable customers hand to their boss — 1–2 days
-4. **IT Value Creation Frontend** — Scorecard/Initiatives/Ideas/Programs tabs — 3–4 days (if time)
+4. **Roadmap Frontend** — Scorecard/Initiatives/Ideas/Programs tabs — 3–4 days (if time)
 5. **Business Capabilities SQL** — 2 tables, seed data — 0.5 day
 6. **Polish** — RBAC gating, back arrow fixes, minor UX — remaining time
 

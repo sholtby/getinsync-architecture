@@ -4,13 +4,13 @@
 **Author:** Stuart Holtby  
 **Status:** 🟡 PLANNED  
 **Depends on:** Main Dashboard Refresh Architecture v1.0  
-**Resolves:** Technology Health and Value Creation hidden in Settings
+**Resolves:** Technology Health and Roadmap hidden in Settings
 
 ---
 
 ## 1. Problem Statement
 
-The main application has no persistent navigation. Users switch between Dashboard, Charts, Applications, and Portfolios via contextual buttons embedded in each view. Technology Health and Value Creation dashboards are only reachable through Settings > Organization, making them invisible to most users.
+The main application has no persistent navigation. Users switch between Dashboard, Charts, Applications, and Portfolios via contextual buttons embedded in each view. Technology Health and Roadmap dashboards are only reachable through Settings > Organization, making them invisible to most users.
 
 This creates three problems:
 
@@ -28,7 +28,7 @@ Add a persistent horizontal tab bar at the top of the main content area with fou
 ┌──────────────────────────────────────────────────────────────┐
 │  [Logo]  ──────────  [Workspace Switcher] [Portfolio] [User] │
 ├──────────────────────────────────────────────────────────────┤
-│  [Overview]   [Dashboard]   [Technology Health]   [Value Creation]  │
+│  [Overview]   [Dashboard]   [Technology Health]   [Roadmap]  │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │                    Main Content Area                          │
@@ -83,7 +83,7 @@ This is today's dashboard, unchanged in behavior. Answers "How is my department 
 
 Promoted from Settings > Organization. No component changes needed — just navigation wiring.
 
-### 3.4 Value Creation (PROMOTED from Settings)
+### 3.4 Roadmap (PROMOTED from Settings)
 
 | Attribute | Value |
 |-----------|-------|
@@ -91,10 +91,10 @@ Promoted from Settings > Organization. No component changes needed — just navi
 | **Audience** | All roles with namespace access |
 | **Content** | Initiatives (Gantt/Kanban/Grid), Scorecard, Ideas, Programs |
 | **Data source** | `vw_finding_summary`, `vw_initiative_summary`, `vw_idea_summary`, `vw_program_summary` |
-| **Filter drawer** | TBD (built during IT Value Creation frontend phase) |
+| **Filter drawer** | TBD (built during Roadmap frontend phase) |
 | **Header chrome** | Workspace switcher HIDDEN (scoping is self-organizing per Principle 13) |
-| **Current route** | `/value-creation` (no change needed) |
-| **Current component** | `src/components/value-creation/ValueCreationPage.tsx` |
+| **Current route** | `/roadmap` (no change needed) |
+| **Current component** | `src/components/roadmap/RoadmapPage.tsx` |
 
 Promoted from Settings > Organization. No component changes needed — just navigation wiring.
 
@@ -109,7 +109,7 @@ The workspace switcher and portfolio picker in the top header bar change visibil
 | Overview | Hidden | Hidden | Namespace scope — no workspace/portfolio filtering needed |
 | Dashboard | Visible | Visible | Workspace + portfolio scoping is the core interaction |
 | Technology Health | Hidden | Hidden | Has its own filter drawer with workspace filter |
-| Value Creation | Hidden | Hidden | Self-organizing scoping, no workspace picker needed |
+| Roadmap | Hidden | Hidden | Self-organizing scoping, no workspace picker needed |
 
 **Implementation:** The tab bar component communicates the active tab to MainApp, which conditionally renders the workspace switcher and portfolio picker. Alternatively, each tab's page component can signal its header requirements via a prop or context.
 
@@ -151,7 +151,7 @@ const handleDrillToWorkspace = (workspaceId: string) => {
 | Charts | `mainView === 'charts'` (state, no URL) |
 | Applications | `mainView === 'applications'` (state, no URL) |
 | Technology Health | `/technology-health` (React Router) |
-| Value Creation | `/value-creation` (React Router) |
+| Roadmap | `/roadmap` (React Router) |
 | Settings | `/settings/*` (React Router) |
 
 Main app views use `mainView` state — no URL routing. This means you can't bookmark or deep-link to a specific tab.
@@ -161,11 +161,11 @@ Main app views use `mainView` state — no URL routing. This means you can't boo
 Keep `mainView` pattern, extend it with `activeTab`:
 
 ```typescript
-type ActiveTab = 'overview' | 'dashboard' | 'technology-health' | 'value-creation';
+type ActiveTab = 'overview' | 'dashboard' | 'technology-health' | 'roadmap';
 const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 ```
 
-Technology Health and Value Creation render inline (like Dashboard) instead of via React Router. Remove them from Settings sidebar.
+Technology Health and Roadmap render inline (like Dashboard) instead of via React Router. Remove them from Settings sidebar.
 
 ### 6.3 Future State (Post-Q1)
 
@@ -176,7 +176,7 @@ Replace `mainView` + `activeTab` with proper URL routing:
 | Overview | `/` or `/overview` |
 | Dashboard | `/workspace/:id` or `/workspace/:id/portfolio/:id` |
 | Technology Health | `/technology-health` |
-| Value Creation | `/value-creation` |
+| Roadmap | `/roadmap` |
 
 This enables bookmarking and deep-linking. Deferred to avoid a large routing refactor during Q1.
 
@@ -184,7 +184,7 @@ This enables bookmarking and deep-linking. Deferred to avoid a large routing ref
 
 ## 7. Settings Sidebar Changes
 
-Remove Technology Health and Value Creation from the Settings > Organization section. They are dashboards, not configuration.
+Remove Technology Health and Roadmap from the Settings > Organization section. They are dashboards, not configuration.
 
 **Before:**
 ```
@@ -198,7 +198,7 @@ ORGANIZATION
 ├── Budget
 ├── Data Centers
 ├── Technology Health        ← REMOVE
-├── Value Creation           ← REMOVE
+├── Roadmap                  ← REMOVE
 ```
 
 **After:**
@@ -241,7 +241,7 @@ src/components/navigation/
 | Overview | Any namespace member | None |
 | Dashboard | Any workspace member | None |
 | Technology Health | Any namespace member | None |
-| Value Creation | Any namespace member | None |
+| Roadmap | Any namespace member | None |
 
 All tabs visible to all authenticated users. Content within tabs is further gated by workspace role and RLS.
 
@@ -275,14 +275,14 @@ The `mainView` type currently has 6 values: `dashboard`, `applications`, `portfo
 - Overview tab shows placeholder content
 - Dashboard tab renders existing mainView logic
 - Technology Health tab renders `TechnologyHealthPage` inline
-- Value Creation tab renders `ValueCreationPage` inline
+- Roadmap tab renders `RoadmapPage` inline
 - Header chrome (workspace/portfolio pickers) conditionally hidden per §4
 
 ### Phase C.2: Remove from Settings (0.5 day)
-- Remove Technology Health and Value Creation from Settings sidebar
+- Remove Technology Health and Roadmap from Settings sidebar
 - Remove their React Router routes (they render inline via tab now)
 - Verify Settings page still works without them
-- Verify direct URL access (`/technology-health`, `/value-creation`) redirects to main app with correct tab
+- Verify direct URL access (`/technology-health`, `/roadmap`) redirects to main app with correct tab
 
 ### Phase C.3: Overview Content (1 day)
 - Build the four-row layout from Dashboard Refresh Architecture §4
@@ -307,8 +307,8 @@ The `mainView` type currently has 6 values: `dashboard`, `applications`, `portfo
 - [ ] Clicking workspace name in Overview → switches to Dashboard tab with that workspace selected
 - [ ] Workspace switcher and portfolio picker hidden on Overview, visible on Dashboard
 - [ ] Technology Health accessible from tab bar (no longer requires Settings)
-- [ ] Value Creation accessible from tab bar (no longer requires Settings)
-- [ ] Settings sidebar no longer shows Technology Health or Value Creation
+- [ ] Roadmap accessible from tab bar (no longer requires Settings)
+- [ ] Settings sidebar no longer shows Technology Health or Roadmap
 - [ ] "View Charts" still works within Dashboard tab
 - [ ] All existing Dashboard functionality preserved
 - [ ] Passes 18-year-old test — new user understands the four tabs immediately

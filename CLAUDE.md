@@ -24,7 +24,7 @@ Architecture docs live in a separate repo, symlinked into this project:
 - **Symlink:** `./docs-architecture/` -> `~/getinsync-architecture/`
 - **Document index:** `./docs-architecture/MANIFEST.md`
 - **Schema reference:** `./docs-architecture/schema/nextgen-schema-current.sql`
-- **Feature specs:** `./docs-architecture/features/` (e.g., `it-value-creation/architecture.md`)
+- **Feature specs:** `./docs-architecture/features/` (e.g., `roadmap/architecture.md`)
 - **ERDs and data model:** `./docs-architecture/core/`
 - **RLS and security:** `./docs-architecture/identity-security/`
 
@@ -278,7 +278,7 @@ When you change a feature area, update the corresponding doc:
 | App Health / TIME-PAID | `core/time-paid-methodology.md` |
 | Tech Health / Dashboard | `features/technology-health/dashboard.md` |
 | Tech Health / Lifecycle data | `features/technology-health/lifecycle-intelligence.md` |
-| IT Value Creation | `features/it-value-creation/architecture.md` |
+| Roadmap | `features/roadmap/architecture.md` |
 | Cost Model | `features/cost-budget/cost-model.md` |
 | Budgets | `features/cost-budget/budget-management.md` |
 | Integrations | `features/integrations/architecture.md` |

@@ -93,7 +93,7 @@ Subtitle:       text-lg text-gray-500
 | `src/components/shared/WorkspaceBanner.tsx` | Shared banner component (text only, no wrapper styling) |
 | `src/components/dashboard/DashboardPage.tsx` | Sticky block: banner + toolbar |
 | `src/components/technology-health/TechnologyHealthPage.tsx` | Sticky block: banner + sub-tabs + toolbar |
-| `src/components/value-creation/ValueCreationPage.tsx` | Sticky block: banner + sub-tabs + toolbar |
+| `src/components/roadmap/RoadmapPage.tsx` | Sticky block: banner + sub-tabs + toolbar |
 
 ---
 
@@ -126,7 +126,7 @@ Tier badge:     ml-1.5 text-[10px] font-semibold text-gray-400 uppercase
 | Canonical File | Notes |
 |---|---|
 | `src/components/technology-health/TechnologyHealthPage.tsx` | Sub-tab implementation |
-| `src/components/value-creation/ValueCreationPage.tsx` | Sub-tab implementation |
+| `src/components/roadmap/RoadmapPage.tsx` | Sub-tab implementation |
 
 ---
 
@@ -309,7 +309,7 @@ Icon:      w-4 h-4 {color}                        (optional, inline with value)
 
 | Canonical File | Notes |
 |---|---|
-| `src/components/value-creation/ValueCreationKpiBar.tsx` | Reference implementation |
+| `src/components/roadmap/RoadmapKpiBar.tsx` | Reference implementation |
 
 ### When to Use Which
 

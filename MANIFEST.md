@@ -36,7 +36,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | `open-items-priority-matrix.md` | `planning/open-items-priority-matrix.md` | Living backlog |
 | `nextgen-schema-current.sql` | `schema/nextgen-schema-current.sql` | Latest schema reference |
 | `session-summary-current.md` | `sessions/2026-02-23-complete.md` | Latest session context |
-| `it-value-creation-v2.jsx` | `features/it-value-creation/mockup-v2.jsx` | Active UI mockup |
+| `it-value-creation-v2.jsx` | `features/roadmap/mockup-v2.jsx` | Active UI mockup |
 | `Q1-2026-Gantt-v2.xlsx` | `planning/q1-2026-gantt-v2.xlsx` | Project timeline |
 
 **Retired filenames** (do not reference these):
@@ -175,11 +175,11 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/technology-health/risk-boundary.md | v1.0 | ☪ | **ADR: Risk registers = GRC territory. GetInSync = computed risk indicators.** |
 | features/technology-health/infrastructure-boundary-rubric.md | v1.0 | ☪ | **What infrastructure data belongs in APM vs CMDB. Decision tree, staleness principle, server_name governance.** |
 
-### IT Value Creation
+### Roadmap
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/it-value-creation/architecture.md | **v1.3** | 🟢 | **IT Value Creation — DEPLOYED. 8 tables, 4 views, seed data. Self-organizing scoping, Gantt/Kanban/Grid UI spec. Supersedes v1.0–v1.2.** |
+| features/roadmap/architecture.md | **v1.3** | 🟢 | **Roadmap — DEPLOYED. 8 tables, 4 views, seed data. Self-organizing scoping, Gantt/Kanban/Grid UI spec. Supersedes v1.0–v1.2.** |
 
 ### Gamification & Data Governance
 
@@ -252,7 +252,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.29** | 🟢 | **Architecture manifest** |
+| **THIS FILE: MANIFEST.md** | **v1.35** | 🟢 | **Architecture manifest** |
 
 ---
 
@@ -269,9 +269,9 @@ The following documents were removed during the architecture audit. They describ
 | identity-security/rls-policy.md | identity-security/rls-policy.md |
 | gis-architecture-changelog-v1_2.md through v1_6.md | archive/superseded/architecture-changelog-v1_7.md |
 | getinsync-development-rules-v1_3.md | operations/development-rules.md |
-| features/it-value-creation/architecture.md | features/it-value-creation/architecture.md |
-| archive/superseded/it-value-creation-v1_1.md | features/it-value-creation/architecture.md |
-| features/it-value-creation/architecture.md | features/it-value-creation/architecture.md |
+| features/roadmap/architecture.md | features/roadmap/architecture.md |
+| archive/superseded/it-value-creation-v1_1.md | features/roadmap/architecture.md |
+| features/roadmap/architecture.md | features/roadmap/architecture.md |
 
 ---
 
@@ -406,7 +406,7 @@ The following documents were removed during the architecture audit. They describ
 - Filter drawer, CSV export, SaaS indicators, Needs Profiling
 - Riverside demo: 12 tech products, 52 tags across 20 DPs
 
-### ✔ IT Value Creation Phase 21 (COMPLETE — Feb 22, 2026)
+### ✔ Roadmap Phase 21 (COMPLETE — Feb 22, 2026)
 - v1.1: findings, initiatives, 2 junction tables, 2 views
 - v1.2: ideas, programs, program_initiatives, initiative_dependencies, 2 views
 - 8 tables, 32 RLS policies, 8 audit triggers, 4 views total
@@ -414,7 +414,7 @@ The following documents were removed during the architecture audit. They describ
 - Architecture v1.3: self-organizing scoping, Gantt/Kanban/Grid UI spec
 
 ### 🟢 Q1 2026 Remaining (Feb–Mar 2026)
-1. **IT Value Creation Frontend** — Claude Code build against v1.3 spec (next)
+1. **Roadmap Frontend** — Claude Code build against v1.3 spec (next)
 2. **Polish Pass** — Week 7-8 per Q1 plan
 3. SSO Implementation — deferred Q2 (identity-security rewrite needed)
 4. **Gamification & Data Governance** — designed Feb 14, Phase 1 targets early Q2
@@ -477,7 +477,7 @@ The following documents were removed during the architecture audit. They describ
 - v1.0, v1.1, v1.2 architecture docs archived → superseded by v1.3
 
 **Document changes:**
-- `features/it-value-creation/architecture.md` — **NEW (🟢).** Complete spec: 8 tables, 4 views, scoping model, UI spec. Supersedes v1.0–v1.2.
+- `features/roadmap/architecture.md` — **NEW (🟢).** Complete spec: 8 tables, 4 views, scoping model, UI spec. Supersedes v1.0–v1.2.
 - `features/integrations/itsm-api-research.md` — **NEW (🟡).** ServiceNow + HaloITSM API patterns for Phase 37.
 - `operations/session-end-checklist.md` → `v1_3.md` — **UPDATED.** Added Claude Code .env password reminder.
 - `features/technology-health/dashboard.md` — **🟡 → 🟢.** Deployed.
@@ -675,6 +675,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.35 | 2026-03-04 | Feature rename: "IT Value Creation" → "Roadmap". Updated section heading, file paths (it-value-creation → roadmap), component references, route paths across 10 architecture docs. Lexicon change only — no database or schema changes. |
 | v1.34 | 2026-03-04 | Cost model primer v1.0 (.md + .docx). Internal team guide: 3 cost channels, data flow diagram, UI locations, maturity levels, legacy fields, quick reference. Document count 89→90. |
 | v1.33 | 2026-03-04 | Cost model reconciliation (SOC2 CC2.3). 5 docs updated against schema dump 2026-03-03: cost-model v2.5→v2.6 (legacy columns documented as LEGACY not REMOVED, dpis marked DEPLOYED, cost override formula added), budget-management v1.3→v1.4 (workspace_budgets table reality, thresholds updated to 80/100/110%, as-built views documented), vendor-cost v1.0→v1.1 (vw_run_rate_by_vendor bugs C.1/C.2 documented with corrective SQL), software-contract v1.0→v1.1 (partial deployment documented, missing updated_at/constraint noted). budget-alerts confirmed Phase 1 DEPLOYED. New doc: cost-model-validation-2026-03-04.md (validation report with refactoring plan). software-contract 🟡→🟢. Document count 88→89. |
 | v1.32 | 2026-03-04 | AppHeader common element. screen-building-guidelines v1.0→v1.1: §9 updated with AppHeader global header bar for edit/detail pages. New shared component `src/components/shared/AppHeader.tsx` renders logo, search (⌘K), static workspace/portfolio context pills, UserMenu. Applied to ApplicationPage. |

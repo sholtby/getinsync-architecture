@@ -66,9 +66,9 @@ SQL Server 2016 — END OF LIFE
 
 This is the "blast radius" query that their SharePoint list cannot answer.
 
-### 3.3 Findings (IT Value Creation — Phase 21)
+### 3.3 Findings (Roadmap — Phase 21)
 
-The IT Value Creation architecture already defines a "Findings" concept — observations linked to applications with severity, recommendation, and status. Technology lifecycle risks are auto-generated findings:
+The Roadmap architecture already defines a "Findings" concept — observations linked to applications with severity, recommendation, and status. Technology lifecycle risks are auto-generated findings:
 
 ```
 Finding: "EOL Technology — SQL Server 2016"
@@ -158,7 +158,7 @@ For the 20% of risks that aren't technology lifecycle issues — the TRA finding
 | `features/technology-health/dashboard.md` | Dashboard that surfaces computed risk indicators |
 | `features/technology-health/technology-stack-erd-addendum.md` | Path 1 inventory that feeds risk detection |
 | `features/technology-health/lifecycle-intelligence.md` | AI lifecycle lookup that populates status |
-| `features/it-value-creation/architecture.md` | Findings concept for auto-generated observations |
+| `features/roadmap/architecture.md` | Findings concept for auto-generated observations |
 | `catalogs/csdm-application-attributes.md` | Data classification, crown jewel attributes |
 
 ---
