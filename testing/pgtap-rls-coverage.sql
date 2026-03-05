@@ -357,6 +357,12 @@ SELECT is(
 );
 
 SELECT is(
+  (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'it_service_software_products'),
+  true,
+  'RLS enabled: it_service_software_products'
+);
+
+SELECT is(
   (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'it_services'),
   true,
   'RLS enabled: it_services'
@@ -1017,6 +1023,14 @@ SELECT isnt(
    AND grantee='authenticated' AND privilege_type='SELECT'),
   0,
   'GRANT SELECT to authenticated: it_service_providers'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='it_service_software_products'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: it_service_software_products'
 );
 
 SELECT isnt(
@@ -1763,6 +1777,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='it_service_software_products'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: it_service_software_products'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
    WHERE table_schema='public' AND table_name='it_services'
    AND grantee='service_role' AND privilege_type='SELECT'),
   0,
@@ -2315,6 +2337,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='it_service_software_products'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: it_service_software_products'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
    WHERE event_object_schema='public' AND event_object_table='it_services'
    AND trigger_name LIKE '%audit%'),
   0,
@@ -2630,6 +2660,16 @@ SELECT is(
   (SELECT count(*)::int FROM pg_views v
    JOIN pg_class c ON c.relname = v.viewname AND c.relnamespace = 'public'::regnamespace
    WHERE v.schemaname = 'public'
+   AND v.viewname = 'vw_it_service_contract_expiry'
+   AND c.reloptions @> ARRAY['security_invoker=true']),
+  1,
+  'security_invoker=true: vw_it_service_contract_expiry'
+);
+
+SELECT is(
+  (SELECT count(*)::int FROM pg_views v
+   JOIN pg_class c ON c.relname = v.viewname AND c.relnamespace = 'public'::regnamespace
+   WHERE v.schemaname = 'public'
    AND v.viewname = 'vw_namespace_summary'
    AND c.reloptions @> ARRAY['security_invoker=true']),
   1,
@@ -2899,6 +2939,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema='public' AND table_name='vw_it_service_contract_expiry'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: vw_it_service_contract_expiry'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
    WHERE table_schema='public' AND table_name='vw_namespace_summary'
    AND grantee='authenticated' AND privilege_type='SELECT'),
   0,
@@ -3136,6 +3184,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema='public' AND table_name='vw_it_service_contract_expiry'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: vw_it_service_contract_expiry'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
    WHERE table_schema='public' AND table_name='vw_namespace_summary'
    AND grantee='service_role' AND privilege_type='SELECT'),
   0,
@@ -3270,27 +3326,27 @@ SELECT isnt(
 -- updating the test suite. If these fail, a new table or view
 -- was added and needs security coverage.
 
--- Expected: 92 public tables
+-- Expected: 93 public tables
 SELECT is(
   (SELECT count(*)::int FROM pg_tables WHERE schemaname = 'public'),
-  92,
-  'SENTINEL: Expected 92 public tables (update test suite if this changes)'
+  93,
+  'SENTINEL: Expected 93 public tables (update test suite if this changes)'
 );
 
--- Expected: 29 public views (excluding pgTAP internal views)
+-- Expected: 30 public views (excluding pgTAP internal views)
 SELECT is(
   (SELECT count(*)::int FROM pg_views WHERE schemaname = 'public'
    AND viewname NOT IN ('pg_all_foreign_keys', 'tap_funky')),
-  29,
-  'SENTINEL: Expected 29 public views (update test suite if this changes)'
+  30,
+  'SENTINEL: Expected 30 public views (update test suite if this changes)'
 );
 
--- Expected: 50 audit triggers (count distinct tables with audit triggers)
+-- Expected: 51 audit triggers (count distinct tables with audit triggers)
 SELECT is(
   (SELECT count(DISTINCT event_object_table)::int FROM information_schema.triggers
    WHERE event_object_schema = 'public' AND trigger_name LIKE '%audit%'),
-  50,
-  'SENTINEL: Expected 50 tables with audit triggers (update test suite if this changes)'
+  51,
+  'SENTINEL: Expected 51 tables with audit triggers (update test suite if this changes)'
 );
 
 

@@ -139,19 +139,19 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| identity-security/security-posture-overview.md | v1.3 | 🟢 | Security posture overview — 92 tables, 357 RLS, 50 triggers, 31 views (updated Mar 4) |
+| identity-security/security-posture-overview.md | v1.3 | 🟡 | Security posture overview — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers, 31→32 views) |
 | identity-security/security-validation-runbook.md | v1.1 | 🟠 | ~~Security validation~~ — DEPRECATED, superseded by session-end-checklist §2.1 + §6d. Retained for INC-001 history. |
 | operations/database-change-validation.md | v1.1 | 🟢 | Deep database validation (CHECK constraints, roles, FKs, namespaces). Section 1 superseded by session-end-checklist §2.1. |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
 | identity-security/soc2-evidence-collection.md | v1.2 | 🟢 | SOC2 monthly evidence collection — 50 triggers, 92 tables (updated Mar 4) |
-| identity-security/soc2-evidence-index.md | v1.3 | 🟢 | SOC2 evidence index — 92 tables, 357 RLS, 50 triggers, identity-security flags cleared (updated Mar 4) |
+| identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
 | operations/session-end-checklist.md | **v1.11** | 🟢 | **Master session-end compliance checklist — v1.11: §2.1 unified bulk safety net (6 checks), Section 4 removed, Section 3 narrowed** |
 
 ### Testing
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.4 | 🟢 | pgTAP security regression — 416 assertions: RLS, GRANTs (92 tables + 29 views), audit triggers (50), view security, sentinel checks |
+| testing/pgtap-rls-coverage.sql | v1.5 | 🟢 | pgTAP security regression — 425 assertions: RLS, GRANTs (93 tables + 30 views), audit triggers (51), view security, sentinel checks |
 | testing/security-posture-validation.sql | v1.3 | 🟢 | Standalone security validation — PASS/FAIL output for all 92 tables + 29 views (incl. view GRANTs) |
 
 ### Integration & Alignment
@@ -278,16 +278,16 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-03-04)
+## Schema Statistics (as of 2026-03-05)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 92 |
-| **Views** | 31 |
+| **Tables** | 93 |
+| **Views** | 32 |
 | **Functions (RPCs)** | 55 |
-| **RLS Policies** | 357 |
-| **Audit Triggers** | 50 |
-| **Explicit GRANTs** | 92 tables × 2 roles (authenticated + service_role) |
+| **RLS Policies** | 361 |
+| **Audit Triggers** | 51 |
+| **Explicit GRANTs** | 93 tables × 2 roles (authenticated + service_role) |
 | **Schema backup** | schema/nextgen-schema-current.sql (PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
