@@ -1256,6 +1256,8 @@ Status-based columns with drag-to-change-status.
 
 **Note:** Dragging in Kanban is a more consequential action than Gantt drag — it changes initiative status, not just timeline. The UI should confirm status changes in production (not in the mockup).
 
+> **Realtime:** When multiple users view the same Kanban board, card moves sync via Supabase Realtime Postgres Changes (P1). See `features/realtime-subscriptions/realtime-subscriptions-architecture.md` § 6.1.
+
 #### 8.9.4 Grid View
 
 Sortable, filterable table. The densest view — best for comparing multiple initiatives side-by-side.

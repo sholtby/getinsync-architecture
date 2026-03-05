@@ -1124,6 +1124,8 @@ interface GamificationPreferences {
 | Templates | Resend templates | Branded GetInSync email templates |
 | Unsubscribe | One-click | Sets `digest_opted_out = true` via signed unsubscribe URL |
 
+> **Infrastructure:** The email digest Edge Function is registered as E4 in the shared infrastructure layer. See `infrastructure/edge-functions-layer-architecture.md` § 4.2 for `RESEND_API_KEY` secret management.
+
 ### 9.2 Weekly Achievement Digest
 
 **Schedule:** Monday morning (8:00 AM recipient's timezone, or UTC if unknown)

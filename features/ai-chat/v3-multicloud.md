@@ -1489,6 +1489,8 @@ create trigger sync_portfolio_assignments
 
 Single endpoint that routes to the appropriate provider.
 
+> **Infrastructure:** This chat gateway is the first consumer of the shared Edge Function layer. See `infrastructure/edge-functions-layer-architecture.md` for deployment, secret management, and `_shared/` utilities.
+
 ```typescript
 // supabase/functions/apm-chat/index.ts
 

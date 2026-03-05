@@ -195,6 +195,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | planning/work-package-privacy-oauth.md | v1.0 | 🟢 | Privacy Policy + OAuth work package |
 | core/namespace-management-ui.md | v1.0 | 🟢 | Phase 25.10 namespace management UI |
 | core/namespace-workspace-ui.md | v1.0 | ☪ | Namespace/Workspace UI patterns |
+| features/realtime-subscriptions/realtime-subscriptions-architecture.md | v1.0 | 🟡 | **Supabase Realtime** — Postgres Changes, Presence, Broadcast. 6 use cases (P1–P6), 3 React hooks. P1 ships with Roadmap Kanban. |
+| infrastructure/edge-functions-layer-architecture.md | v1.0 | 🟡 | **Edge Functions layer** — Deno runtime, 8 consumers, 6 functions. Secret mgmt, two-client auth, MCP inline tools. E1+E2 ship with AI Chat MVP. |
 
 ### Global Search
 
@@ -385,6 +387,17 @@ The following documents were removed during the architecture audit. They describ
 - Full program context always shown (total budget, all initiatives) — never sliced by workspace filter
 - NULL workspace_id = namespace-wide scope for findings and programs
 - WorkspaceGroups remain for catalog sharing (publisher/consumer) only — not overloaded for entity visibility
+
+### 14. Realtime Capability Separation (Mar 4, 2026)
+- Postgres Changes (data sync), Presence (who's online), and Broadcast (cross-session messaging) are three distinct capabilities sharing one WebSocket connection
+- Subscribe only to tables where multiple users modify data concurrently; reporting dashboards use refetch-on-focus instead
+- Tenant-scoped channel naming: `namespace:{id}:table:{name}` pattern prevents cross-tenant data leakage
+
+### 15. Edge Functions as Shared Infrastructure (Mar 4, 2026)
+- Server-side execution is a shared infrastructure layer, not per-feature — all functions share `_shared/` utilities (auth, CORS, error handling, audit)
+- Secrets via Edge Function Secrets (function-scoped) or Vault (database/customer-scoped)
+- Two-client auth pattern: user JWT for user-context calls, service role for background/system operations
+- First consumer: AI Chat (E1+E2)
 
 ---
 
@@ -633,11 +646,11 @@ The following documents were removed during the architecture audit. They describ
 | Status | Count |
 |--------|-------|
 | 🟢 AS-BUILT | 54 |
-| 🟡 AS-DESIGNED | 7 |
+| 🟡 AS-DESIGNED | 9 |
 | 🟠 NEEDS UPDATE | 0 |
 | ☪ REFERENCE | 15 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **90** |
+| **Total tracked** | **92** |
 
 ---
 
@@ -675,6 +688,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.36 | 2026-03-04 | Realtime + Edge Functions architecture. Added features/realtime-subscriptions/realtime-subscriptions-architecture.md v1.0 🟡 and infrastructure/edge-functions-layer-architecture.md v1.0 🟡. Principles 14–15 added. Cross-refs in roadmap, ai-chat, gamification docs. Document count 90→92, AS-DESIGNED 7→9. |
 | v1.35 | 2026-03-04 | Feature rename: "IT Value Creation" → "Roadmap". Updated section heading, file paths (it-value-creation → roadmap), component references, route paths across 10 architecture docs. Lexicon change only — no database or schema changes. |
 | v1.34 | 2026-03-04 | Cost model primer v1.0 (.md + .docx). Internal team guide: 3 cost channels, data flow diagram, UI locations, maturity levels, legacy fields, quick reference. Document count 89→90. |
 | v1.34 | 2026-03-04 | Stats alignment: 90→92 tables, 347→357 RLS, 48→50 triggers, 54→55 functions. New tables: application_categories, application_category_assignments (Application Categories feature). Updated 4 docs: security-posture-overview v1.2→v1.3, soc2-evidence-collection v1.1→v1.2, soc2-evidence-index v1.2→v1.3. pgTAP + security-posture-validation marked 🟠 (sentinel checks stale). |
