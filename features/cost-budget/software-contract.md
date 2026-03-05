@@ -1,8 +1,11 @@
 # features/cost-budget/software-contract.md
 Software Product Contracts & Vendor Management
 Last updated: 2026-03-04
+Version: 2.0
 
 ---
+
+> **v2.0 MAJOR CHANGE:** Software contracts now live on **IT Services**, not the `deployment_profile_software_products` junction. All cost/vendor/contract columns on the junction are **DEPRECATED**. See `adr-cost-model-reunification.md` for the full decision rationale.
 
 ## 1. Purpose
 
@@ -12,9 +15,9 @@ This document defines the architecture for tracking software vendors, contracts,
 
 **Scope:**
 - Manufacturer vs. Vendor distinction
-- Enhanced junction table for deployment-level cost tracking
-- SAM-lite contract fields (expiry, reference, vendor)
-- Cost override logic
+- IT Service as the contract and cost layer for software (v2.0)
+- SAM-lite contract fields (expiry, reference, vendor) on IT Services
+- Junction table is now inventory-only (no cost, no contract)
 - What we explicitly do NOT track (staying out of the SAM swamp)
 
 **Audience:** Internal architects, developers, and implementers.
@@ -46,205 +49,137 @@ This document defines the architecture for tracking software vendors, contracts,
 
 ---
 
-## 3. Architectural Decision: Vendor on Junction, Not Application
+## 3. Architectural Decision: Vendor on IT Service, Not Application or Junction
 
 ### Decision
 
 **DO NOT add `vendor_organization_id` to the `applications` table.**
 
-Vendor relationship is captured on `deployment_profile_software_products` junction table instead.
+> **v2.0 Change:** Vendor relationship is captured on **IT Services**, not the dpsp junction. The junction is now inventory-only.
+
+Vendor relationship is captured on `it_services.vendor_org_id`. The IT Service represents the commercial agreement — who you pay, how much, when the contract expires.
 
 ### Rationale
 
 | Approach | Problem |
 |----------|---------|
 | Vendor on Application | Conflates software maker, reseller, and support provider |
-| Vendor on Application | Creates redundancy with Software Catalog path |
-| Vendor on Application | One app can have multiple software products from different vendors |
-| **Vendor on Junction** | Captures the actual purchase relationship |
-| **Vendor on Junction** | Same product can have different vendors per deployment |
-| **Vendor on Junction** | Enables vendor spend analysis |
+| Vendor on Junction (v1.0) | Created two parallel cost streams; allocation was stubbed; no budget tracking |
+| **Vendor on IT Service (v2.0)** | IT Service already has cost pool, allocation, budget, stranded cost, and budget alerts |
 
-### Data Model
+### Data Model (v2.0)
 
 ```
-software_products (Catalog)
+software_products (Catalog — INVENTORY ONLY)
 ├── manufacturer_org_id → Organization (Microsoft)
-└── annual_cost (list/reference price)
+└── annual_cost (reference price — NOT used in cost calculations)
 
-deployment_profile_software_products (Junction - Enhanced)
-├── software_product_id → Software Product
-├── vendor_org_id → Organization (CDW)      ← Who you PAY
-├── annual_cost → What YOU pay              ← Overrides catalog
-└── contract_end_date                       ← When it expires
+it_services (Contract + Cost Layer)
+├── vendor_org_id → Organization (CDW)           ← Who you PAY
+├── annual_cost → Contract total / cost pool      ← What you PAY
+├── contract_reference → PO#, Agreement#          ← Contract ID
+├── contract_start_date / contract_end_date       ← Contract lifecycle
+├── renewal_notice_days                           ← Alert threshold
+└── budget_amount → Budget for this service       ← Budget tracking
+
+it_service_software_products (Inventory Link — NEW)
+├── it_service_id → IT Service
+└── software_product_id → Software Product        ← What this service provides
+
+deployment_profile_software_products (Junction — INVENTORY ONLY)
+├── software_product_id → Software Product         ← What software runs here
+├── deployed_version → What version is running
+└── notes
 ```
 
-### Path Summary
+### Path Summary (v2.0)
 
 | Question | Path |
 |----------|------|
-| Who makes it? | DP → Junction → Software Product → `manufacturer_org_id` → Organization |
-| Who do we pay? | DP → Junction → `vendor_org_id` → Organization |
-| What's the list price? | Software Product → `annual_cost` |
-| What do we actually pay? | Junction → `annual_cost` (if set) OR Software Product → `annual_cost` |
+| Who makes it? | DP → dpsp → Software Product → `manufacturer_org_id` → Organization |
+| Who do we pay? | DP → dpis → IT Service → `vendor_org_id` → Organization |
+| What's the contract total? | IT Service → `annual_cost` |
+| What does this DP pay? | dpis → `allocation_value` (fixed or percent of pool) |
+| What software does the service provide? | IT Service → `it_service_software_products` → Software Product |
 
 ---
 
-## 4. Schema: deployment_profile_software_products (Enhanced)
+## 4. Schema: deployment_profile_software_products (Inventory Only)
 
-### Current Schema
+> **v2.0 DEPRECATION:** The "enhanced" dpsp junction from v1.0 scattered cost/vendor/contract fields on the inventory junction. These fields are ALL DEPRECATED in v2.0 — cost and contract data now lives on IT Services. See `adr-cost-model-reunification.md` §4.5 for the full deprecation schedule.
+
+### Inventory Schema (Retained Columns)
 
 ```sql
 CREATE TABLE deployment_profile_software_products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   deployment_profile_id UUID REFERENCES deployment_profiles(id) ON DELETE CASCADE,
   software_product_id UUID REFERENCES software_products(id) ON DELETE CASCADE,
+  deployed_version TEXT,            -- What version is running
+  quantity INTEGER,                 -- Reference: seats/licenses (metadata)
+  notes TEXT,                       -- Free text
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(deployment_profile_id, software_product_id)
 );
 ```
 
-### Enhanced Schema
+### Deprecated Columns (Still in DB — Pending Drop)
 
-```sql
--- ============================================
--- ENHANCED JUNCTION: VENDOR & CONTRACT FIELDS
--- ============================================
+| Column | Type | Status | Replacement |
+|--------|------|--------|-------------|
+| vendor_org_id | UUID | DEPRECATED | `it_services.vendor_org_id` |
+| annual_cost | DECIMAL(12,2) | DEPRECATED | IT Service allocation via `dpis.allocation_value` |
+| allocation_percent | DECIMAL(5,2) | DEPRECATED | `dpis.allocation_value` with `allocation_basis` |
+| allocation_basis | TEXT | DEPRECATED | `dpis.allocation_basis` |
+| contract_reference | TEXT | DEPRECATED | `it_services.contract_reference` |
+| contract_start_date | DATE | DEPRECATED | `it_services.contract_start_date` |
+| contract_end_date | DATE | DEPRECATED | `it_services.contract_end_date` |
+| renewal_notice_days | INTEGER | DEPRECATED | `it_services.renewal_notice_days` |
+| cost_confidence | TEXT | DEPRECATED | Future: IT Service or dpis level |
 
--- Vendor Organization FK
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN vendor_org_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
-
--- Cost Override (what you actually pay)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN annual_cost DECIMAL(12,2);
-
--- Quantity (reference only, no automatic math)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN quantity INTEGER;
-
--- Allocation (stubbed for future use)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN allocation_percent DECIMAL(5,2);
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN allocation_basis TEXT;
-
--- Contract Reference Fields (SAM-lite)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN contract_reference TEXT;
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN contract_start_date DATE;
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN contract_end_date DATE;
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN renewal_notice_days INTEGER DEFAULT 90;
-
--- Data Quality
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN cost_confidence TEXT DEFAULT 'estimated';
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN notes TEXT;
-
--- Constraints
-ALTER TABLE deployment_profile_software_products
-ADD CONSTRAINT chk_dpsp_cost_confidence
-CHECK (cost_confidence IN ('estimated', 'verified'));
-
-ALTER TABLE deployment_profile_software_products
-ADD CONSTRAINT chk_dpsp_allocation_percent
-CHECK (allocation_percent IS NULL OR (allocation_percent >= 0 AND allocation_percent <= 100));
-
--- Indexes
-CREATE INDEX idx_dpsp_vendor ON deployment_profile_software_products(vendor_org_id);
-CREATE INDEX idx_dpsp_contract_end ON deployment_profile_software_products(contract_end_date);
-
--- Comments
-COMMENT ON COLUMN deployment_profile_software_products.vendor_org_id IS 
-'The vendor/reseller you purchase from. Different from manufacturer on software_products.';
-
-COMMENT ON COLUMN deployment_profile_software_products.annual_cost IS 
-'Actual annual cost for this deployment. Overrides software_products.annual_cost if set.';
-
-COMMENT ON COLUMN deployment_profile_software_products.quantity IS 
-'Number of licenses/seats. Reference only - not used in cost calculations.';
-
-COMMENT ON COLUMN deployment_profile_software_products.allocation_percent IS 
-'Stubbed: Percentage of total cost allocated to this DP. NULL = 100%.';
-
-COMMENT ON COLUMN deployment_profile_software_products.contract_end_date IS 
-'Contract/agreement expiration date. Used for renewal alerts.';
-
-COMMENT ON COLUMN deployment_profile_software_products.renewal_notice_days IS 
-'Days before contract_end_date to trigger renewal alert. Default 90.';
-```
-
-### Full Column List (After Enhancement)
-
-> **Deployment Status (2026-03-04):** All SAM-lite columns are DEPLOYED on the junction table. Two items from the spec are MISSING in production:
-> - `updated_at` — column does NOT exist (created_at exists but no update trigger). Audit gap.
-> - `chk_dpsp_allocation_percent` constraint — NOT applied. allocation_percent has no range validation.
-> - `allocation_percent` and `allocation_basis` — exist but are stubbed (not used in cost calculations).
-
-| Column | Type | Nullable | Default | Purpose | Status |
-|--------|------|----------|---------|---------|--------|
-| id | UUID | NO | gen_random_uuid() | PK | DEPLOYED |
-| deployment_profile_id | UUID | NO | — | FK to DP | DEPLOYED |
-| software_product_id | UUID | NO | — | FK to catalog | DEPLOYED |
-| deployed_version | TEXT | YES | NULL | Version tracking | DEPLOYED (not in original spec) |
-| vendor_org_id | UUID | YES | NULL | Who you pay | DEPLOYED |
-| annual_cost | DECIMAL(12,2) | YES | NULL | Override catalog price | DEPLOYED |
-| quantity | INTEGER | YES | NULL | Reference (seats/licenses) | DEPLOYED |
-| allocation_percent | DECIMAL(5,2) | YES | NULL | Stubbed: cost split | DEPLOYED (no constraint) |
-| allocation_basis | TEXT | YES | NULL | Stubbed: 'users', 'estimate', etc. | DEPLOYED |
-| contract_reference | TEXT | YES | NULL | PO#, Contract ID, Agreement# | DEPLOYED |
-| contract_start_date | DATE | YES | NULL | Contract effective date | DEPLOYED |
-| contract_end_date | DATE | YES | NULL | Contract expiration | DEPLOYED |
-| renewal_notice_days | INTEGER | YES | 90 | Alert threshold | DEPLOYED |
-| cost_confidence | TEXT | YES | 'estimated' | Data quality flag | DEPLOYED |
-| notes | TEXT | YES | NULL | Free text | DEPLOYED |
-| created_at | TIMESTAMPTZ | YES | now() | Audit | DEPLOYED |
-| updated_at | TIMESTAMPTZ | YES | now() | Audit | **MISSING** |
+**These columns are NULLable and have minimal data (UI never surfaced most of them). They will be dropped in Phase 5 of the reunification migration after a verification period.**
 
 ---
 
-## 5. Cost Override Logic
+## 5. Cost Model (v2.0 — Via IT Service)
+
+> **v2.0 Change:** The junction-level cost override logic from v1.0 is DEPRECATED. Software costs now flow through IT Service allocations.
 
 ### Principle
 
-**Junction cost wins if present; catalog price is the fallback.**
+**IT Service is the cost pool. Software Product is inventory only.**
 
 ### Formula
 
 ```sql
-Effective_Cost = COALESCE(
-  junction.annual_cost,           -- What you actually pay (if known)
-  software_products.annual_cost   -- List/catalog price (fallback)
+-- Software cost for a DP is calculated via IT Service allocations, NOT junction overrides
+DP_Software_Cost = SUM(
+  CASE dpis.allocation_basis
+    WHEN 'fixed' THEN dpis.allocation_value
+    WHEN 'percent' THEN (its.annual_cost * dpis.allocation_value / 100)
+  END
 )
-```
-
-### With Allocation (Future)
-
-```sql
-Effective_Cost = COALESCE(
-  junction.annual_cost,
-  software_products.annual_cost
-) * COALESCE(junction.allocation_percent, 100) / 100
+-- WHERE the IT Service provides the relevant Software Product
+-- (linked via it_service_software_products)
 ```
 
 ### Example
 
-| Scenario | Catalog Price | Junction Cost | Allocation % | Effective Cost |
-|----------|---------------|---------------|--------------|----------------|
-| Simple (catalog only) | $12,000 | NULL | NULL | $12,000 |
-| Override (negotiated) | $12,000 | $10,800 | NULL | $10,800 |
-| Partial allocation | $12,000 | NULL | 40 | $4,800 |
-| Override + allocation | $12,000 | $10,800 | 40 | $4,320 |
+| IT Service | Contract Total | DP Allocation | DP Cost |
+|------------|---------------|---------------|---------|
+| Microsoft 365 EA | $240,000 | fixed: $36,000 (300 seats) | $36,000 |
+| Microsoft 365 EA | $240,000 | percent: 5% | $12,000 |
+| Sage 300 License | $12,000 | fixed: $10,800 (negotiated) | $10,800 |
+
+### DEPRECATED: Junction Cost Override (v1.0)
+
+The following formula is NO LONGER USED:
+
+```sql
+-- DEPRECATED — do not use
+Effective_Cost = COALESCE(junction.annual_cost, software_products.annual_cost)
+```
 
 ---
 
@@ -286,9 +221,11 @@ Effective_Cost = COALESCE(
 
 ## 7. Contract Expiry Reporting
 
+> **v2.0 Change:** Contract expiry reporting now uses `vw_it_service_contract_expiry` instead of the deprecated `vw_software_contract_expiry`. Contract dates live on IT Services.
+
 ### Dashboard Widget
 
-**"Software Contracts Expiring Soon"**
+**"IT Service Contracts Expiring Soon"**
 
 | Timeframe | Count |
 |-----------|-------|
@@ -296,31 +233,31 @@ Effective_Cost = COALESCE(
 | 31-90 days | 5 |
 | 91-180 days | 8 |
 
-### Detail Report
+### Detail Report (v2.0)
 
 ```sql
-SELECT 
-  sp.name AS product,
-  o.name AS vendor,
-  dps.contract_reference,
-  dps.contract_end_date,
-  dps.annual_cost,
-  dps.contract_end_date - CURRENT_DATE AS days_until_expiry
-FROM deployment_profile_software_products dps
-JOIN software_products sp ON sp.id = dps.software_product_id
-LEFT JOIN organizations o ON o.id = dps.vendor_org_id
-WHERE dps.contract_end_date IS NOT NULL
-  AND dps.contract_end_date <= CURRENT_DATE + INTERVAL '180 days'
-ORDER BY dps.contract_end_date;
+SELECT
+  it_service_name,
+  vendor_name,
+  contract_reference,
+  contract_end_date,
+  annual_cost,
+  days_until_expiry,
+  contract_status
+FROM vw_it_service_contract_expiry
+WHERE contract_status IN ('renewal_due', 'expiring_soon')
+ORDER BY contract_end_date;
 ```
 
-### Sample Output
+### Contract Status Buckets
 
-| Product | Vendor | Reference | Expires | Annual Cost | Days |
-|---------|--------|-----------|---------|-------------|------|
-| Adobe Creative Cloud | CDW | PO-2024-1234 | 2026-03-15 | $10,800 | 52 |
-| Sage 300 | Meridian | AGR-5678 | 2026-04-01 | $24,000 | 69 |
-| Microsoft 365 E3 | Microsoft | EA-9999 | 2026-06-30 | $43,200 | 159 |
+| Status | Condition |
+|--------|-----------|
+| `expired` | `contract_end_date < CURRENT_DATE` |
+| `renewal_due` | Within `renewal_notice_days` of expiry |
+| `expiring_soon` | Within 180 days of expiry |
+| `active` | More than 180 days to expiry |
+| `no_contract` | No contract end date set |
 
 ### Notification (Future)
 
@@ -329,167 +266,130 @@ When `contract_end_date - renewal_notice_days <= CURRENT_DATE`:
 - Optional email notification (future)
 - Export for procurement team
 
+### DEPRECATED: vw_software_contract_expiry
+
+The junction-based contract expiry view is deprecated. It will be dropped in Phase 5 of the reunification migration.
+
 ---
 
-## 8. Allocation Model (Stubbed)
+## 8. Allocation Model — Now Via IT Services
 
-### Current State: Stubbed
+> **v2.0 Change:** The stubbed allocation on the dpsp junction is DEPRECATED. Allocation now uses the existing IT Service mechanism (`deployment_profile_it_services`) which already supports fixed-dollar and percentage-based allocation, stranded cost, and budget tracking.
 
-Columns exist but are not enforced in calculations or UI.
-
-### Future Behavior
-
-When `allocation_percent` is set:
-- UI shows allocation controls
-- Cost calculation applies percentage
-- Validation: Sum of allocations for same software product should ≤ 100% (warning, not error)
-
-### Use Case
+### How It Works (v2.0)
 
 **Shared Microsoft 365 tenant across multiple applications:**
 
-| Application | DP | Software Product | Allocation | Cost |
-|-------------|-----|------------------|------------|------|
-| HR System | HR-Prod | Microsoft 365 E3 | 40% | $17,280 |
-| Finance App | Fin-Prod | Microsoft 365 E3 | 35% | $15,120 |
-| CRM | CRM-Prod | Microsoft 365 E3 | 25% | $10,800 |
-| **Total** | | | **100%** | **$43,200** |
+| IT Service | annual_cost | DP | Allocation Basis | Allocation Value | DP Cost |
+|------------|------------|-----|-----------------|-----------------|---------|
+| Microsoft 365 E3 EA | $43,200 | HR-Prod | percent | 40 | $17,280 |
+| Microsoft 365 E3 EA | $43,200 | Fin-Prod | percent | 35 | $15,120 |
+| Microsoft 365 E3 EA | $43,200 | CRM-Prod | percent | 25 | $10,800 |
+| **Total** | | | | **100%** | **$43,200** |
+| **Stranded** | | | | | **$0** |
 
-### Why Stubbed
+### Quick Calculator (UI Convenience)
 
-- Most organizations don't need this level of detail
-- Adds complexity to UI
-- Can be enabled via tier gating (Enterprise/Full)
+For per-user/per-seat pricing, a UI quick calculator helps users arrive at the right allocation:
+
+```
+Unit price ($120) x Seats (150) = $18,000
+→ Saved as allocation_basis = 'fixed', allocation_value = $18,000
+```
+
+No data model change needed — the calculator computes, the system stores the result.
+
+### DEPRECATED: dpsp.allocation_percent
+
+The junction-level `allocation_percent` and `allocation_basis` columns are deprecated and will be dropped in Phase 5.
 
 ---
 
-## 9. View Updates
+## 9. View Updates (v2.0)
 
-### vw_deployment_profile_costs (Updated)
+### vw_deployment_profile_costs
 
-The existing view needs modification to use the cost override logic.
+> **v2.0 Change:** The software cost subquery has been removed. All cost flows through IT Service and Cost Bundle channels.
 
-**Current Logic:**
-```sql
--- Software cost (current)
-SELECT SUM(sp.annual_cost) AS software_cost
-FROM deployment_profile_software_products dps
-JOIN software_products sp ON sp.id = dps.software_product_id
-WHERE dps.deployment_profile_id = dp.id
-```
+**Before (v1.0):** `software_cost = SUM(COALESCE(dpsp.annual_cost, sp.annual_cost))`
+**After (v2.0):** `software_cost = 0` (or column removed). All software costs flow through `service_cost` via IT Service allocations.
 
-**Updated Logic:**
-```sql
--- Software cost (with override and allocation)
-SELECT SUM(
-  COALESCE(dps.annual_cost, sp.annual_cost) 
-  * COALESCE(dps.allocation_percent, 100) / 100
-) AS software_cost
-FROM deployment_profile_software_products dps
-JOIN software_products sp ON sp.id = dps.software_product_id
-WHERE dps.deployment_profile_id = dp.id
-```
-
-### New View: vw_software_contract_expiry
+### vw_it_service_contract_expiry (NEW — Replaces vw_software_contract_expiry)
 
 ```sql
-CREATE OR REPLACE VIEW vw_software_contract_expiry AS
-SELECT 
-  dps.id,
-  dp.id AS deployment_profile_id,
-  dp.name AS deployment_profile_name,
-  a.id AS application_id,
-  a.name AS application_name,
-  a.workspace_id,
-  sp.id AS software_product_id,
-  sp.name AS software_product_name,
-  mfr.id AS manufacturer_id,
-  mfr.name AS manufacturer_name,
-  v.id AS vendor_id,
-  v.name AS vendor_name,
-  dps.contract_reference,
-  dps.contract_start_date,
-  dps.contract_end_date,
-  dps.renewal_notice_days,
-  dps.contract_end_date - CURRENT_DATE AS days_until_expiry,
-  CASE 
-    WHEN dps.contract_end_date IS NULL THEN 'no_contract'
-    WHEN dps.contract_end_date < CURRENT_DATE THEN 'expired'
-    WHEN dps.contract_end_date <= CURRENT_DATE + (dps.renewal_notice_days || ' days')::INTERVAL THEN 'renewal_due'
-    WHEN dps.contract_end_date <= CURRENT_DATE + INTERVAL '180 days' THEN 'expiring_soon'
+CREATE OR REPLACE VIEW vw_it_service_contract_expiry AS
+SELECT
+  its.id AS it_service_id,
+  its.name AS it_service_name,
+  its.owner_workspace_id AS workspace_id,
+  w.namespace_id,
+  o.name AS vendor_name,
+  its.contract_reference,
+  its.contract_start_date,
+  its.contract_end_date,
+  its.renewal_notice_days,
+  its.contract_end_date - CURRENT_DATE AS days_until_expiry,
+  CASE
+    WHEN its.contract_end_date IS NULL THEN 'no_contract'
+    WHEN its.contract_end_date < CURRENT_DATE THEN 'expired'
+    WHEN its.contract_end_date <= CURRENT_DATE + (its.renewal_notice_days || ' days')::INTERVAL THEN 'renewal_due'
+    WHEN its.contract_end_date <= CURRENT_DATE + INTERVAL '180 days' THEN 'expiring_soon'
     ELSE 'active'
   END AS contract_status,
-  COALESCE(dps.annual_cost, sp.annual_cost) AS effective_annual_cost,
-  dps.cost_confidence
-FROM deployment_profile_software_products dps
-JOIN deployment_profiles dp ON dp.id = dps.deployment_profile_id
-JOIN applications a ON a.id = dp.application_id
-JOIN software_products sp ON sp.id = dps.software_product_id
-LEFT JOIN organizations mfr ON mfr.id = sp.manufacturer_org_id
-LEFT JOIN organizations v ON v.id = dps.vendor_org_id
-WHERE dp.dp_type = 'application';
+  its.annual_cost,
+  its.budget_amount
+FROM it_services its
+JOIN workspaces w ON w.id = its.owner_workspace_id
+LEFT JOIN organizations o ON o.id = its.vendor_org_id
+WHERE its.contract_end_date IS NOT NULL;
 ```
 
-### New View: vw_vendor_spend — NOT BUILT
+### DEPRECATED Views
 
-> **Status (2026-03-04):** This view has NOT been created in the database. No frontend consumer exists yet.
-
-```sql
-CREATE OR REPLACE VIEW vw_vendor_spend AS
-SELECT 
-  v.id AS vendor_id,
-  v.name AS vendor_name,
-  COUNT(DISTINCT dps.id) AS product_count,
-  COUNT(DISTINCT dp.application_id) AS application_count,
-  SUM(COALESCE(dps.annual_cost, sp.annual_cost)) AS total_annual_spend,
-  MIN(dps.contract_end_date) AS earliest_expiry,
-  COUNT(CASE WHEN dps.contract_end_date <= CURRENT_DATE + INTERVAL '90 days' THEN 1 END) AS contracts_expiring_90_days
-FROM deployment_profile_software_products dps
-JOIN software_products sp ON sp.id = dps.software_product_id
-JOIN deployment_profiles dp ON dp.id = dps.deployment_profile_id
-JOIN organizations v ON v.id = dps.vendor_org_id
-GROUP BY v.id, v.name;
-```
+| View | Status | Replacement |
+|------|--------|-------------|
+| `vw_software_contract_expiry` | DEPRECATED | `vw_it_service_contract_expiry` |
+| `vw_vendor_spend` | NOT BUILT — cancelled | Vendor spend is via `vw_run_rate_by_vendor` (IT Service + Cost Bundle channels) |
 
 ---
 
-## 10. UI Implications
+## 10. UI Implications (v2.0)
 
-### Software Product Link Dialog (Enhanced)
+### Software Product Link Dialog (Simplified)
+
+> **v2.0 Change:** The link dialog is now inventory-only. Cost, vendor, and contract fields are removed (they were never surfaced in UI anyway — the as-built modal only captured software_product_id, deployed_version, and notes).
 
 When linking a Software Product to a Deployment Profile:
 
-**Basic (always visible):**
 - Software Product (dropdown)
-- Vendor (organization picker, filtered to is_vendor=true)
-- Annual Cost (optional, placeholder shows catalog price)
+- Deployed Version (text)
+- Quantity (number — reference only)
 - Notes
 
-**Contract Details (collapsible section):**
+### IT Service Modal (Enhanced)
+
+When creating or editing an IT Service:
+
+**Cost fields (existing):**
+- Annual Cost (the contract total / cost pool)
+- Cost Model (dropdown)
+
+**Contract Details (NEW — collapsible section):**
 - Contract Reference (text)
 - Start Date (date picker)
 - End Date (date picker)
 - Renewal Notice Days (number, default 90)
 
-**Advanced (tier-gated or collapsible):**
-- Quantity (number)
-- Allocation % (number)
-- Allocation Basis (dropdown)
-- Cost Confidence (dropdown)
-
-### Application Edit Modal
-
-The existing "Software Products" section needs update:
-- Show vendor name alongside product name
-- Show effective cost (junction or catalog)
-- Visual indicator for contract expiry status
+**Software Products Provided (NEW section):**
+- List of Software Products linked via `it_service_software_products`
+- Add/remove links
 
 ### New Reports/Pages
 
-| Report | Tier | Content |
-|--------|------|---------|
-| Contract Expiry | Pro+ | List of expiring contracts with filters |
-| Vendor Spend | Enterprise+ | Spend by vendor with drill-down |
+| Report | Location | Content |
+|--------|----------|---------|
+| Contract Expiry | Dashboard widget or IT Service settings | IT Service contracts expiring (from `vw_it_service_contract_expiry`) |
+| Quick Calculator | IT Service allocation dialog | Unit price x Quantity = Fixed allocation |
 
 ---
 
@@ -543,24 +443,34 @@ When syncing to ServiceNow:
 
 | Document | Relevance |
 |----------|-----------|
-| features/cost-budget/cost-model.md | Three cost channels, view logic |
-| catalogs/software-product.md | Catalog structure, manufacturer |
+| features/cost-budget/adr-cost-model-reunification.md | ADR: IT Services absorb the contract role |
+| features/cost-budget/cost-model.md | Two cost channels (v3.0), view logic |
+| catalogs/it-service.md | IT Service expanded with contract role |
+| catalogs/software-product.md | Catalog structure, manufacturer (inventory only) |
 | core/involved-party.md | Organization entity, is_vendor flag |
-| catalogs/csdm-application-attributes.md | CSDM alignment (updated to remove vendor from app) |
 
 ---
 
 ## 14. Implementation Phases
 
-| Phase | Scope | Effort | Status |
-|-------|-------|--------|--------|
-| **23-pre** | Junction schema enhancement (this doc) | 1 hr | DEPLOYED (missing updated_at, constraint) |
-| **23-pre** | View updates (vw_deployment_profile_costs) | 30 min | DEPLOYED |
-| **23-pre** | New views (contract_expiry, vendor_spend) | 30 min | PARTIAL (contract_expiry DEPLOYED, vendor_spend NOT BUILT) |
-| **23a** | CSDM attributes on applications (minus vendor) | 30 min | DEPLOYED |
-| **23b** | CSDM attributes on deployment_profiles | 30 min | DEPLOYED |
-| **UI** | Software link dialog enhancement | 2 hrs | DEPLOYED |
-| **UI** | Contract expiry report | 2 hrs | NOT STARTED |
+### v1.x Phases (COMPLETED — now SUPERSEDED by v2.0 reunification)
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **23-pre** | Junction schema enhancement | DEPLOYED → DEPRECATED by v2.0 |
+| **23-pre** | View updates (vw_deployment_profile_costs) | DEPLOYED → Modified by v2.0 |
+| **23-pre** | New views (contract_expiry, vendor_spend) | vw_software_contract_expiry DEPLOYED → DEPRECATED; vw_vendor_spend NOT BUILT → CANCELLED |
+
+### v2.0 Reunification Phases (see `adr-cost-model-reunification.md` §5)
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **Phase 0** | Architecture doc updates (this doc + 8 others) | IN PROGRESS |
+| **Phase 1** | Schema: 4 contract columns on it_services, new junction, new view | PENDING |
+| **Phase 2** | Views: remove software cost subquery from vw_deployment_profile_costs | PENDING |
+| **Phase 3** | Frontend: IT Service contract fields, software product linking, quick calculator | PENDING |
+| **Phase 4** | Data migration: dpsp cost data → IT Services | PENDING |
+| **Phase 5** | Cleanup: drop deprecated dpsp columns, drop vw_software_contract_expiry | PENDING |
 
 ---
 
@@ -568,10 +478,11 @@ When syncing to ServiceNow:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.0 | 2026-03-04 | **Cost model reunification.** Contracts move from dpsp junction to IT Services. §1: scope updated. §3: vendor on IT Service (was junction). §4: dpsp is inventory-only — cost/contract columns DEPRECATED. §5: cost override → IT Service allocation. §7: contract expiry → vw_it_service_contract_expiry. §8: allocation via IT Services (was stubbed on junction). §9: views updated. §10: UI simplified. §14: v1.x phases superseded by reunification phases. See `adr-cost-model-reunification.md`. |
 | v1.1 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §4: deployment status added — updated_at MISSING, chk_dpsp_allocation_percent MISSING, deployed_version column noted. §9: vw_vendor_spend marked NOT BUILT. §14: implementation status column added. |
 | v1.0 | 2026-01-22 | Initial version — junction enhancement, SAM-lite scope, cost override logic |
 
 ---
 
 *Document: features/cost-budget/software-contract.md*
-*January 2026*
+*March 2026*

@@ -1,5 +1,5 @@
 # GetInSync NextGen Conceptual ERD
-## Version 1.2 - December 2025
+## Version 2.0 - March 2026
 
 ---
 
@@ -18,11 +18,22 @@ This document presents the conceptual data model for GetInSync NextGen. It focus
 | **Steward enables owners** | Application Owners can self-serve without Editor licenses |
 | **TBM-lite cost transparency** | Budget-to-actual, vendor reporting, application TCO |
 
+### What's New in v2.0
+
+| Enhancement | Description |
+|-------------|-------------|
+| **ProductContract merged into IT Service** | ProductContract is no longer a separate entity. Vendor, contract dates, and cost pool live on IT Service. |
+| **ITServiceSoftwareProduct** | NEW junction table linking IT Service to Software Product (inventory relationship) |
+| **Software Products inventory-only** | Software Products no longer carry cost. Cost flows through IT Services. |
+| **Two cost channels** | IT Services + Cost Bundles. Software Product channel removed from cost calculations. |
+| **Contract lifecycle on IT Service** | `contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days` |
+| **vw_it_service_contract_expiry** | NEW view for contract lifecycle tracking |
+
 ### What's New in v1.2
 
 | Enhancement | Description |
 |-------------|-------------|
-| **ITServiceContract** | NEW junction table linking ITService to ProductContract |
+| **ITServiceContract** | Junction table linking ITService to ProductContract (superseded by v2.0 — see IT Service contract fields) |
 | **Budget-to-Actual** | BudgetedAnnualCost + ActualAnnualCost on ITService |
 | **Budget-to-Actual** | BudgetedCost + AnnualCost on ProductContract |
 | **FiscalYear** | Year-over-year tracking on ITService and ProductContract |
@@ -71,12 +82,12 @@ erDiagram
     Portfolio }o--o{ BusinessApplication : contains
     BusinessApplication ||--o{ DeploymentProfile : "deployed as"
     
-    %% Cost & Vendors
-    DeploymentProfile }o--o{ ITService : "consumes"
-    DeploymentProfile }o--o{ ProductContract : "funded by"
-    ProductContract }o--|| Organization : "with vendor"
+    %% Cost & Vendors (v2.0 — ProductContract merged into ITService)
+    DeploymentProfile }o--o{ ITService : "consumes (cost allocation)"
+    DeploymentProfile }o--o{ SoftwareProduct : "uses (inventory only)"
+    ITService }o--o{ SoftwareProduct : "provides (via junction)"
+    ITService }o--|| Organization : "with vendor"
     ITService }o--|| CostCategory : "categorized as"
-    ProductContract }o--|| CostCategory : "categorized as"
     
     %% Integrations
     BusinessApplication }o--o{ InternalIntegration : "connected via"
@@ -329,31 +340,25 @@ erDiagram
     
     SoftwareProduct {
         uuid SoftwareProductId PK
-        uuid NamespaceId FK
+        uuid WorkspaceId FK
         uuid ManufacturerOrgId FK
         string Name "e.g., Microsoft 365"
         boolean IsInternalOnly
+        string Note "Inventory only - no cost (v2.0)"
     }
-    
-    ProductContract {
-        uuid ProductContractId PK
-        uuid WorkspaceId FK
+
+    ITServiceSoftwareProduct {
+        uuid Id PK
+        uuid ITServiceId FK
         uuid SoftwareProductId FK
-        uuid SupplierOrgId FK
-        uuid CostCategoryId FK
-        string ContractNumber
-        int FiscalYear "2025, 2026, etc."
-        decimal BudgetedCost "Planned spend"
-        decimal AnnualCost "Invoice/actual"
-        decimal Variance "Calculated"
-        date StartDate
-        date EndDate
+        string Notes "Which software this service covers"
     }
-    
+
     Namespace ||--o{ Organization : "scopes"
     Organization ||--o{ SoftwareProduct : "manufactures"
-    Organization ||--o{ ProductContract : "supplies"
-    SoftwareProduct ||--o{ ProductContract : "licensed via"
+    Organization ||--o{ ITService : "supplies (v2.0)"
+    SoftwareProduct ||--o{ ITServiceSoftwareProduct : "covered by"
+    ITService ||--o{ ITServiceSoftwareProduct : "provides"
 ```
 
 #### Entity Descriptions
@@ -361,14 +366,14 @@ erDiagram
 | Entity | Purpose | Scope |
 |--------|---------|-------|
 | **Organization** | External vendor or internal division | Namespace |
-| **SoftwareProduct** | Commercial software (not apps, not IT services) | Namespace |
-| **ProductContract** | Vendor agreement for software/services | Workspace |
+| **SoftwareProduct** | Commercial software inventory (no cost — v2.0) | Workspace |
+| **ITServiceSoftwareProduct** | Links IT Service to Software Product (v2.0) | Workspace |
 
 #### Organization Roles
 
 | Role Flag | Purpose |
 |-----------|---------|
-| **IsSupplier** | Can be assigned to ProductContract.SupplierOrgId |
+| **IsSupplier** | Can be assigned to ITService.VendorOrgId (was ProductContract.SupplierOrgId) |
 | **IsManufacturer** | Can be assigned to SoftwareProduct.ManufacturerOrgId |
 | **IsCustomer** | Can be assigned as a business customer (future) |
 | **IsInternalOrg** | Internal divisions (e.g., "Central IT"); excluded from vendor reports |
@@ -492,7 +497,7 @@ Instead, use **Free-Standing Deployment Profiles** — DeploymentProfiles where 
 
 ### 3.6 Deployment & Cost
 
-This cluster shows where applications run and what they cost. **Enhanced in v1.1** with TBM-lite cost model support.
+This cluster shows where applications run and what they cost. **Updated in v2.0** — ProductContract merged into IT Service. Two cost channels: IT Services + Cost Bundles.
 
 ```mermaid
 erDiagram
@@ -504,12 +509,11 @@ erDiagram
         string Name "e.g., Production, DR, Dev"
         string Environment "Production, Non-Production"
         string HostingModel "OnPrem, Cloud, Hybrid, SaaS"
-        decimal DirectCost "Costs specific to this deployment"
-        decimal AllocatedContractCost "Sum of contract allocations"
         decimal AllocatedServiceCost "Sum of IT service allocations"
-        decimal TotalCost "Computed: Direct + Allocated"
+        decimal BundleCost "Sum of cost bundle allocations"
+        decimal TotalCost "Computed: Service + Bundle"
     }
-    
+
     CostCategory {
         uuid CostCategoryId PK
         uuid NamespaceId FK
@@ -518,83 +522,68 @@ erDiagram
         int DisplayOrder
         boolean IsActive
     }
-    
+
     ITService {
         uuid ITServiceId PK
         uuid WorkspaceId FK
         uuid CostCategoryId FK
-        string Name "e.g., Azure SQL, Shared File Storage"
+        uuid VendorOrgId FK "v2.0 - who supplies this"
+        string Name "e.g., Azure SQL, M365 E5 EA"
         string ServiceType "Infrastructure, Platform, Application"
-        int FiscalYear "2025, 2026, etc."
-        decimal BudgetedAnnualCost "Planned spend"
-        decimal ActualAnnualCost "Calculated from contracts"
-        decimal Variance "Calculated: Actual - Budget"
+        decimal AnnualCost "Total cost pool"
         decimal AllocatedCost "Sum of DP allocations"
-        decimal StrandedCost "Computed: Actual - Allocated"
+        decimal StrandedCost "Computed: Annual - Allocated"
+        string ContractReference "PO or agreement ID (v2.0)"
+        date ContractStartDate "v2.0"
+        date ContractEndDate "v2.0"
+        int RenewalNoticeDays "Default 90 (v2.0)"
         uuid ServiceOwnerContactId FK "Central IT contact"
-        boolean IsInternalOnly "Hide from federated catalog"
+        boolean IsInternalOnly "Visibility + sharing control"
     }
-    
-    ITServiceContract {
-        uuid ITServiceContractId PK
-        uuid ITServiceId FK
-        uuid ProductContractId FK
-        decimal AllocationPercent "% of contract to this service"
-        decimal AllocatedCost "Calculated"
-    }
-    
+
     DeploymentProfileITService {
         uuid DeploymentProfileITServiceId PK
         uuid DeploymentProfileId FK
         uuid ITServiceId FK
-        decimal AllocationPercent "% of IT Service cost"
-        decimal AllocatedCost "Calculated"
-        string AllocationMethod "Manual, ByUsers, ByVMs"
+        string AllocationBasis "fixed or percent"
+        decimal AllocationValue "$ amount or % of pool"
     }
-    
-    ProductContract {
-        uuid ProductContractId PK
-        uuid WorkspaceId FK
+
+    ITServiceSoftwareProduct {
+        uuid Id PK
+        uuid ITServiceId FK
         uuid SoftwareProductId FK
-        uuid SupplierOrgId FK
-        uuid CostCategoryId FK
-        string ContractNumber
-        int FiscalYear "2025, 2026, etc."
-        decimal BudgetedCost "Planned spend"
-        decimal AnnualCost "Invoice/actual"
-        decimal Variance "Calculated"
-        date StartDate
-        date EndDate
+        string Notes "v2.0 - inventory link"
     }
-    
-    DeploymentProfileContract {
-        uuid DeploymentProfileContractId PK
-        uuid DeploymentProfileId FK
-        uuid ProductContractId FK
-        decimal AllocationPercent
-        decimal AllocatedCost
-    }
-    
+
     SoftwareProduct {
         uuid SoftwareProductId PK
         uuid WorkspaceId FK
         uuid ManufacturerOrgId FK
         string Name "e.g., Microsoft 365, SAP ERP"
         boolean IsInternalOnly
+        string Note "Inventory only - no cost (v2.0)"
     }
-    
+
+    DeploymentProfileSoftwareProduct {
+        uuid Id PK
+        uuid DeploymentProfileId FK
+        uuid SoftwareProductId FK
+        string DeployedVersion "Inventory tracking"
+        int Quantity "Seats/licenses"
+        string Notes "No cost fields (v2.0)"
+    }
+
     BusinessApplication ||--o{ DeploymentProfile : "deployed as"
-    DeploymentProfile ||--o{ DeploymentProfileITService : "consumes"
+    DeploymentProfile ||--o{ DeploymentProfileITService : "consumes (cost)"
+    DeploymentProfile ||--o{ DeploymentProfileSoftwareProduct : "uses (inventory)"
     ITService ||--o{ DeploymentProfileITService : "allocated to"
-    ITService ||--o{ ITServiceContract : "funded by"
-    ProductContract ||--o{ ITServiceContract : "funds"
-    DeploymentProfile ||--o{ DeploymentProfileContract : "funded by"
-    ProductContract ||--o{ DeploymentProfileContract : "allocated to"
-    ProductContract }o--|| SoftwareProduct : "licenses"
-    ProductContract }o--|| Organization : "with vendor"
+    ITService ||--o{ ITServiceSoftwareProduct : "provides"
+    SoftwareProduct ||--o{ ITServiceSoftwareProduct : "covered by"
+    SoftwareProduct ||--o{ DeploymentProfileSoftwareProduct : "tracked on"
+    ITService }o--|| Organization : "with vendor"
     SoftwareProduct }o--|| Organization : "made by"
     ITService }o--|| CostCategory : "categorized as"
-    ProductContract }o--|| CostCategory : "categorized as"
     CostCategory ||--o{ ITService : "groups"
 ```
 
@@ -612,85 +601,70 @@ Five high-level categories aligned with Technology Business Management principle
 
 CostCategory is **Namespace-scoped** — shared across all Workspaces. Customers can customize categories to match their chart of accounts.
 
-#### Cost Model (Enhanced in v1.2)
+#### Cost Model (v2.0 — Two Channels)
 
-**Two Cost Paths:**
+> **v2.0 Change:** ProductContract merged into IT Service. Cost flows through two channels: IT Services and Cost Bundles. Software Products are inventory-only.
 
-| Path | Use Case | Flow |
-|------|----------|------|
-| **Shared Infrastructure** | Costs shared by multiple apps | Contract → ITServiceContract → ITService → DeploymentProfileITService → DP |
-| **App-Specific** | License for one application | Contract → DeploymentProfileContract → DP |
+**Two Cost Channels:**
 
-**Budget vs. Actual:**
-
-| Entity | Budget Field | Actual Field | Variance |
-|--------|--------------|--------------|----------|
-| **ITService** | BudgetedAnnualCost | ActualAnnualCost (from contracts) | Calculated |
-| **ProductContract** | BudgetedCost | AnnualCost (invoice) | Calculated |
-| **DeploymentProfile** | — | TotalCost (calculated) | — |
-
-**Key Insight:** Budget is set at the source (ITService or Contract). Actuals flow through allocations to DeploymentProfiles.
+| Channel | Use Case | Flow |
+|---------|----------|------|
+| **IT Services** | Shared infrastructure AND software licensing | ITService → DeploymentProfileITService → DP |
+| **Cost Bundles** | Consulting, MSP, support, estimated costs | Cost Bundle DP → Primary DP rollup |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         COST FLOW DIAGRAM                               │
+│                      COST FLOW DIAGRAM (v2.0)                           │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  PATH 1: SHARED INFRASTRUCTURE                                          │
-│  ─────────────────────────────                                          │
+│  CHANNEL 1: IT SERVICES (Infrastructure + Software)                     │
+│  ──────────────────────────────────────────────────                     │
 │                                                                         │
-│  ProductContract ──► ITServiceContract ──► ITService                    │
-│  (Azure EA: $80K)    (100%)                 (Azure Hosting)             │
-│                                                  │                      │
-│                      ┌───────────────────────────┼───────────────┐      │
-│                      ▼                           ▼               ▼      │
-│              DeploymentProfile          DeploymentProfile    DeploymentProfile
-│              (App A: 40%)               (App B: 35%)         (App C: 25%)
-│              = $32,000                  = $28,000            = $20,000  │
+│  ITService ──────────────────────► DeploymentProfileITService           │
+│  (M365 E5 EA: $240K)               ├─ Justice DP: fixed $36K           │
+│  vendor: Microsoft                  ├─ Heritage DP: fixed $360         │
+│  contract_end: 2027-06-30           └─ Finance DP: percent 15%         │
+│       │                                                                 │
+│       │ it_service_software_products                                    │
+│       ├──► Microsoft 365 E5 (SoftwareProduct — inventory)               │
+│       ├──► Microsoft Teams (SoftwareProduct — inventory)                │
+│       └──► Microsoft SharePoint (SoftwareProduct — inventory)           │
 │                                                                         │
-│  PATH 2: APP-SPECIFIC LICENSE                                           │
-│  ────────────────────────────                                           │
+│  CHANNEL 2: COST BUNDLES                                                │
+│  ────────────────────────                                               │
 │                                                                         │
-│  ProductContract ──► DeploymentProfileContract ──► DeploymentProfile    │
-│  (Tyler: $45K)       (100%)                        (Utility Billing)    │
+│  Cost Bundle DP ──────────────────► Primary DP rollup                   │
+│  (dp_type='cost_bundle')            "Vendor Support" $5K/year           │
+│                                     "Annual Pen Test" $3K/year          │
 │                                                                         │
-│  PATH 3: FREE-STANDING (Non-App Costs)                                  │
-│  ─────────────────────────────────────                                  │
+│  INVENTORY ONLY (no cost):                                              │
+│  ─────────────────────────                                              │
 │                                                                         │
-│  ProductContract ──► DeploymentProfileContract ──► Free-Standing DP     │
-│  (O365 Org-Wide)     (100%)                        (ApplicationId=NULL) │
-│                                                         │               │
-│                                                         ▼               │
-│                                                    Portfolio            │
+│  DeploymentProfile ──► dpsp ──► SoftwareProduct                         │
+│  (tracks which software is deployed — deployed_version, quantity)        │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### ITService Cost Calculation
+#### ITService Cost Calculation (v2.0)
 
 ```
-ITService.ActualAnnualCost = Sum(ITServiceContract.AllocatedCost)
-
-ITService.Variance = ActualAnnualCost - BudgetedAnnualCost
-
-ITService.StrandedCost = ActualAnnualCost - Sum(DeploymentProfileITService.AllocatedCost)
+ITService.StrandedCost = AnnualCost - Sum(DeploymentProfileITService.AllocationValue)
 ```
 
-#### DeploymentProfile Cost Calculation
+#### DeploymentProfile Cost Calculation (v2.0)
 
 ```
 DeploymentProfile.TotalCost =
-    DirectCost                           (manually entered)
-  + AllocatedContractCost               (sum of contract allocations)
-  + AllocatedServiceCost                (sum of IT service allocations)
+    AllocatedServiceCost                (sum of IT service allocations)
+  + BundleCost                          (sum of cost bundle DPs)
 ```
 
 | Field | Source | Purpose |
 |-------|--------|---------|
-| **DirectCost** | Manual entry | Costs specific to this deployment (consulting, one-time fees) |
-| **AllocatedContractCost** | Calculated | Sum of DeploymentProfileContract.AllocatedCost |
-| **AllocatedServiceCost** | Calculated | Sum of DeploymentProfileITService.AllocatedCost |
-| **TotalCost** | Calculated | Sum of all three |
+| **AllocatedServiceCost** | Calculated | Sum of DeploymentProfileITService allocations |
+| **BundleCost** | Calculated | Sum of cost_bundle DPs for this application |
+| **TotalCost** | Calculated | Service + Bundle |
 
 #### Application TCO Calculation
 
@@ -724,24 +698,22 @@ Note: ByUsers and ByVMs are **v2 enhancements**. v1 supports Manual only.
 
 | Rule | Validation | Severity |
 |------|------------|----------|
-| Sum of allocations ≤ 100% | Warning if exceeded | Warning |
-| Sum of allocations ≤ 105% | Error if exceeded | Error |
-| Contract allocation same Workspace | Enforced | Error |
+| Sum of IT Service allocations ≤ 100% | Warning if exceeded | Warning |
+| Sum of IT Service allocations ≤ 105% | Error if exceeded | Error |
 | Stranded cost > 20% of total | Flag for review | Warning |
 
-#### Avoiding Double-Counting
+#### Avoiding Double-Counting (v2.0)
 
 The key to TBM-lite is **never counting the same dollar twice**:
 
 | Cost Type | Where It Lives | Where It Doesn't Live |
 |-----------|----------------|----------------------|
-| Contract cost (actual) | ProductContract.AnnualCost | (nowhere else) |
-| Allocated to IT Service | ITServiceContract.AllocatedCost | DeploymentProfile directly |
-| IT Service to app | DeploymentProfileITService.AllocatedCost | (rolled up to DP) |
-| Contract to app directly | DeploymentProfileContract.AllocatedCost | ITService |
+| IT Service cost pool | ITService.AnnualCost | SoftwareProduct or dpsp |
+| IT Service to app | DeploymentProfileITService.AllocationValue | (rolled up to DP) |
+| Cost Bundle | Cost Bundle DP annual_cost | IT Service |
 | Stranded/unallocated | ITService.StrandedCost | Applications |
 
-**Rule:** A contract flows to apps either via ITService OR via direct DeploymentProfileContract — never both.
+**Rule:** Each cost enters through exactly one channel — IT Service OR Cost Bundle. Software Products are inventory-only and carry no cost.
 
 ---
 
@@ -891,8 +863,8 @@ erDiagram
 | Scope | Entities |
 |-------|----------|
 | **Platform** | Region, Individual |
-| **Namespace** | Namespace, Organization, WorkspaceGroup, TIMEQuestion (custom), CostCategory, SoftwareProduct |
-| **Workspace** | Workspace, Contact, Portfolio, BusinessApplication, DeploymentProfile, ITService, ProductContract, Program, Project, InternalIntegration, ExternalIntegration, TIMEResponse |
+| **Namespace** | Namespace, Organization, WorkspaceGroup, TIMEQuestion (custom), CostCategory |
+| **Workspace** | Workspace, Contact, Portfolio, BusinessApplication, DeploymentProfile, ITService, SoftwareProduct, Program, Project, InternalIntegration, ExternalIntegration, TIMEResponse |
 | **Cross-Workspace** | WorkspaceGroupMembership (M:N) |
 
 ### New Entities (NextGen)
@@ -906,7 +878,18 @@ erDiagram
 | **RefContactType.GrantsStewardRights** | Enables Steward derivation | New field |
 | **TIMEAssessment** | Multi-stakeholder scoring (v2) | New |
 | **CostCategory** | TBM-lite cost classification | New in v1.1 |
-| **ITServiceContract** | Links ITService to ProductContract | New in v1.2 |
+| **ITServiceContract** | Links ITService to ProductContract | New in v1.2 (superseded by v2.0 — contract fields on IT Service) |
+| **ITServiceSoftwareProduct** | Links ITService to SoftwareProduct (inventory) | New in v2.0 |
+
+### New Fields (v2.0)
+
+| Entity | Field | Purpose |
+|--------|-------|---------|
+| **ITService** | VendorOrgId | Who supplies this service (was on ProductContract) |
+| **ITService** | ContractReference | PO number, agreement ID |
+| **ITService** | ContractStartDate | Contract term start |
+| **ITService** | ContractEndDate | Contract term expiry |
+| **ITService** | RenewalNoticeDays | Days before expiry to alert (default 90) |
 
 ### New Fields (v1.2)
 
@@ -955,7 +938,7 @@ The enhanced cost model enables these TBM-lite reports:
 | Report | Description |
 |--------|-------------|
 | **Budget vs. Actual by IT Service** | Compare planned vs. invoice by service |
-| **Budget vs. Actual by Contract** | Compare planned vs. invoice by vendor contract |
+| **Contract Expiry Dashboard** | IT Service contract lifecycle tracking (v2.0) |
 | **Year-over-Year by IT Service** | FY2024 vs. FY2025 vs. FY2026 trending |
 | **Spend by Vendor** | Total actual spend grouped by SupplierOrg |
 | **Spend by Manufacturer** | Total spend grouped by ManufacturerOrg |
@@ -973,6 +956,7 @@ The enhanced cost model enables these TBM-lite reports:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.0 | 2026-03-04 | **Cost Model Reunification:** ProductContract merged into IT Service. Software Products are inventory-only. Two cost channels (IT Services + Cost Bundles). Added ITServiceSoftwareProduct junction, contract lifecycle fields on IT Service. Updated all ERDs, cost flow diagrams, and entity summaries. See `adr-cost-model-reunification.md`. |
 | v1.0 | 2025-12-14 | Initial conceptual ERD covering all domain clusters |
 | v1.1 | 2025-12-16 | Enhanced cost model: CostCategory, DirectCost, AllocatedCost, StrandedCost, AllocationMethod. Free-Standing Deployment Profiles for non-application costs. |
 | v1.2 | 2025-12-19 | Budget-to-Actual: Added ITServiceContract junction, BudgetedAnnualCost/ActualAnnualCost on ITService, BudgetedCost/AnnualCost on ProductContract, FiscalYear on both. Year-over-year tracking. |

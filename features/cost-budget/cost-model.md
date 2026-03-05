@@ -1,6 +1,7 @@
 # features/cost-budget/cost-model.md
 GetInSync Cost Model Architecture
 Last updated: 2026-03-04
+Version: 3.0
 
 ## 1. Purpose
 
@@ -19,31 +20,39 @@ Goals:
 1. **BusinessApplication is a reporting aggregate, not a cost container.**
 2. **DeploymentProfile is the cost rollup point** - but receives cost from proper sources, not manual entry.
 3. **No mystery costs on Application DPs** - all costs flow through defined channels.
-4. **Three cost channels only:** Software Product, IT Service, Cost Bundle.
+4. **Two cost channels only:** IT Service, Cost Bundle. Software Products are inventory — no cost.
 5. **Allocation happens at the relationship level** - via Portfolio Assignment, not at the contract level.
 6. **Cost tracking is optional** - TIME/PAID assessment works without cost data.
 7. **Estimated costs are valid** - better to have rough numbers than none.
 
 ## 3. Cost Sources
 
-### 3.1 Software Product Cost (Licensing)
+### 3.1 Software Products (Inventory Only — No Cost)
 
-`software_products.annual_cost` is the home for licensing and subscription costs.
+> **v3.0 Change:** Software Products no longer carry cost. All software licensing and subscription costs flow through IT Services. See `adr-cost-model-reunification.md` for the decision rationale.
 
-- **Behavior:** Cost flows to DeploymentProfiles via `deployment_profile_software_products` junction.
-- **Cost Override:** The junction supports a per-deployment cost override via `dpsp.annual_cost`. When set, it takes precedence over the catalog price.
-- **Calculation:** `DP_Licensing = SUM(COALESCE(dpsp.annual_cost, sp.annual_cost))`
+`deployment_profile_software_products` is an **inventory-only** junction — it records "what software runs on this deployment" without any cost data.
 
-**Simple Rule:** Different price = different catalog entry. If a workspace has negotiated pricing, create a separate catalog entry (e.g., "Sage 300 (Ministry X Agreement)").
+- **Behavior:** Links a Software Product to a DP for inventory/tracking purposes.
+- **No cost fields:** Cost/vendor/contract columns on the junction are DEPRECATED (see §10.6).
+- **Retained fields:** `software_product_id`, `deployed_version`, `quantity` (reference), `notes`.
+- **Cost path:** Software licensing costs are entered as IT Service allocations via `deployment_profile_it_services`. The IT Service carries the contract, vendor, and cost pool.
 
-### 3.2 IT Service Cost (Infrastructure)
+**How it works:** Create an IT Service (e.g., "Microsoft 365 E5 Enterprise Agreement") with the contract cost. Link that IT Service to the Software Products it provides via `it_service_software_products`. Allocate IT Service cost to DPs via `deployment_profile_it_services`. The same DPs can also link to the Software Product via `dpsp` for inventory tracking.
 
-`it_services.annual_cost` holds the total cost pool for shared infrastructure.
+### 3.2 IT Service Cost (Infrastructure + Software Contracts)
 
-- **TotalAnnualCost:** The full operating cost of the service (e.g., $100k).
+> **v3.0 Change:** IT Services now absorb the contract role previously held by ProductContract. They carry vendor, contract lifecycle, and cost pool for both infrastructure AND software licensing.
+
+`it_services.annual_cost` holds the total cost pool for the service — whether that's shared infrastructure, a software enterprise agreement, or a managed service contract.
+
+- **TotalAnnualCost:** The full operating cost or contract value (e.g., $100k).
+- **Contract fields (NEW):** `contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`.
+- **Software Product link (NEW):** `it_service_software_products` junction links an IT Service to the Software Products it provides/funds (inventory relationship — no cost on this junction).
 - **Behavior:** Acts as a "Cost Pool".
   - Allocated portions flow to Consumer DPs via `deployment_profile_it_services` junction.
   - Unallocated portions remain as "Stranded Cost" (Overhead) on the Publisher Workspace.
+  - Contract lifecycle tracked via `vw_it_service_contract_expiry` view.
 
 ### 3.3 Cost Bundle DP (Everything Else)
 
@@ -59,7 +68,7 @@ Use for:
 
 **Fields:** `name`, `annual_cost`, `cost_confidence`, `notes`
 
-**Legacy note:** `applications.annual_cost` still exists as a calculated field derived from `annual_licensing_cost + annual_tech_cost` on the primary DP. It predates the three-channel model and is used by `useApplications.ts`. It will be deprecated when the frontend migration (see §10.4) is complete.
+**Legacy note:** `applications.annual_cost` still exists as a calculated field derived from `annual_licensing_cost + annual_tech_cost` on the primary DP. It predates the two-channel model and is used by `useApplications.ts`. It will be deprecated when the frontend migration (see §10.4) is complete.
 
 ### 3.4 Legacy Fields on Deployment Profile
 
@@ -67,7 +76,7 @@ Use for:
 
 | Field | Status | Replacement Channel | Frontend Consumers | Migration Risk |
 |-------|--------|--------------------|--------------------|----------------|
-| `annual_licensing_cost` | LEGACY | Software Product channel | 16 files | HIGH — CSV import/export depends on it |
+| `annual_licensing_cost` | LEGACY | IT Service allocation (software costs now flow through IT Services) | 16 files | HIGH — CSV import/export depends on it |
 | `annual_tech_cost` | LEGACY | IT Service allocation or Cost Bundle | 16 files | HIGH — same |
 | `estimated_tech_debt` | LEGACY | Cost Bundle or dedicated field TBD | TechDebtModal, CSV, Charts | MEDIUM — active feature |
 
@@ -77,16 +86,17 @@ Use for:
 
 ### 4.1 Formula
 
+> **v3.0 Change:** DP_Licensing removed. Software costs now flow through the IT Service channel.
+
 ```
-DP_Total = DP_Licensing + DP_Infrastructure + DP_Other
+DP_Total = DP_Infrastructure + DP_Other
 
 Where:
-  DP_Licensing      = SUM(COALESCE(dpsp.annual_cost, sp.annual_cost))
   DP_Infrastructure = SUM(it_service allocations via deployment_profile_it_services)
   DP_Other          = SUM(linked cost_bundle DPs.annual_cost)
 ```
 
-> **Note:** `dpsp.annual_cost` is the junction-level cost override. When present, it takes precedence over the catalog price (`sp.annual_cost`). This is implemented in `vw_deployment_profile_costs`.
+> **Note:** Software licensing costs flow through IT Service allocations. An IT Service representing a software contract (e.g., "Microsoft 365 EA") allocates cost to DPs via `deployment_profile_it_services` the same way infrastructure services do.
 
 ### 4.2 Linking Cost Bundles to Application DPs
 
@@ -178,35 +188,41 @@ IT Service: Database Hosting - SQL Server
 - **Service Owner Report:** Shows Total Pool, Recovered Amount, and Stranded Overhead.
 - **Benefit:** No double-counting. No dummy DPs needed.
 
-## 7. ProductContract (Deferred)
+## 7. ProductContract — Merged into IT Service
 
-### 7.1 Status
+> **v3.0 Decision:** ProductContract is no longer a separate entity. IT Services absorb the contract role. See `adr-cost-model-reunification.md` for the full rationale.
 
-ProductContract is **reserved for future use** but not implemented in v2.5.
+### 7.1 History
 
-### 7.2 When It Would Be Needed
+ProductContract was originally a first-class entity in `core-architecture.md` and `conceptual-erd.md`. It was deferred at v2.5 (January 2026) because it would have introduced a third budget track — incompatible with the concurrent budget management build. The v2.5 workaround scattered contract fields onto the `deployment_profile_software_products` junction, creating two parallel cost streams.
 
-- Complex allocation scenarios (split one contract across multiple DPs with different %)
-- Contract management features (renewal dates, terms, vendor contacts)
-- True-up and compliance tracking
+### 7.2 Resolution (v3.0)
 
-### 7.3 Current Workaround
+IT Services now carry:
+- **Cost pool:** `it_services.annual_cost` (contract total)
+- **Vendor:** `it_services.vendor_org_id`
+- **Contract lifecycle:** `contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`
+- **Allocation:** via `deployment_profile_it_services` (existing mechanism)
+- **Budget tracking:** via `it_services.budget_amount` (existing mechanism)
+- **Software Product link:** via `it_service_software_products` (new junction — inventory, not cost)
+- **Stranded cost:** `pool - allocations` (existing mechanism)
+- **Contract expiry:** via `vw_it_service_contract_expiry` (new view)
 
-**Different price = different catalog entry.**
+### 7.3 Why This Works Without a Third Budget Track
 
-If Ministry X has a negotiated rate, create:
-- "Sage 300 Bundle" ($12,000) - standard pricing
-- "Sage 300 Bundle (Ministry X)" ($10,000) - negotiated pricing
+IT Services already have a complete budget management stack (see `budget-management.md`): budget amounts, budget status views, budget alerts, and workspace budget summary. Software costs flowing through IT Services inherit all of this for free.
 
-### 7.4 Future Behavior
+### 7.4 The "Different Price" Pattern (Revised)
 
-When ProductContract is built, it would **override** the catalog price:
+With ProductContract merged into IT Service, the workaround changes:
 
-```
-DP links to Software Product (Sage 300 - $12,000)
-DP also has ProductContract ($10,000 negotiated)
-→ System uses $10,000 (contract overrides catalog)
-```
+**Before (v2.5):** Different price = different catalog entry.
+**After (v3.0):** Different price = different IT Service allocation.
+
+Example: Ministry X has a negotiated rate for Sage 300:
+- IT Service: "Sage 300 License Agreement" — pool $12,000
+- Ministry X DP allocation: fixed $10,000 (their negotiated rate)
+- Stranded: $2,000 (contract holder absorbs the difference)
 
 ## 8. Cost Tracking Maturity
 
@@ -216,9 +232,9 @@ Organizations can adopt cost tracking incrementally:
 |-------|------|-----------|----------------|------------|----------|
 | **0** | **Not Tracked** | — | — | — | Focus on TIME/PAID first |
 | **1** | **Estimated** | Cost Bundle | Cost Bundle | Optional | Quick start, rough numbers |
-| **2** | **Categorized** | Software Product | Cost Bundle | By % | Know licensing, estimate infra |
-| **3** | **Attributed** | Software Product | IT Service | By % | Full traceability |
-| **4** | **Allocated** | Software Product | IT Service + Stranded | By % with basis | Chargeback-ready |
+| **2** | **Categorized** | IT Service | Cost Bundle | By % | Know licensing (via IT Service), estimate infra |
+| **3** | **Attributed** | IT Service | IT Service | By % | Full traceability |
+| **4** | **Allocated** | IT Service + Stranded | IT Service + Stranded | By % with basis | Chargeback-ready |
 
 ### 8.1 Level 1: Estimated (Quick Start)
 
@@ -241,11 +257,11 @@ Cost Bundle DP: "Sage 300 - Estimated Costs"
 
 ### 9.1 Field
 
-| Field | Table | Values |
-|-------|-------|--------|
-| `cost_confidence` | `deployment_profile_software_products` | `estimated`, `verified` |
+| Field | Table | Values | Status |
+|-------|-------|--------|--------|
+| `cost_confidence` | `deployment_profile_software_products` | `estimated`, `verified` | DEPRECATED — dpsp is now inventory-only |
 
-> **As-built (2026-03-04):** `cost_confidence` exists on the `deployment_profile_software_products` junction table, not on `deployment_profiles` directly. Cost Bundle DPs do not yet have a `cost_confidence` field (see §10.3 — deferred).
+> **v3.0 note:** `cost_confidence` on the dpsp junction is deprecated along with all other cost fields on that table. Future cost confidence tracking will move to the IT Service or `deployment_profile_it_services` level (not yet implemented). Cost Bundle DPs do not yet have a `cost_confidence` field (see §10.3 — deferred).
 
 ### 9.2 Dashboard Indicator
 
@@ -329,27 +345,71 @@ CREATE TABLE deployment_profile_it_services (
 > - `relationship_type` column added (NOT NULL) — not in original spec
 > - `allocation_basis` values are `percent`/`fixed` (not `percent`/`flat`/`per_unit`)
 
+### 10.6 Cost Model Reunification — NEW (v3.0)
+
+> **Reference:** `adr-cost-model-reunification.md` — full decision rationale and schema details.
+
+**New columns on `it_services`:**
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `contract_reference` | TEXT | PO#, Contract ID, Agreement reference |
+| `contract_start_date` | DATE | Contract effective date |
+| `contract_end_date` | DATE | Contract expiration date |
+| `renewal_notice_days` | INTEGER (default 90) | Days before expiry to trigger renewal alert |
+
+**New table: `it_service_software_products`:**
+
+Inventory junction linking IT Services to the Software Products they provide/fund. No cost on this junction.
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | UUID | PK |
+| `it_service_id` | UUID | FK to it_services |
+| `software_product_id` | UUID | FK to software_products |
+| `notes` | TEXT | Free text |
+| `created_at` | TIMESTAMPTZ | Audit |
+
+**New view: `vw_it_service_contract_expiry`:**
+
+Replaces `vw_software_contract_expiry`. Returns IT Service contract status with buckets: expired, renewal_due, expiring_soon, active, no_contract.
+
+**Deprecated columns on `deployment_profile_software_products`:**
+
+| Column | Disposition |
+|--------|------------|
+| `vendor_org_id` | DEPRECATED — vendor lives on IT Service |
+| `annual_cost` | DEPRECATED — cost lives on IT Service allocation |
+| `allocation_percent` | DEPRECATED — allocation is on `dpis` |
+| `allocation_basis` | DEPRECATED — allocation is on `dpis` |
+| `contract_reference` | DEPRECATED — contract lives on IT Service |
+| `contract_start_date` | DEPRECATED — contract lives on IT Service |
+| `contract_end_date` | DEPRECATED — contract lives on IT Service |
+| `renewal_notice_days` | DEPRECATED — contract lives on IT Service |
+| `cost_confidence` | DEPRECATED — confidence is per IT Service or allocation |
+
+**Retained on `dpsp` (inventory role):** `software_product_id`, `deployed_version`, `quantity`, `notes`.
+
 ## 11. Out of Scope
 
-- Seat/license tracking (use notes field)
+- Seat/license tracking (use notes field or quick calculator)
 - User provisioning / IAM integration
 - True-up and compliance automation
 - General Ledger (GL) integration
-- ProductContract (deferred to future version)
 
 ## 12. ASCII ERD (Conceptual)
 
 ```
-Cost Sources                           Consumer Allocation
-============                           ===================
+Cost Sources (v3.0 — Two Channels)          Consumer Allocation
+======================================      ===================
 
 +--------------------+
-|  software_products |
+|  software_products |  (INVENTORY ONLY — no cost)
 +--------------------+
-| annual_cost        |
+| name, version      |
 +----------+---------+
            |
-           | via junction
+           | inventory link (dpsp — no cost)
            v
 +-------------------------------+       +-------------------------+
 |      DeploymentProfile        |       |   portfolio_assignments |
@@ -362,20 +422,25 @@ Cost Sources                           Consumer Allocation
 +-------------------------------+
            ^
            |
-           | via junction
+           | via dpis (cost allocation)
            |
-+--------------------+      +-------------------------+
-|    it_services     |      |    Cost Bundle DP       |
-+--------------------+      +-------------------------+
-| annual_cost (Pool) |      | dp_type: 'cost_bundle'  |
-+--------------------+      | annual_cost             |
-           |                | cost_confidence         |
-           v                +-------------------------+
-+-------------------------------+
-| deployment_profile_it_services|
-+-------------------------------+
-| allocation_value (Recovered)  |
-+-------------------------------+
++-----------------------------+      +-------------------------+
+|       it_services           |      |    Cost Bundle DP       |
++-----------------------------+      +-------------------------+
+| annual_cost (Pool)          |      | dp_type: 'cost_bundle'  |
+| contract_reference    (NEW) |      | annual_cost             |
+| contract_start_date   (NEW) |      | cost_confidence         |
+| contract_end_date     (NEW) |      +-------------------------+
+| renewal_notice_days   (NEW) |
++-----------------------------+
+           |                    \
+           v                     \   inventory link (NEW)
++-------------------------------+ \  +-----------------------------+
+| deployment_profile_it_services|  ->| it_service_software_products|
++-------------------------------+    +-----------------------------+
+| allocation_value (Recovered)  |    | it_service_id               |
++-------------------------------+    | software_product_id         |
+                                     +-----------------------------+
 
 Stranded Cost = IT Service Pool - SUM(Recovered)
 ```
@@ -384,6 +449,7 @@ Stranded Cost = IT Service Pool - SUM(Recovered)
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v3.0 | 2026-03-04 | **Cost model reunification.** IT Services absorb the contract role. Software Products become inventory-only (no cost). Two cost channels (IT Service, Cost Bundle) replace three. §2.4: "two cost channels." §3.1: rewritten — inventory only. §3.2: expanded with contract fields, software product link. §4.1: formula — DP_Licensing removed. §7: ProductContract merged into IT Service (was "deferred"). §8: maturity levels updated. §9.1: cost_confidence on dpsp marked DEPRECATED. §10.6: NEW — reunification schema changes, deprecated dpsp columns. §12: ERD updated to show two-channel model. See `adr-cost-model-reunification.md`. |
 | v2.6 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §3.1: added cost override note (COALESCE(dpsp, sp)). §3.4: legacy columns documented as LEGACY not REMOVED (16 frontend consumers). §4.1: formula updated with cost override. §9.1: cost_confidence corrected to dpsp junction table. §10.3: marked DEFERRED. §10.4: marked BLOCKED with prerequisites. §10.5: marked DEPLOYED with as-built differences (relationship_type, missing updated_at). §12 ERD: updated to show legacy fields pending migration. |
 | v2.5 | 2026-01-20 | Major simplification. Removed direct cost fields from DP. Three cost channels only (Software Product, IT Service, Cost Bundle). Added consumer allocation via portfolio_assignments. Added cost tracking maturity levels. Added cost confidence flag. Deferred ProductContract. |
 | v2.4 | 2025-12-12 | Previous version with ProductContract model and EstimatedAnnualCost on DP. |

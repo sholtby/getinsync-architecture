@@ -1,7 +1,8 @@
 # core/core-architecture.md
 GetInSync Architecture Specification
 
-Last updated: 2025-12-12
+Last updated: 2026-03-04
+Version: 2.5
 
 ## 1. Purpose
 
@@ -9,7 +10,7 @@ This file defines the core conceptual architecture for NextGen GetInSync.
 It describes:
 
 - The central role of BusinessApplications
-- How DeploymentProfiles, ITServices, SoftwareProducts, ProductContracts, and Portfolios work together
+- How DeploymentProfiles, ITServices, SoftwareProducts, and Portfolios work together
 - The Involved Party model at a high level
 - How Namespaces, Workspaces, and WorkspaceGroups structure tenant and reporting views
 
@@ -21,8 +22,8 @@ Detailed fields and behaviours live in domain specific Skills files.
 
 - Make BusinessApplication the centre of APM
 - Separate application intent from runtime deployment and cost
-- Treat ITServices as logical technical capabilities rather than individual CIs
-- Treat SoftwareProduct and ProductContract as the home of licences and commercial agreements
+- Treat ITServices as logical technical capabilities AND the home of commercial agreements (v2.5)
+- Treat SoftwareProduct as inventory-only — what software exists, not what it costs (v2.5)
 - Use DeploymentProfile as the runtime and cost anchor
 - Use Portfolios for organisational and TIME / PAID views
 - Use Involved Party for Organizations, Individuals, Contacts, and their relationships
@@ -33,9 +34,9 @@ Detailed fields and behaviours live in domain specific Skills files.
 - BusinessApplication is the anchor for APM, TIME, PAID, APQC, and ownership.
 - DeploymentProfile represents a specific deployment context or cost bundle.
 - ITService represents logical technical capabilities that support DeploymentProfiles.
-- SoftwareProduct is **Workspace-Owned** with **Federated Catalog** visibility via WorkspaceGroups.
-- ProductContract represents the **Local** commercial agreement.
-- Costs flow into DeploymentProfiles, then into Portfolios.
+- SoftwareProduct is **Workspace-Owned** with **Federated Catalog** visibility via WorkspaceGroups. **Inventory only — no cost (v2.5).**
+- ProductContract has been **merged into IT Service (v2.5).** IT Services carry vendor, contract dates, and cost pool.
+- Costs flow into DeploymentProfiles via two channels: IT Services and Cost Bundles.
 - Integrations model data flows between internal applications and external entities.
 - Namespace and Workspace define a multi-tenant structure.
 - WorkspaceGroup provides an enterprise-level reporting lens across multiple Workspaces inside a Namespace.
@@ -86,8 +87,8 @@ The detailed schema is in the catalogs/business-application.md.
 - Key behaviours:
   - Holds environment and hosting attributes.
   - Links to ITServices that provide runtime capabilities.
-  - Links to SoftwareProducts via DeploymentProfileSoftwareProduct.
-  - Receives cost from ProductContracts via DeploymentProfileContract.
+  - Links to SoftwareProducts via DeploymentProfileSoftwareProduct (inventory only — no cost on this link).
+  - Receives cost from IT Services via DeploymentProfileITService and from Cost Bundles.
   - Allocates cost into Portfolios via DeploymentProfilePortfolio.
   - Carries EstimatedAnnualCost for legacy or approximate costs.
   - May or may not reference a BusinessApplication.
@@ -97,13 +98,16 @@ Detailed schema is in core/deployment-profile.md.
 ### 3.4 ITService
 
 - Logical technical capability that supports DeploymentProfiles.
+- **Also serves as the commercial agreement for Software Products (v2.5).**
 - Examples:
   - AWS EC2 Windows Server platform
   - SQL Server database platform
   - Network firewall service
   - Endpoint management service
-- Stores runtime cost and lifecycle state.
+  - **Microsoft 365 E5 Enterprise Agreement** (software contract — v2.5)
+- Stores runtime cost, vendor, contract lifecycle, and lifecycle state.
 - Attached to DeploymentProfiles via DeploymentProfileITService.
+- Links to Software Products via `it_service_software_products` (v2.5).
 
 Detailed schema is in catalogs/it-service.md.
 
@@ -121,17 +125,14 @@ Detailed schema is in catalogs/it-service.md.
 
 Detailed schema is in catalogs/software-product.md.
 
-### 3.6 ProductContract (Local Commercial)
+### 3.6 ProductContract — Merged into IT Service (v2.5)
 
-- **Workspace-Scoped:** Represents a specific commercial agreement or subscription.
-- Stores:
-  - Supplier and manufacturer Organisations
-  - Term, renewal, billing frequency
-  - Cost per billing period
-  - Seats purchased if known
-- **Directly allocates cost into DeploymentProfiles** using DeploymentProfileContract.
+> **v2.5 Decision:** ProductContract is no longer a separate entity. Its role has been absorbed by IT Services. See `adr-cost-model-reunification.md`.
 
-Detailed schema is in catalogs/software-product.md.
+- Vendor, contract dates, and cost pool now live on the IT Service entity.
+- IT Services link to the Software Products they cover via `it_service_software_products`.
+- Cost flows: **IT Service → DeploymentProfileITService → DeploymentProfile**.
+- See `catalogs/it-service.md` for the full IT Service architecture.
 
 ### 3.7 Portfolio
 
@@ -187,14 +188,16 @@ Detailed schema is in the integrations Skills file.
 - ITService cost is rolled up into DeploymentProfiles.
 - BusinessApplication sees its runtime and cost through its DeploymentProfiles.
 
-### 4.2 SoftwareProduct, ProductContract, DeploymentProfile
+### 4.2 SoftwareProduct, ITService, DeploymentProfile (v2.5)
 
-- SoftwareProduct (Workspace-Owned) has many ProductContracts (Local).
-- ProductContract cost is allocated directly into DeploymentProfiles using DeploymentProfileContract.
-- DeploymentProfile may be application-specific or generic.
+- SoftwareProduct is inventory-only — tracks what software exists, not what it costs.
+- ITService carries the cost pool, vendor, and contract lifecycle for software.
+- ITService links to Software Products via `it_service_software_products` (what software does this service cover?).
+- ITService cost is allocated to DeploymentProfiles via `deployment_profile_it_services`.
+- DeploymentProfile may be application-specific or generic (free-standing).
 - Combined, this supports:
   - Application-specific deployments such as Sage 300 Justice Prod
-  - Generic SaaS spend such as O365 Org Wide
+  - Generic SaaS spend such as O365 Org Wide (via free-standing DP + IT Service)
 
 ### 4.3 DeploymentProfile and Portfolios
 
@@ -257,7 +260,7 @@ Platform and grouping
 ```
 
 ```
-Core APM and cost model
+Core APM and cost model (v2.5)
 
 +-----------------------------+
 |      BusinessApplication    |
@@ -271,17 +274,17 @@ Core APM and cost model
              |
    +---------+---------+
    |                   |
-   | M:N               | M:N (via DeploymentProfileContract)
+   | M:N (dpis)        | M:N (dpsp — inventory only)
    v                   v
-+----------------+   +---------------------------+
-|    ITService   |   |      ProductContract      |
-+----------------+   +---------------------------+
-                         |
-                         | many..1
-                         v
-                    +--------------------+
-                    |  SoftwareProduct   | <-- Workspace-Owned / Federated
-                    +--------------------+
++--------------------+  +--------------------+
+|    ITService       |  |  SoftwareProduct   | <-- Workspace-Owned / Federated
++--------------------+  +--------------------+
+   |                            ^
+   | it_service_software_products (v2.5)
+   +----------------------------+
+
+ITService carries: cost pool, vendor, contract dates
+SoftwareProduct carries: inventory only (no cost)
 ```
 
 ```
@@ -319,9 +322,10 @@ High level only. Detailed steps belong in a dedicated Migration Skills file.
 - Create DeploymentProfiles for each application environment.
 - Move technical attributes from BA to DP.
 
-### 6.3 Cost Migration
-- Move cost fields from BusinessApplications to **ProductContracts**.
-- Allocate Contracts to DeploymentProfiles via **DeploymentProfileContract**.
+### 6.3 Cost Migration (Updated v2.5)
+- Move cost fields from BusinessApplications to **IT Services**.
+- IT Services carry vendor, contract dates, and cost pool.
+- Allocate IT Services to DeploymentProfiles via **DeploymentProfileITService**.
 - Use **EstimatedAnnualCost** on DeploymentProfile for balance-forward costs.
 - **Note:** EstimatedAnnualCost is ADDITIVE (see Cost Model Architecture for details).
 
@@ -332,8 +336,8 @@ High level only. Detailed steps belong in a dedicated Migration Skills file.
 ## 7. Open Questions or Follow-Up Work
 
 - Governance workflow: Who approves new shared SoftwareProducts in Publisher Workspaces?
-- Exact structure of advanced ProductContract pricing (per seat, tiered models).
-- How far to go with modelling MSP and service contracts in early versions.
+- ~~Exact structure of advanced ProductContract pricing (per seat, tiered models).~~ **Resolved v2.5:** ProductContract merged into IT Service. Quick calculator (seats × unit price) is a UI convenience.
+- ~~How far to go with modelling MSP and service contracts in early versions.~~ **Resolved v2.5:** IT Services carry contracts directly.
 - Detailed ServiceNow alignment rules for Federated Catalog items.
 
 ## 8. Out of Scope
@@ -353,5 +357,6 @@ These subjects are covered in separate domain-specific Skills files.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.5 | 2026-03-04 | **Cost Model Reunification:** ProductContract merged into IT Service. SoftwareProduct is now inventory-only (no cost). Updated entity descriptions, ERDs, relationships, and migration guidance. Two cost channels: IT Services + Cost Bundles. See `adr-cost-model-reunification.md`. |
 | v2.4 | 2025-12-12 | Resolved scoping contradiction: SoftwareProduct is now consistently described as Workspace-Owned with Federated Catalog visibility. Renamed "Global Catalog" to "Federated Catalog" throughout. Clarified Organization is Namespace-Scoped. Clarified only Namespace Admins can use WorkspaceGroup views. Added EstimatedAnnualCost clarification. |
 | v2.3 | 2025-12-08 | Previous version with scoping ambiguity. |

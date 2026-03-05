@@ -1,6 +1,7 @@
 # features/cost-budget/vendor-cost.md
 Vendor Attribution & Run Rate Architecture
 Last updated: 2026-03-04
+Version: 2.0
 
 ---
 
@@ -8,34 +9,36 @@ Last updated: 2026-03-04
 
 > **"Every dollar needs a home and an owner."**
 
-This document defines the architecture for tracking vendor relationships and costs across all three cost channels in GetInSync NextGen. It ensures complete vendor attribution for run rate reporting and budget analysis.
+This document defines the architecture for tracking vendor relationships and costs across the two cost channels in GetInSync NextGen. It ensures complete vendor attribution for run rate reporting and budget analysis.
+
+> **v2.0 Change:** Software Products are now inventory-only — no cost channel. Vendor attribution operates on two cost channels: IT Services and Cost Bundles. See `adr-cost-model-reunification.md`.
 
 **Core Principle:** No orphaned spend. Every dollar flows through a defined channel, is attributed to a vendor, and rolls up to a business application.
 
 **Scope:**
-- Vendor attribution on all three cost channels
+- Vendor attribution on two cost channels (IT Service, Cost Bundle)
 - Run rate definition (operational vs. project costs)
-- SAM-lite contract fields
-- Cost override logic
+- SAM-lite contract fields (on IT Services)
 - Unified run rate views
 
 **Audience:** Internal architects, developers, and implementers.
 
 ---
 
-## 2. The Three Cost Channels
+## 2. The Two Cost Channels
 
-GetInSync has three channels through which costs flow to applications:
+> **v2.0 Change:** Software Products are inventory-only (no cost). Two cost channels remain.
+
+GetInSync has two channels through which costs flow to applications:
 
 | Channel | Source Table | Cost Field | Use For |
 |---------|--------------|------------|---------|
-| **Software Products** | `deployment_profile_software_products` | Junction or catalog `annual_cost` | Licensing, subscriptions |
-| **IT Services** | `deployment_profile_it_services` | `allocation_value` | Shared infrastructure |
+| **IT Services** | `deployment_profile_it_services` | `allocation_value` | Infrastructure AND software licensing (via IT Service cost pool) |
 | **Cost Bundles** | `deployment_profiles` (dp_type='cost_bundle') | `annual_cost` | Everything else |
 
-**Before this architecture:** Only Software Products had vendor attribution. IT Services and Cost Bundles had costs going to no one.
+**Software Products** are inventory-only — they record what software is deployed but carry no cost. Software licensing costs flow through IT Services (e.g., an IT Service "Microsoft 365 E5 Enterprise Agreement" holds the contract total and allocates to DPs).
 
-**After this architecture:** All three channels have vendor attribution, enabling complete "Who are we paying?" analysis.
+**Vendor attribution:** Both cost channels have vendor attribution via `vendor_org_id` on their respective tables (`it_services` and `deployment_profiles`), enabling complete "Who are we paying?" analysis.
 
 ---
 
@@ -64,9 +67,10 @@ GetInSync has three channels through which costs flow to applications:
 **DO NOT add `vendor_organization_id` to the `applications` table.**
 
 Vendor relationship is captured at the cost channel level:
-- Software Products → Junction table
-- IT Services → IT Service table
-- Cost Bundles → Deployment Profile table
+- IT Services → `it_services.vendor_org_id`
+- Cost Bundles → `deployment_profiles.vendor_org_id`
+
+> **v2.0 Note:** The Software Products junction (`dpsp.vendor_org_id`) is DEPRECATED. Vendor attribution for software costs is via the IT Service that funds the software.
 
 ### Rationale
 
@@ -128,65 +132,20 @@ Vendor relationship is captured at the cost channel level:
 
 ## 6. Schema Changes
 
-### 6.1 Software Products Junction (Enhanced)
+### 6.1 Software Products Junction — DEPRECATED COST COLUMNS
 
-```sql
--- ============================================
--- CHANNEL 1: SOFTWARE PRODUCTS
--- ============================================
+> **v2.0 Change:** All cost/vendor/contract columns on the `deployment_profile_software_products` junction are DEPRECATED. The junction is now inventory-only. Vendor attribution for software costs flows through IT Services.
 
--- Vendor Organization FK
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN vendor_org_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
+**Retained (inventory):** `software_product_id`, `deployed_version`, `quantity`, `notes`
 
--- Cost Override (what you actually pay)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN annual_cost DECIMAL(12,2);
+**DEPRECATED (pending drop in Phase 5):**
+- `vendor_org_id` — vendor attribution is on IT Service
+- `annual_cost` — cost is via IT Service allocation
+- `allocation_percent`, `allocation_basis` — allocation is on `dpis`
+- `contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days` — contract lifecycle is on IT Service
+- `cost_confidence` — data quality tracking is on IT Service
 
--- Quantity (reference only)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN quantity INTEGER;
-
--- Allocation (stubbed)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN allocation_percent DECIMAL(5,2);
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN allocation_basis TEXT;
-
--- Contract Reference Fields (SAM-lite)
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN contract_reference TEXT;
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN contract_start_date DATE;
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN contract_end_date DATE;
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN renewal_notice_days INTEGER DEFAULT 90;
-
--- Data Quality
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN cost_confidence TEXT DEFAULT 'estimated';
-
-ALTER TABLE deployment_profile_software_products
-ADD COLUMN notes TEXT;
-
--- Constraints
-ALTER TABLE deployment_profile_software_products
-ADD CONSTRAINT chk_dpsp_cost_confidence
-CHECK (cost_confidence IN ('estimated', 'verified'));
-
-ALTER TABLE deployment_profile_software_products
-ADD CONSTRAINT chk_dpsp_allocation_percent
-CHECK (allocation_percent IS NULL OR (allocation_percent >= 0 AND allocation_percent <= 100));
-
--- Indexes
-CREATE INDEX idx_dpsp_vendor ON deployment_profile_software_products(vendor_org_id);
-CREATE INDEX idx_dpsp_contract_end ON deployment_profile_software_products(contract_end_date);
-```
+See `software-contract.md` §4 for the full deprecation list and `adr-cost-model-reunification.md` §4.5 for the migration plan.
 
 ### 6.2 IT Services (Vendor Attribution)
 
@@ -258,25 +217,16 @@ COMMENT ON COLUMN deployment_profiles.cost_recurrence IS
 
 ---
 
-## 7. Cost Override Logic
+## 7. Cost Logic (v2.0)
 
 ### Principle
 
-**Junction cost wins if present; catalog/pool price is the fallback.**
+**IT Service is the cost pool. Software Products are inventory only.**
 
-### Software Products
-
-```sql
-Effective_Cost = COALESCE(
-  junction.annual_cost,           -- What you actually pay (if known)
-  software_products.annual_cost   -- List/catalog price (fallback)
-) * COALESCE(junction.allocation_percent, 100) / 100
-```
-
-### IT Services
+### IT Services (includes software licensing)
 
 ```sql
-Effective_Cost = allocation_value  -- Already the recovered amount
+Effective_Cost = allocation_value  -- The recovered amount from the IT Service pool
 ```
 
 ### Cost Bundles
@@ -286,6 +236,10 @@ Effective_Cost = deployment_profiles.annual_cost
 WHERE cost_recurrence = 'recurring'  -- For run rate only
 ```
 
+### DEPRECATED: Software Product Cost Override
+
+The junction-level cost override formula (`COALESCE(junction.annual_cost, sp.annual_cost)`) is DEPRECATED. Software costs flow through IT Service allocations.
+
 ---
 
 ## 8. SAM-Lite Scope
@@ -294,14 +248,13 @@ WHERE cost_recurrence = 'recurring'  -- For run rate only
 
 | Field | Table | Purpose |
 |-------|-------|---------|
-| vendor_org_id | All 3 channels | Who you pay |
-| annual_cost | Junction / DP | What you pay |
-| quantity | Junction | How many (reference) |
-| contract_reference | Junction | PO#, Contract# |
-| contract_end_date | Junction | Expiration |
-| renewal_notice_days | Junction | Alert threshold |
-| cost_confidence | Junction / DP | Data quality |
-| cost_recurrence | DP | Run rate vs. project |
+| vendor_org_id | IT Services / Cost Bundle DPs | Who you pay |
+| annual_cost | IT Services / Cost Bundle DPs | What you pay (total pool or bundle amount) |
+| contract_reference | IT Services | PO#, Contract# |
+| contract_end_date | IT Services | Expiration |
+| renewal_notice_days | IT Services | Alert threshold |
+| quantity | dpsp (inventory) | How many seats (reference only) |
+| cost_recurrence | Cost Bundle DPs | Run rate vs. project |
 
 ### What We Do NOT Track ❌
 
@@ -430,47 +383,20 @@ LEFT JOIN (
 WHERE a.operational_status IN ('operational', 'pipeline');
 ```
 
-### 9.3 vw_run_rate_by_vendor
+### 9.3 vw_run_rate_by_vendor (v2.0 — Two UNION Legs)
 
-> **KNOWN BUGS (2026-03-04):**
->
-> **Bug C.1 (Software channel):** The as-built view uses `sum(COALESCE(sp.annual_cost, 0))` — reads from catalog price only, ignoring `dpsp.annual_cost` junction override. Should use `sum(COALESCE(dpsp.annual_cost, sp.annual_cost, 0))` to match `vw_deployment_profile_costs`. Vendor spend is understated when junction cost overrides exist.
->
-> **Bug C.2 (IT Service channel):** The as-built view uses raw `sum(COALESCE(dpis.allocation_value, 0))` without the percent-vs-fixed allocation logic. Should apply the same CASE expression as `vw_deployment_profile_costs`. IT service vendor spend is misreported for percentage-based allocations.
->
-> **Fix pending** — see `cost-model-validation-2026-03-04.md` Category C for corrective SQL.
+> **v2.0 Change:** The Software Product UNION leg has been removed. Software costs now flow through the IT Service channel. Bugs C.1 (software channel) and C.2 (IT Service channel) documented in v1.1 are resolved by the reunification — C.1 is moot (software leg removed), C.2 was already fixed in R.2.
 
-**Spec SQL (correct logic — as-built differs):**
+**Spec SQL (v2.0):**
 
 ```sql
 CREATE OR REPLACE VIEW vw_run_rate_by_vendor AS
 
--- Software Product spend by vendor
+-- IT Service spend by vendor (includes software licensing costs)
 SELECT
-  'Software' AS cost_type,
-  COALESCE(v.name, '(No Vendor)') AS vendor_name,
-  v.id AS vendor_id,
-  a.workspace_id,
-  SUM(
-    COALESCE(dps.annual_cost, sp.annual_cost, 0)
-    * COALESCE(dps.allocation_percent, 100) / 100
-  ) AS annual_spend
-FROM deployment_profile_software_products dps
-JOIN software_products sp ON sp.id = dps.software_product_id
-JOIN deployment_profiles dp ON dp.id = dps.deployment_profile_id
-JOIN applications a ON a.id = dp.application_id
-LEFT JOIN organizations v ON v.id = dps.vendor_org_id
-WHERE dp.dp_type = 'application'
-  AND a.operational_status = 'operational'
-GROUP BY v.id, v.name, a.workspace_id
-
-UNION ALL
-
--- IT Service spend by vendor
-SELECT
-  'IT Service',
+  'IT Service' AS cost_type,
   COALESCE(v.name, '(Internal)') AS vendor_name,
-  v.id,
+  v.id AS vendor_id,
   a.workspace_id,
   SUM(
     CASE
@@ -479,7 +405,7 @@ SELECT
       WHEN dpis.allocation_basis = 'percent' THEN COALESCE(its.annual_cost * dpis.allocation_value / 100, 0)
       ELSE COALESCE(dpis.allocation_value, 0)
     END
-  )
+  ) AS annual_spend
 FROM deployment_profile_it_services dpis
 JOIN it_services its ON its.id = dpis.it_service_id
 JOIN deployment_profiles dp ON dp.id = dpis.deployment_profile_id
@@ -507,45 +433,9 @@ WHERE dp.dp_type = 'cost_bundle'
 GROUP BY v.id, v.name, a.workspace_id;
 ```
 
-### 9.4 vw_software_contract_expiry
+### 9.4 vw_software_contract_expiry — DEPRECATED
 
-```sql
-CREATE OR REPLACE VIEW vw_software_contract_expiry AS
-SELECT 
-  dps.id,
-  dp.id AS deployment_profile_id,
-  dp.name AS deployment_profile_name,
-  a.id AS application_id,
-  a.name AS application_name,
-  a.workspace_id,
-  sp.id AS software_product_id,
-  sp.name AS software_product_name,
-  mfr.id AS manufacturer_id,
-  mfr.name AS manufacturer_name,
-  v.id AS vendor_id,
-  v.name AS vendor_name,
-  dps.contract_reference,
-  dps.contract_start_date,
-  dps.contract_end_date,
-  dps.renewal_notice_days,
-  dps.contract_end_date - CURRENT_DATE AS days_until_expiry,
-  CASE 
-    WHEN dps.contract_end_date IS NULL THEN 'no_contract'
-    WHEN dps.contract_end_date < CURRENT_DATE THEN 'expired'
-    WHEN dps.contract_end_date <= CURRENT_DATE + (dps.renewal_notice_days || ' days')::INTERVAL THEN 'renewal_due'
-    WHEN dps.contract_end_date <= CURRENT_DATE + INTERVAL '180 days' THEN 'expiring_soon'
-    ELSE 'active'
-  END AS contract_status,
-  COALESCE(dps.annual_cost, sp.annual_cost) AS effective_annual_cost,
-  dps.cost_confidence
-FROM deployment_profile_software_products dps
-JOIN deployment_profiles dp ON dp.id = dps.deployment_profile_id
-JOIN applications a ON a.id = dp.application_id
-JOIN software_products sp ON sp.id = dps.software_product_id
-LEFT JOIN organizations mfr ON mfr.id = sp.manufacturer_org_id
-LEFT JOIN organizations v ON v.id = dps.vendor_org_id
-WHERE dp.dp_type = 'application';
-```
+> **v2.0:** This view is DEPRECATED. Replaced by `vw_it_service_contract_expiry` (see `software-contract.md` §9 for the new view definition). Will be dropped in Phase 5 of the reunification migration.
 
 ### 9.5 vw_vendor_spend_summary — NOT BUILT
 
@@ -689,11 +579,12 @@ GRANT SELECT ON vw_vendor_spend_summary TO authenticated;
 
 | Document | Relevance |
 |----------|-----------|
-| features/cost-budget/cost-model.md | Three cost channels (to be updated to v2.6) |
-| features/cost-budget/budget-management.md | Budget vs. run rate (NEW) |
-| catalogs/software-product.md | Catalog structure, manufacturer |
+| features/cost-budget/adr-cost-model-reunification.md | ADR: IT Services absorb the contract role |
+| features/cost-budget/cost-model.md | Two cost channels (v3.0) |
+| features/cost-budget/budget-management.md | Budget vs. run rate |
+| catalogs/it-service.md | IT Service expanded with contract role |
+| catalogs/software-product.md | Catalog structure, manufacturer (inventory only) |
 | core/involved-party.md | Organization entity, is_vendor flag |
-| catalogs/csdm-application-attributes.md | CSDM alignment (remove vendor from app) |
 
 ---
 
@@ -721,10 +612,11 @@ GRANT SELECT ON vw_vendor_spend_summary TO authenticated;
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v1.1 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §9.3: BUG callout for vw_run_rate_by_vendor — Software channel ignores junction cost override (uses sp.annual_cost not COALESCE), IT Service channel missing percent-vs-fixed allocation logic. Corrective SQL added. §9.5: vw_vendor_spend_summary marked NOT BUILT. §14: implementation status column added (10/14 hrs deployed). |
+| v2.0 | 2026-03-04 | **Cost model reunification.** §2: three channels → two (Software Products now inventory-only). §4: vendor on IT Service (dpsp vendor DEPRECATED). §6.1: dpsp cost/vendor columns marked DEPRECATED. §7: software cost override DEPRECATED. §8: SAM-lite fields now on IT Services. §9.3: Software UNION leg removed from vw_run_rate_by_vendor. §9.4: vw_software_contract_expiry marked DEPRECATED. See `adr-cost-model-reunification.md`. |
+| v1.1 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §9.3: BUG callout for vw_run_rate_by_vendor. §9.5: vw_vendor_spend_summary marked NOT BUILT. §14: implementation status column added. |
 | v1.0 | 2026-01-22 | Initial version — vendor attribution on all 3 cost channels, run rate definition, unified views |
 
 ---
 
 *Document: features/cost-budget/vendor-cost.md*
-*January 2026*
+*March 2026*

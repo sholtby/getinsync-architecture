@@ -30,14 +30,16 @@ Budget management enables organizations to:
 
 ## 3. Budget Hierarchy
 
+> **v1.5 Note:** With the cost model reunification (see `adr-cost-model-reunification.md`), software licensing costs now flow through IT Service allocations rather than the Software Product channel. This means application run rates sourced from `vw_deployment_profile_costs` now compute software cost via the IT Service subquery instead of the software junction. **No budget management changes required** — the two-track structure (Applications + IT Services) remains identical.
+
 ```
 Namespace Budget (not tracked in system)
 │
 ├── Workspace Budget
 │   ├── Application Budgets
-│   │   └── Deployment Profile Costs (run rate)
+│   │   └── Deployment Profile Costs (run rate via IT Service + Cost Bundle)
 │   │
-│   └── IT Service Budgets (NEW v1.3)
+│   └── IT Service Budgets (includes software contract budgets)
 │       └── IT Service Allocations (committed capacity)
 │
 └── Unallocated Budget = Workspace - (Apps + Services)
@@ -796,6 +798,7 @@ ORDER BY budget_amount - committed DESC;
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.5 | 2026-03-04 | §3: Added reunification note — software costs now flow through IT Service allocations. No budget management changes required (two-track structure unchanged). See `adr-cost-model-reunification.md`. |
 | v1.4 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §4.1: application budget columns clarified (budget_locked, budget_notes exist; budget_fiscal_year not added). §4.3: corrected to workspace_budgets table (workspaces.budget_amount does not exist). §5.1: thresholds updated to as-built (80/100/110%, added tight and no_costs statuses). §6.1: vw_budget_status SQL updated to match as-built. §6.3: noted as-built reads from workspace_budgets. §6.4: new section documenting budget_transfers, vw_budget_alerts, vw_workspace_budget_history, vw_budget_transfer_history. §12.1: marked DEPLOYED. §12.2: marked DEPLOYED with cross-reference to budget-alerts.md. |
 | v1.3 | 2026-01-31 | Add IT Service budget tracking, vw_it_service_budget_status, initialize_it_service_budgets(), update vw_workspace_budget_summary |
 | v1.2 | 2026-01-15 | Application budgets, workspace budgets, initialize function |

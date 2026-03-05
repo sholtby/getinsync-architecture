@@ -3,81 +3,41 @@ title: "GetInSync NextGen — Cost Model Primer"
 subtitle: "How costs are recorded, calculated, and displayed"
 author: "GetInSync Architecture Team"
 date: "March 4, 2026"
-version: "1.0"
+version: "2.0"
 ---
 
 # 1. The Big Idea
 
 **"Every dollar needs a home and an owner."**
 
-GetInSync tracks the cost of running your application portfolio. Instead of dumping a single dollar figure on an application and hoping someone remembers where it came from, costs flow through three defined **channels** — each tied to a specific source.
+GetInSync tracks the cost of running your application portfolio. Instead of dumping a single dollar figure on an application and hoping someone remembers where it came from, costs flow through two defined **channels** — each tied to a specific source.
+
+> **v2.0 Change:** The cost model has been simplified from three channels to two. Software Products are now **inventory-only** — they track what software exists, not what it costs. All licensing costs, vendor relationships, and contract lifecycle data live on **IT Services**. See `adr-cost-model-reunification.md`.
 
 ## Key Concepts
 
-**DeploymentProfile is the cost rollup point, not the Application.** A DeploymentProfile (DP) represents a deployed instance of an application — typically one per environment (PROD, DEV, TEST). Costs attach to DPs because different environments may have different licensing, infrastructure, and support costs.
+**DeploymentProfile is the cost rollup point, not the Application.** A DeploymentProfile (DP) represents a deployed instance of an application — typically one per environment (PROD, DEV, TEST). Costs attach to DPs because different environments may have different infrastructure and support costs.
 
 **Application is a reporting aggregate.** An application's total cost is simply the sum of costs across all its DPs. The application itself stores no cost data directly.
 
-**Three channels, no exceptions.** Every cost enters the system through exactly one of three channels:
+**Two channels, no exceptions.** Every cost enters the system through exactly one of two channels:
 
 | Channel | What It Covers | Source Table |
 |---------|---------------|-------------|
-| **Software Products** | Licensing, subscriptions | `deployment_profile_software_products` |
-| **IT Services** | Shared infrastructure allocations | `deployment_profile_it_services` |
+| **IT Services** | Infrastructure allocations AND software licensing | `deployment_profile_it_services` |
 | **Cost Bundles** | Everything else (consulting, MSP, support, etc.) | `deployment_profiles` with `dp_type = 'cost_bundle'` |
 
-If a cost doesn't fit any channel, it goes in a Cost Bundle. No cost lives directly on an application or a standard deployment profile.
+If a cost doesn't fit either channel, it goes in a Cost Bundle. No cost lives directly on an application, a standard deployment profile, or a software product.
 
 ---
 
-# 2. The Three Cost Channels
+# 2. The Two Cost Channels
 
-## 2.1 Channel 1: Software Products
+## 2.1 Channel 1: IT Services
 
-Software Product costs represent licensing and subscription fees — the money you pay for the right to use a piece of software.
+IT Service costs represent shared infrastructure AND software licensing — the servers, databases, network, cloud services, and software agreements that applications depend on.
 
-### Where the data lives
-
-- **Catalog price:** `software_products.annual_cost` — the list price for the product.
-- **Per-deployment cost:** `deployment_profile_software_products.annual_cost` — an optional override. If your Ministry negotiated a special rate, this is where that goes.
-- **Which price wins:** The system uses `COALESCE(junction.annual_cost, catalog.annual_cost)` — the per-deployment override wins if set; otherwise, the catalog price applies.
-
-### How to enter it
-
-1. Open an application and go to the **Deployments & Costs** tab.
-2. Expand a Deployment Profile.
-3. Click **Link Software Product**.
-4. Select the product from the catalog.
-5. Optionally enter an **Annual Cost** override (the catalog price is shown as placeholder).
-6. Optionally enter vendor, contract reference, contract dates, and renewal notice period.
-7. Save.
-
-### What else is captured
-
-The software product junction also tracks:
-
-| Field | Purpose |
-|-------|---------|
-| `vendor_org_id` | Who you pay (reseller/vendor — different from manufacturer) |
-| `contract_reference` | PO number, agreement ID |
-| `contract_start_date` / `contract_end_date` | Contract lifecycle |
-| `renewal_notice_days` | Days before expiry to trigger a renewal alert (default: 90) |
-| `cost_confidence` | `estimated` or `verified` — flags data quality |
-| `quantity` | Number of seats/licenses (reference only, not used in calculations) |
-
-### Example
-
-> **Sage 300 GL — PROD**
->
-> - Catalog price: $12,000/year
-> - This deployment's cost: $10,000/year (negotiated via CDW)
-> - System uses: **$10,000** (junction override wins)
-
----
-
-## 2.2 Channel 2: IT Services
-
-IT Service costs represent shared infrastructure — the servers, databases, network, and cloud services that multiple applications depend on.
+> **v2.0:** IT Services now also serve as the commercial agreement for Software Products. An IT Service like "Microsoft 365 E5 Enterprise Agreement" carries the cost pool ($240K), vendor (Microsoft), and contract dates. It links to the Software Products it covers via `it_service_software_products`.
 
 ### The cost pool model
 
@@ -97,7 +57,10 @@ Stranded (overhead):  $70,000
 
 ### Where the data lives
 
-- **Cost pool:** `it_services.annual_cost` — the total operating cost.
+- **Cost pool:** `it_services.annual_cost` — the total cost (infrastructure or licensing).
+- **Vendor:** `it_services.vendor_org_id` — who supplies this service.
+- **Contract lifecycle:** `it_services.contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`.
+- **Software link:** `it_service_software_products` — which Software Products this IT Service covers.
 - **Allocations:** `deployment_profile_it_services` — links an IT Service to a DP with an allocation.
 
 ### Two allocation modes
@@ -117,7 +80,7 @@ Stranded (overhead):  $70,000
 6. Enter the allocation value.
 7. Save.
 
-### Example
+### Example — Infrastructure
 
 > **Finance ERP — PROD** uses "Database Hosting — SQL Server"
 >
@@ -126,9 +89,19 @@ Stranded (overhead):  $70,000
 > - IT Service pool: $100,000
 > - Calculated cost: **$10,000** (10% of $100,000)
 
+### Example — Software Licensing (v2.0)
+
+> **Justice — PROD** uses "Microsoft 365 E5 Enterprise Agreement"
+>
+> - IT Service pool: $240,000 (vendor: Microsoft, contract end: 2027-06-30)
+> - Allocation basis: fixed
+> - Allocation value: $36,000 (300 seats × $120/seat)
+> - The IT Service links to Software Products: "Microsoft 365 E5", "Microsoft Teams", "Microsoft SharePoint"
+> - These products also appear on the DP via `dpsp` for inventory tracking (no cost on that link)
+
 ---
 
-## 2.3 Channel 3: Cost Bundles
+## 2.2 Channel 2: Cost Bundles
 
 Cost Bundles capture everything that isn't a software license or an IT service allocation. They are the "catch-all" channel.
 
@@ -175,13 +148,12 @@ Cost Bundles are scoped to an application (via `application_id`), but they only 
 
 ## 3.1 Deployment Profile Level
 
-The database view `vw_deployment_profile_costs` calculates the total cost for each application-type DP by summing across all three channels:
+The database view `vw_deployment_profile_costs` calculates the total cost for each application-type DP by summing across both channels:
 
 ```
-DP Total = Software Cost + Service Cost + Bundle Cost
+DP Total = Service Cost + Bundle Cost
 
 Where:
-  Software Cost = SUM(COALESCE(junction.annual_cost, catalog.annual_cost))
   Service Cost  = SUM(fixed allocations) + SUM(percent allocations)
   Bundle Cost   = SUM(cost_bundle DPs where is_primary = true)
 ```
@@ -192,10 +164,9 @@ The view returns these columns for each DP:
 |--------|-------------|
 | `deployment_profile_id` | Which DP |
 | `application_id` | Which application |
-| `software_cost` | Total from Software Product channel |
 | `service_cost` | Total from IT Service channel |
 | `bundle_cost` | Total from Cost Bundle channel |
-| `total_cost` | Sum of all three |
+| `total_cost` | Sum of both channels |
 
 ## 3.2 Application Level
 
@@ -217,7 +188,7 @@ getTotalAnnualCost(app):
   2. Otherwise → fall back to legacy fields (annual_licensing_cost + annual_tech_cost)
 ```
 
-This fallback exists because some older data hasn't been migrated to the three-channel model yet (see Section 7).
+This fallback exists because some older data hasn't been migrated to the two-channel model yet (see Section 7).
 
 ---
 
@@ -231,10 +202,10 @@ This fallback exists because some older data hasn't been migrated to the three-c
 
 **ApplicationCostSummary** shows an expandable tree breaking down costs by channel:
 
-- **Software Products** — each linked product with its effective cost
-- **IT Services** — each allocated service with its calculated cost and allocation percentage
+- **IT Services** — each allocated service with its calculated cost, allocation type, and vendor
 - **Recurring Costs** — each cost bundle with its amount
-- **Total Run Rate** — the sum
+- **Software Products** — inventory list (which software is deployed — no cost displayed)
+- **Total Run Rate** — the sum of IT Service + Cost Bundle costs
 
 If the application has multiple DPs, each cost line shows which DP it belongs to.
 
@@ -266,9 +237,9 @@ Organizations don't need to track every dollar from day one. GetInSync supports 
 |-------|------|-----------|----------------|------------|-------------|
 | **0** | Not Tracked | — | — | — | Focus on TIME/PAID assessment first |
 | **1** | Estimated | Cost Bundle | Cost Bundle | Optional | Quick start, rough numbers |
-| **2** | Categorized | Software Product | Cost Bundle | By % | Know licensing, estimate infra |
-| **3** | Attributed | Software Product | IT Service | By % | Full traceability |
-| **4** | Allocated | Software Product | IT Service + Stranded | By % with basis | Chargeback-ready |
+| **2** | Categorized | IT Service | Cost Bundle | By % | Know licensing, estimate infra |
+| **3** | Attributed | IT Service | IT Service | By % | Full traceability |
+| **4** | Allocated | IT Service + Stranded | IT Service + Stranded | By % with basis | Chargeback-ready |
 
 ### Level 1 Example (Quick Start)
 
@@ -278,25 +249,32 @@ Don't know the breakdown? Create a single Cost Bundle:
 >
 > Notes: "Includes licensing, hosting, and support. To be broken out later."
 
-This is better than nothing. You get a cost figure in the system immediately, and you can refine it later by replacing the bundle with actual Software Product and IT Service entries.
+This is better than nothing. You get a cost figure in the system immediately, and you can refine it later by replacing the bundle with IT Service entries.
 
 ---
 
 # 6. Data Flow Diagram
 
 ```
-USER ENTRY
-===========
+USER ENTRY (v2.0)
+==================
                                                     DATABASE TABLES
                                                     ===============
-  Link Software Product  ───────────────────►  deployment_profile_software_products
-  (annual_cost override)                        ├─ annual_cost (override)
+  Create IT Service  ──────────────────────►  it_services
+  (cost pool, vendor, contract)                 ├─ annual_cost (pool)
                                                 ├─ vendor_org_id
-                                                └─ contract fields
+                                                └─ contract_start/end_date
                                                           │
-  Allocate IT Service  ─────────────────────►  deployment_profile_it_services
+  Link Software Products ──────────────────►  it_service_software_products
+  to IT Service (inventory)                     └─ which software this service covers
+                                                          │
+  Allocate IT Service to DP  ──────────────►  deployment_profile_it_services
   (fixed $ or % of pool)                        ├─ allocation_value
                                                 └─ allocation_basis (fixed/percent)
+                                                          │
+  Link Software Product to DP  ────────────►  deployment_profile_software_products
+  (inventory only — no cost)                    ├─ deployed_version
+                                                └─ quantity
                                                           │
   Add Recurring Cost  ──────────────────────►  deployment_profiles
   (cost bundle)                                  ├─ dp_type = 'cost_bundle'
@@ -307,7 +285,6 @@ USER ENTRY
                                                    CALCULATION
                                                    ===========
                                               vw_deployment_profile_costs
-                                                ├─ software_cost
                                                 ├─ service_cost
                                                 ├─ bundle_cost
                                                 └─ total_cost
@@ -329,7 +306,9 @@ USER ENTRY
 
 ---
 
-# 7. Legacy Fields and Migration
+# 7. Legacy and Deprecated Fields
+
+## 7.1 Legacy DP Fields
 
 Three cost fields from the pre-channel model still exist on the `deployment_profiles` table:
 
@@ -339,14 +318,32 @@ Three cost fields from the pre-channel model still exist on the `deployment_prof
 | `annual_tech_cost` | LEGACY | Not editable in UI. CSV import still maps to this field. |
 | `estimated_tech_debt` | LEGACY | Used by TechDebtModal and CSV export. |
 
-These fields are **architecturally superseded** by the three-channel model but cannot be removed yet because:
+These fields are **architecturally superseded** by the two-channel model but cannot be removed yet because:
 
 1. The `getTotalAnnualCost()` utility falls back to them when view data isn't available.
 2. CSV import maps the "Annual Cost" column to `annual_tech_cost`.
 3. CSV export includes all three fields.
 4. The dashboard summary view aggregates these fields.
 
-**Migration plan:** A future session will migrate existing data from these fields into Cost Bundle DPs, update the frontend references, and then drop the columns. See `cost-model-validation-2026-03-04.md` for the full prerequisite list.
+## 7.2 Deprecated dpsp Fields (v2.0)
+
+Nine cost/vendor/contract columns on `deployment_profile_software_products` are **DEPRECATED** — they will be dropped after data migration:
+
+| Field | Status | Migrated To |
+|-------|--------|------------|
+| `annual_cost` | DEPRECATED | `it_services.annual_cost` |
+| `vendor_org_id` | DEPRECATED | `it_services.vendor_org_id` |
+| `contract_reference` | DEPRECATED | `it_services.contract_reference` |
+| `contract_start_date` | DEPRECATED | `it_services.contract_start_date` |
+| `contract_end_date` | DEPRECATED | `it_services.contract_end_date` |
+| `renewal_notice_days` | DEPRECATED | `it_services.renewal_notice_days` |
+| `cost_confidence` | DEPRECATED | Not migrated (low value) |
+| `allocation_percent` | DEPRECATED | `dpis.allocation_value` |
+| `allocation_basis` | DEPRECATED | `dpis.allocation_basis` |
+
+**Retained dpsp fields:** `software_product_id`, `deployed_version`, `quantity`, `notes` (inventory tracking).
+
+**Migration plan:** See `adr-cost-model-reunification.md` §5 for the phased migration path.
 
 ---
 
@@ -356,10 +353,11 @@ These fields are **architecturally superseded** by the three-channel model but c
 
 | Table | Purpose |
 |-------|---------|
-| `software_products` | Software product catalog (name, manufacturer, annual_cost) |
-| `it_services` | IT service catalog (name, annual_cost = total pool) |
+| `software_products` | Software product catalog (name, manufacturer — inventory only, no cost) |
+| `it_services` | IT service catalog (name, annual_cost = total pool, vendor, contract dates) |
+| `it_service_software_products` | Links IT services to software products (v2.0) |
 | `deployment_profiles` | Deployment instances; also stores cost bundles (`dp_type = 'cost_bundle'`) |
-| `deployment_profile_software_products` | Links software products to DPs with cost override + contract fields |
+| `deployment_profile_software_products` | Links software products to DPs (inventory only — no cost fields) |
 | `deployment_profile_it_services` | Links IT services to DPs with allocation (fixed or percent) |
 | `workspace_budgets` | Multi-year workspace budget tracking |
 
@@ -367,13 +365,13 @@ These fields are **architecturally superseded** by the three-channel model but c
 
 | View | Purpose |
 |------|---------|
-| `vw_deployment_profile_costs` | Three-channel cost rollup per DP |
+| `vw_deployment_profile_costs` | Two-channel cost rollup per DP (service + bundle) |
 | `vw_application_run_rate` | Total run rate per application |
-| `vw_run_rate_by_vendor` | Cost by vendor across all three channels |
+| `vw_run_rate_by_vendor` | Cost by vendor across IT Services + Cost Bundles |
 | `vw_budget_status` | Per-application budget health |
 | `vw_it_service_budget_status` | Per-service budget health |
 | `vw_workspace_budget_summary` | Workspace-level budget rollup |
-| `vw_software_contract_expiry` | Contract status and renewal tracking |
+| `vw_it_service_contract_expiry` | IT Service contract lifecycle tracking (v2.0) |
 
 ## Key Frontend Components
 
@@ -398,14 +396,16 @@ These fields are **architecturally superseded** by the three-channel model but c
 
 | Document | What It Covers |
 |----------|---------------|
-| `features/cost-budget/cost-model.md` (v2.6) | Full architecture: allocation model, stranded cost, maturity levels |
-| `features/cost-budget/vendor-cost.md` (v1.1) | Vendor attribution, manufacturer vs vendor, run rate views |
-| `features/cost-budget/software-contract.md` (v1.1) | Junction schema, SAM-lite contract fields, cost override logic |
-| `features/cost-budget/budget-management.md` (v1.4) | Budgets, thresholds, workspace_budgets table, IT service budgets |
+| `features/cost-budget/cost-model.md` (v3.0) | Full architecture: two-channel model, allocation, stranded cost, maturity levels |
+| `features/cost-budget/vendor-cost.md` (v2.0) | Vendor attribution via IT Services + Cost Bundles |
+| `features/cost-budget/software-contract.md` (v2.0) | Contract lifecycle on IT Services, deprecated dpsp fields |
+| `features/cost-budget/budget-management.md` (v1.5) | Budgets, thresholds, workspace_budgets table, IT service budgets |
 | `features/cost-budget/budget-alerts.md` (v1.0) | Alert preferences, configurable alert rules |
-| `features/cost-budget/cost-model-validation-2026-03-04.md` | Validation report: known issues, refactoring plan |
+| `features/cost-budget/adr-cost-model-reunification.md` | ADR: why ProductContract merged into IT Service |
+| `catalogs/it-service.md` (v2.0) | IT Service architecture: contract fields, software product junction |
+| `catalogs/software-product.md` (v3.0) | Software Product architecture: inventory-only |
 
 ---
 
 *Document: features/cost-budget/cost-model-primer.md*
-*Version 1.0 — March 2026*
+*Version 2.0 — March 2026*

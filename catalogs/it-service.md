@@ -1,6 +1,7 @@
 # catalogs/it-service.md
 GetInSync IT Services NextGen Architecture and ServiceNow Alignment
-Last updated: 2025-12-12
+Last updated: 2026-03-04
+Version: 2.0
 
 ---
 
@@ -12,6 +13,8 @@ This version introduces:
 - **Federated Visibility:** How Central IT shares infrastructure services (e.g., "Gov Private Cloud") with Ministries.
 - **Stranded Cost Logic:** How to handle unallocated service costs without creating dummy Deployment Profiles.
 - **IsInternalOnly Flag:** Explicit visibility control for shared services.
+
+> **v2.0 Change:** IT Services now also serve as the **commercial agreement** for Software Products. Contract lifecycle fields (vendor, contract dates, renewal notice) live directly on the IT Service. The former ProductContract entity has been merged into IT Service. A new `it_service_software_products` junction links IT Services to the Software Products they provide. See `adr-cost-model-reunification.md`.
 
 Goals:
 - Replace the legacy "everything not an application goes into IT Services" pattern.
@@ -63,9 +66,16 @@ Fields:
 - Description
 - ITServiceType
 - **TotalAnnualCost** (The full cost of running this service, e.g., $100k)
+- **VendorOrgId (FK)** <-- Who supplies this service (v2.0)
 - **IsInternalOnly (Boolean, Default: TRUE)** <-- Visibility Control
 - LifecycleState
 - sn_service_instance_sys_id (optional CSDM mapping)
+
+**Contract Lifecycle Fields (v2.0):**
+- **contract_reference** (TEXT) — PO number, agreement ID, or contract reference
+- **contract_start_date** (DATE) — When the contract term begins
+- **contract_end_date** (DATE) — When the contract term expires
+- **renewal_notice_days** (INTEGER, Default: 90) — Days before expiry to trigger renewal alert
 
 **IsInternalOnly Field:**
 - Controls visibility to other Workspaces in the same WorkspaceGroup.
@@ -102,6 +112,45 @@ Fields:
 - **AllocationValue** (The calculated cost recovered from this specific DP)
 
 **Note:** This table was previously referred to as "DeploymentProfileITServiceAllocation" in some documents. The canonical name is **DeploymentProfileITService** to match the naming convention of DeploymentProfileContract and DeploymentProfilePortfolio.
+
+### 3.5 ITServiceSoftwareProduct (v2.0)
+
+Links IT Services to the Software Products they provide. This is the inventory relationship — it answers "which software products does this IT Service cover?"
+
+Fields:
+- ITServiceSoftwareProductId (PK)
+- **ITServiceId (FK)** — The IT Service providing the software
+- **SoftwareProductId (FK)** — The Software Product covered
+- Notes (optional)
+- CreatedAt
+
+**Constraints:**
+- UNIQUE(it_service_id, software_product_id)
+- RLS enabled, namespace-scoped policies
+- Audit trigger
+
+**Example:**
+- IT Service: "Microsoft 365 E5 Enterprise Agreement" ($240,000)
+  - → Microsoft 365 E5 (Software Product)
+  - → Microsoft Teams (Software Product)
+  - → Microsoft SharePoint (Software Product)
+
+**Why this exists:** Software Products are now inventory-only (v3.0). This junction makes IT Services the funding source for software — you can see which IT Service pays for which software products, and which DPs consume that IT Service.
+
+### 3.6 Contract Expiry View (v2.0)
+
+The view `vw_it_service_contract_expiry` provides contract lifecycle tracking across all IT Services with contract dates.
+
+**Status buckets:**
+| Status | Logic |
+|--------|-------|
+| `expired` | `contract_end_date < CURRENT_DATE` |
+| `renewal_due` | Within `renewal_notice_days` of end date |
+| `expiring_soon` | Within 90 days of end date (but not yet in renewal window) |
+| `active` | Contract end date is in the future |
+| `no_contract` | No contract dates set |
+
+**Key columns:** it_service_id, name, vendor_name, contract_end_date, renewal_notice_days, days_until_expiry, status
 
 ### 3.4 Cost Reconciliation Logic (The "Stranded Cost" Pattern)
 
@@ -140,17 +189,19 @@ Path: BusinessApplication -> DeploymentProfile -> ITService.
 - The `IsCatalogPublisher` flag on WorkspaceGroupWorkspace determines if an IT Service is visible to other workspaces in the group.
 - The `IsInternalOnly` flag on ITService determines if a specific service is shared.
 
-### 4.4 ProductContract
+### 4.4 SoftwareProduct (v2.0)
 
-- Contracts fund the **Software** running on the IT Service, or the MSP managing it.
-- Modeled separately in the Software Product domain.
+- IT Services are now the **funding source** for Software Products.
+- The `it_service_software_products` junction links an IT Service to the Software Products it covers.
+- Software Products are inventory-only — they carry no cost. Cost lives on the IT Service.
+- See `catalogs/software-product.md` for the Software Product architecture.
 
 ---
 
-## 5. ASCII ERD (Conceptual)
+## 5. ASCII ERD (Conceptual — v2.0)
 
 ```
-Shared Infrastructure Model
+IT Service as Infrastructure Provider + Software Contract (v2.0)
 
 +----------------------------+       +-----------------------------+
 |         ITService          | <---- |     Publisher Workspace     |
@@ -159,13 +210,32 @@ Shared Infrastructure Model
 | WorkspaceId (FK)           | <---- OWNER
 | Name                       |
 | TotalAnnualCost (Pool)     |
+| VendorOrgId (FK)           | <---- Who supplies this
+| contract_reference         |
+| contract_start/end_date    | <---- Contract lifecycle (v2.0)
+| renewal_notice_days        |
 | IsInternalOnly (Bool)      | <---- DEFAULT TRUE (Private)
-+------------+---------------+
-             ^
-             | Visible IF (Shared Group + Publisher + !InternalOnly)
-             | Linked by Consumers
-             |
-+------------------------------+     +-----------------------------+
++------+----------+----------+
+       |          |
+       |          | it_service_software_products (v2.0)
+       |          |
+       |   +------v-----------------------+
+       |   | ITServiceSoftwareProduct     |
+       |   +------------------------------+
+       |   | ITServiceId (FK)             |
+       |   | SoftwareProductId (FK)       |
+       |   +------+-----------------------+
+       |          |
+       |          v
+       |   +------------------------------+
+       |   |      SoftwareProduct         |
+       |   +------------------------------+
+       |   | (Inventory only — no cost)   |
+       |   +------------------------------+
+       |
+       | deployment_profile_it_services (cost allocation)
+       |
++------v-----------------------+     +-----------------------------+
 |   DeploymentProfileITService | <---|     Consumer Workspace      |
 +------------------------------+     |    (Ministry of Justice)    |
 | DeploymentProfileITServiceId |     +-----------------------------+
@@ -178,9 +248,6 @@ Shared Infrastructure Model
              v
 +----------------------------+
 |     DeploymentProfile      |
-+----------------------------+
-| DeploymentProfileId (PK)   |
-| WorkspaceId (FK)           |
 +----------------------------+
 ```
 
@@ -213,6 +280,7 @@ Shared Infrastructure Model
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.0 | 2026-03-04 | **Cost Model Reunification:** IT Services now serve as the commercial agreement for Software Products. Added 4 contract lifecycle fields (`contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`). Added `vendor_org_id` field. Added `it_service_software_products` junction table. Added `vw_it_service_contract_expiry` view. Updated ERD and relationship to SoftwareProduct. See `adr-cost-model-reunification.md`. |
 | v1.3 | 2025-12-12 | Added IsInternalOnly field to ITService entity (was referenced in visibility rules but missing from field list). Standardized join table name to DeploymentProfileITService (was inconsistently called DeploymentProfileITServiceAllocation). |
 | v1.2 | 2025-12-08 | Previous version with missing IsInternalOnly field. |
 

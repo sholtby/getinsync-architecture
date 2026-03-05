@@ -86,8 +86,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/core-architecture.md | v2.4 | 🟢 | Core architecture — conceptual data model (AWS refs are customer infrastructure examples, not GetInSync stack) |
-| core/conceptual-erd.md | v1.2 | 🟢 | Conceptual ERD — stack-agnostic entity model (AWS/Azure in CloudProvider enum only) |
+| core/core-architecture.md | v2.5 | 🟡 | Core architecture — ProductContract merged into IT Service, two cost channels (updated Mar 4) |
+| core/conceptual-erd.md | v2.0 | 🟡 | Conceptual ERD — ProductContract replaced by ITServiceSoftwareProduct junction (updated Mar 4) |
 | core/composite-application.md | v1.1 | 🟡 | Composite applications (Supabase-native) |
 | core/composite-application-erd.md | v1.0 | 🟡 | Composite application ERD |
 | core/deployment-profile.md | v1.8 | 🟢 | DP-centric assessment, clone/move, naming |
@@ -101,8 +101,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| catalogs/software-product.md | v2.1 | 🟢 | Software Product Catalog — no stale refs (originally flagged 10 AWS, none found) |
-| catalogs/it-service.md | v1.3 | 🟢 | IT Services — shared infrastructure. Entra ID generalized as customer IdP example |
+| catalogs/software-product.md | v3.0 | 🟡 | Software Product Catalog — now inventory-only, ProductContract merged into IT Service (updated Mar 4) |
+| catalogs/it-service.md | v2.0 | 🟡 | IT Services — shared infrastructure + software contracts. Contract lifecycle fields, `it_service_software_products` junction (updated Mar 4) |
 | catalogs/business-application.md | v1.2 | 🟢 | Business Application entity — IdP refs generalized (Entra as example, not only) |
 | catalogs/business-application-identification.md | v1.0 | ☪ | Criteria for business apps vs tech services |
 | catalogs/csdm-application-attributes.md | v1.0 | ☪ | CSDM mandatory fields alignment |
@@ -113,14 +113,14 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/cost-budget/cost-model.md | v2.6 | 🟢 | Cost flow, allocation, TBM-lite — reconciled Mar 4 (legacy columns documented, dpis DEPLOYED, cost override formula) |
+| features/cost-budget/cost-model.md | v3.0 | 🟡 | Cost flow — two channels (IT Services + Cost Bundles), Software Products inventory-only, ProductContract merged into IT Service (updated Mar 4) |
 | features/cost-budget/cost-model-addendum.md | v2.5.1 | 🟢 | **Confirms zero cost model impact from Path 1 technology tagging — DEPLOYED** |
-| features/cost-budget/budget-management.md | v1.4 | 🟢 | Application and workspace budgets — reconciled Mar 4 (workspace_budgets table, threshold comparison, as-built views) |
+| features/cost-budget/budget-management.md | v1.5 | 🟡 | Application and workspace budgets — software costs flow through IT Service allocations (updated Mar 4) |
 | features/cost-budget/budget-alerts.md | v1.0 | 🟢 | Budget health monitoring — Phase 1 DB layer DEPLOYED |
-| features/cost-budget/vendor-cost.md | v1.1 | 🟢 | Vendor management, contracts — reconciled Mar 4 (vw_run_rate_by_vendor bugs documented) |
-| features/cost-budget/software-contract.md | v1.1 | 🟢 | Software contract lifecycle — reconciled Mar 4 (partial deployment documented) |
+| features/cost-budget/vendor-cost.md | v2.0 | 🟡 | Vendor attribution — two channels (IT Services + Cost Bundles), dpsp vendor DEPRECATED (updated Mar 4) |
+| features/cost-budget/software-contract.md | v2.0 | 🟡 | Software contracts — contracts live on IT Services, dpsp cost columns DEPRECATED (updated Mar 4) |
 | features/cost-budget/cost-model-validation-2026-03-04.md | — | 🟢 | **Cost model validation report — schema debt, view bugs, frontend audit, refactoring plan** |
-| features/cost-budget/cost-model-primer.md (.docx) | v1.0 | 🟢 | **Cost model primer — end-to-end guide for internal team: 3 channels, data flow, UI, maturity levels** |
+| features/cost-budget/cost-model-primer.md (.docx) | v2.0 | 🟡 | **Cost model primer — end-to-end guide for internal team: 2 channels, inventory-only software, data flow, UI, maturity levels (updated Mar 4)** |
 | features/cost-budget/adr-cost-model-reunification.md | v1.0 | ☪ | **ADR: IT Services absorb contract role. Software Products become inventory. Reverses v2.5 fork. Schema changes, migration path, budget impact analysis.** |
 
 ### Identity, Security & Access
@@ -255,7 +255,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.35** | 🟢 | **Architecture manifest** |
+| **THIS FILE: MANIFEST.md** | **v1.36** | 🟢 | **Architecture manifest — v1.36: Cost Model Reunification Phase 0 (9 docs updated)** |
 
 ---
 
@@ -302,6 +302,9 @@ The following documents were removed during the architecture audit. They describ
 | *(new table)* | gamification_user_stats | Gamification Architecture v1.2 |
 | *(new table)* | flags | Gamification Architecture v1.2 |
 | namespaces | +`enable_achievement_digests` (boolean) | Gamification Architecture v1.2 |
+| it_services | +`contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days` | ADR: Cost Model Reunification |
+| *(new table)* | it_service_software_products | ADR: Cost Model Reunification |
+| *(new view)* | vw_it_service_contract_expiry | ADR: Cost Model Reunification |
 | *(new view)* | flag_summary_by_workspace | Gamification Architecture v1.2 |
 | *(new functions x9)* | check_achievements, generate_activity_feed, etc. | Gamification Architecture v1.2 |
 
@@ -334,9 +337,9 @@ The following documents were removed during the architecture audit. They describ
 - Deployment Profile is the assessment anchor, not Application
 - Same app can have different technical scores in different deployments
 
-### 4. Cost Attribution
+### 4. Cost Attribution (Updated Mar 4, 2026)
 - Every dollar needs a home and an owner
-- Three cost channels: Software Products, IT Services, Cost Bundles
+- Two cost channels: IT Services, Cost Bundles. Software Products are inventory-only (no cost).
 - No cost fields on Application or Deployment Profile directly
 
 ### 5. Progressive Disclosure
