@@ -121,6 +121,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/cost-budget/software-contract.md | v1.1 | 🟢 | Software contract lifecycle — reconciled Mar 4 (partial deployment documented) |
 | features/cost-budget/cost-model-validation-2026-03-04.md | — | 🟢 | **Cost model validation report — schema debt, view bugs, frontend audit, refactoring plan** |
 | features/cost-budget/cost-model-primer.md (.docx) | v1.0 | 🟢 | **Cost model primer — end-to-end guide for internal team: 3 channels, data flow, UI, maturity levels** |
+| features/cost-budget/adr-cost-model-reunification.md | v1.0 | ☪ | **ADR: IT Services absorb contract role. Software Products become inventory. Reverses v2.5 fork. Schema changes, migration path, budget impact analysis.** |
 
 ### Identity, Security & Access
 
@@ -648,9 +649,9 @@ The following documents were removed during the architecture audit. They describ
 | 🟢 AS-BUILT | 54 |
 | 🟡 AS-DESIGNED | 9 |
 | 🟠 NEEDS UPDATE | 0 |
-| ☪ REFERENCE | 15 |
+| ☪ REFERENCE | 16 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **92** |
+| **Total tracked** | **93** |
 
 ---
 
@@ -688,6 +689,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.37 | 2026-03-04 | ADR: Cost Model Reunification. IT Services absorb contract role; Software Products become pure inventory. Reverses v2.5 fork that created two parallel cost streams. Documents: rationale for original fork (budget management complexity), schema changes needed (4 cols on it_services, new junction it_service_software_products), migration path (5 phases), budget impact (none — IT Service track already handles it). Document count 92→93, REFERENCE 15→16. |
 | v1.36 | 2026-03-04 | Realtime + Edge Functions architecture. Added features/realtime-subscriptions/realtime-subscriptions-architecture.md v1.0 🟡 and infrastructure/edge-functions-layer-architecture.md v1.0 🟡. Principles 14–15 added. Cross-refs in roadmap, ai-chat, gamification docs. Document count 90→92, AS-DESIGNED 7→9. |
 | v1.35 | 2026-03-04 | Feature rename: "IT Value Creation" → "Roadmap". Updated section heading, file paths (it-value-creation → roadmap), component references, route paths across 10 architecture docs. Lexicon change only — no database or schema changes. |
 | v1.34 | 2026-03-04 | Cost model primer v1.0 (.md + .docx). Internal team guide: 3 cost channels, data flow diagram, UI locations, maturity levels, legacy fields, quick reference. Document count 89→90. |
