@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 3, 2026 (Edit App Tab Refactoring + Validation Sweep)
+**As of:** March 5, 2026 (Per-Workspace Portfolio Memory + Per-DP Assessment)
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -63,7 +63,16 @@
 
 ---
 
-## Completed This Session (Mar 3)
+## Completed This Session (Mar 5)
+
+| Item | Resolution |
+|------|------------|
+| Per-workspace portfolio memory | ✅ COMPLETE. Workspace switching now restores last-used portfolio per workspace. `user_sessions.portfolio_by_workspace` JSONB column added. localStorage map with DB sync for cross-device persistence. Three timing bugs fixed (stale data detection, effect ordering, 'all' leaking). |
+| Per-DP assessment buttons in drawer | ✅ COMPLETE. ApplicationDetailDrawer shows per-deployment-profile "Assess" buttons. Each button navigates to the correct DP's assessment. |
+| Consumer assessment label fix | ✅ COMPLETE. Assessment columns now show correct labels matching DP-level assessment data. |
+| pgTAP plan count alignment | ✅ FIXED. Plan count updated from 416 → 423 to match actual test count (93 tables, 51 audit triggers, 30 views). |
+
+## Completed Mar 3
 
 | Item | Resolution |
 |------|------------|
@@ -95,7 +104,7 @@
 | **HIGH** | 5 | 3 SOC2 policies (OVERDUE) + RBAC UI gating + Edit App refactoring |
 | **MEDIUM** | 19 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC enforcement, filter drawer, scope indicator, Cost Analysis bug |
 | **LOW** | 13 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail |
-| **Total Open** | 37 | Closed 6 (#38, #39, #52, #53, #54, #56). Added 2 (#61, #62). Net -4 from last session. |
+| **Total Open** | 37 | No new open items this session. 4 items completed (per-workspace portfolio memory, per-DP buttons, consumer label fix, pgTAP alignment). |
 
 ### SOC2 Policy Scorecard
 
@@ -121,4 +130,4 @@
 ---
 
 *Document: planning/open-items-priority-matrix.md*
-*Replaces: March 2, 2026 version*
+*Replaces: March 3, 2026 version*

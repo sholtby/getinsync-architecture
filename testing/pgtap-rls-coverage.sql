@@ -3,14 +3,14 @@
 -- =============================================================================
 -- Version: 1.2
 -- Date: 2026-02-28
--- Purpose: Automated regression tests for security posture across all 90 tables + 29 views
+-- Purpose: Automated regression tests for security posture across all 93 tables + 30 views
 --
 -- What this tests:
---   1. RLS enabled on all 90 public tables
+--   1. RLS enabled on all 93 public tables
 --   2. GRANT (SELECT at minimum) for authenticated + service_role on all tables
---   3. Audit trigger present on 37 designated tables
---   4. security_invoker=true on all 29 views
---   5. GRANT SELECT for authenticated + service_role on all 29 views
+--   3. Audit trigger present on 51 designated tables
+--   4. security_invoker=true on all 30 views
+--   5. GRANT SELECT for authenticated + service_role on all 30 views
 --   6. No orphaned tables/views (new ones without security coverage)
 --
 -- How to run:
@@ -33,14 +33,14 @@ BEGIN;
 -- Every public table must have RLS enabled. A table without RLS
 -- is a multi-tenant data leak waiting to happen.
 
-SELECT plan(92 + 92 + 92 + 50 + 29 + 29 + 29 + 3);
--- 92 = RLS enabled checks
--- 92 = authenticated GRANT checks (tables)
--- 92 = service_role GRANT checks (tables)
--- 50 = audit trigger checks
--- 27 = view security_invoker checks
--- 27 = authenticated GRANT checks (views)
--- 27 = service_role GRANT checks (views)
+SELECT plan(93 + 93 + 93 + 51 + 30 + 30 + 30 + 3);
+-- 93 = RLS enabled checks
+-- 93 = authenticated GRANT checks (tables)
+-- 93 = service_role GRANT checks (tables)
+-- 51 = audit trigger checks
+-- 30 = view security_invoker checks
+-- 30 = authenticated GRANT checks (views)
+-- 30 = service_role GRANT checks (views)
 --  3 = summary/sentinel checks
 
 -- RLS enabled on all 92 tables
