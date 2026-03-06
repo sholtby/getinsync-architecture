@@ -249,6 +249,17 @@ When multiple Claude Code windows run simultaneously:
 - Before merging to `dev`, always `git pull origin dev` first and resolve any conflicts
 - The architecture repo (`~/getinsync-architecture/`) stays on `main` — no feature branches needed for docs
 
+### Branch Cleanup
+
+Remote feature branches are kept on GitHub for audit trail after merging. Periodically (every few weeks), Stuart prunes stale remote branches:
+```bash
+# List merged remote branches (safe to delete)
+git branch -r --merged dev | grep -v 'main\|dev\|HEAD'
+
+# Delete stale remote branches older than 30 days
+# Stuart runs this manually — Claude Code does NOT auto-delete remote branches
+```
+
 ---
 
 ## What You Must NOT Do
