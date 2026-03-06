@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 5, 2026 (Per-Workspace Portfolio Memory + Per-DP Assessment)
+**As of:** March 5, 2026 (Phase 27b Lifecycle UI Complete)
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -63,7 +63,23 @@
 
 ---
 
-## Completed This Session (Mar 5)
+## Completed This Session (Mar 5 — Session 3)
+
+| Item | Resolution |
+|------|------------|
+| Phase 27b.4 — IT Service lifecycle linking | ✅ COMPLETE. ITServiceModal rewritten with lifecycle reference search/create/display. LifecycleBadge added to IT Service catalog grid. Schema gaps deployed (lifecycle_reference_id FK on it_services). |
+| Phase 27b.5 — Software Product lifecycle linking | ✅ COMPLETE. SoftwareProductModal rewritten with lifecycle reference search/create/display. Lifecycle join added to SoftwareProductsSettings fetch. Schema gaps deployed (lifecycle_reference_id FK on software_products). |
+| Phase 27 schema gaps (5 scripts) | ✅ DEPLOYED. it_services.lifecycle_reference_id FK, software_products.lifecycle_reference_id FK, it_service_technology_products junction table (with GRANT/RLS/audit), vw_it_service_lifecycle_risk view, vw_dp_lifecycle_risk_combined view. |
+
+## Completed Mar 5 — Session 2
+
+| Item | Resolution |
+|------|------------|
+| Cost Model Reunification Phase 3F | ✅ COMPLETE. Quick Calculator for IT Service allocation — inline Unit Price × Quantity = Total popover in IT Service dependency table. Saves as `allocation_basis='fixed'`. |
+| Cost Model Reunification (all phases) | ✅ ALL PHASES COMPLETE (0–3). Phase 3 shipped: TypeScript types, ITServiceModal contract fields, IT Service→Software Product linking, cost component verification, Contract Expiry Widget, Quick Calculator. |
+| phase3-handover.md cleanup | ✅ Deleted temporary handover doc as instructed. |
+
+## Completed Mar 5 — Session 1
 
 | Item | Resolution |
 |------|------------|
@@ -104,7 +120,7 @@
 | **HIGH** | 5 | 3 SOC2 policies (OVERDUE) + RBAC UI gating + Edit App refactoring |
 | **MEDIUM** | 19 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC enforcement, filter drawer, scope indicator, Cost Analysis bug |
 | **LOW** | 13 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail |
-| **Total Open** | 37 | No new open items this session. 4 items completed (per-workspace portfolio memory, per-DP buttons, consumer label fix, pgTAP alignment). |
+| **Total Open** | 37 | No new open items this session. Phase 27b lifecycle UI complete (all 5 sub-items). |
 
 ### SOC2 Policy Scorecard
 
@@ -130,4 +146,4 @@
 ---
 
 *Document: planning/open-items-priority-matrix.md*
-*Replaces: March 3, 2026 version*
+*Replaces: March 5, 2026 Session 2 version*
