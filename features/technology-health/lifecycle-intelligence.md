@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-02-14
+Last updated: 2026-03-05
 
 ---
 
@@ -264,9 +264,9 @@ preview --> mainstream --> extended --> end_of_support --> end_of_life
    +-- Pre-release, not for production
 ```
 
-### 4.4 IT Service Integration (Path 2)
+### 4.4 IT Service Integration (Path 2) — DEPLOYED
 
-Extend `it_services` to link to lifecycle reference.
+Extend `it_services` to link to lifecycle reference. **`it_services.lifecycle_reference_id` FK deployed Mar 2026.**
 
 ```sql
 -- Add lifecycle reference link to it_services
@@ -283,9 +283,9 @@ CREATE INDEX idx_it_services_lifecycle ON it_services(lifecycle_reference_id);
 CREATE INDEX idx_it_services_lifecycle_status ON it_services(lifecycle_status);
 ```
 
-### 4.5 Software Product Integration
+### 4.5 Software Product Integration — DEPLOYED
 
-Extend `software_products` to link to lifecycle reference.
+Extend `software_products` to link to lifecycle reference. **`software_products.lifecycle_reference_id` FK deployed Mar 2026.**
 
 ```sql
 -- Add lifecycle reference link to software_products
@@ -690,7 +690,7 @@ CREATE TABLE lifecycle_alert_settings (
 
 **v1.1: Two views, one per path, plus a unified view.**
 
-#### Path 2 View (original from v1.0):
+#### Path 2 View (original from v1.0) — DEPLOYED:
 
 ```sql
 -- View: IT Services with lifecycle risk
@@ -778,7 +778,7 @@ GROUP BY tp.id, tp.name, tp.category, tp.product_family,
          tlr.mainstream_support_end, tlr.extended_support_end, tlr.end_of_life_date;
 ```
 
-#### Unified View (NEW in v1.1):
+#### Unified View (NEW in v1.1) — DEPLOYED:
 
 ```sql
 -- View: Combined lifecycle risk across both paths
@@ -873,12 +873,12 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - **v1.1:** Add FK column to `technology_products` (lifecycle_reference_id)
 - Seed major vendors
 
-### Phase 27b: Manual Lifecycle Entry UI (3 hrs)
-- Add lifecycle fields to IT Service edit modal
-- Add lifecycle fields to Software Product edit modal
-- **v1.1:** Add lifecycle fields to Technology Product catalog admin
-- Display lifecycle status badges throughout UI
-- **v1.1:** Show lifecycle badge inline on DP technology tags
+### Phase 27b: Manual Lifecycle Entry UI (3 hrs) — COMPLETE
+- ✅ 27b.1: TechnologyProductModal lifecycle linking (search existing, create new, display linked)
+- ✅ 27b.2: Lifecycle badges on DP technology tags (LinkedTechnologyProductsList)
+- ✅ 27b.3: TechnologyCatalogSettings badge source fix (joins through lifecycle_reference_id FK)
+- ✅ 27b.4: ITServiceModal lifecycle reference linking (search/create/display pattern)
+- ✅ 27b.5: SoftwareProductModal lifecycle reference linking (search/create/display pattern)
 
 ### Phase 27c: AI Lookup Skill (4 hrs)
 - Implement extraction skill using Claude
@@ -893,8 +893,8 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - User confirmation dialog
 - Save to reference table on confirm
 
-### Phase 27e: Dashboard Widget (3 hrs -- was 2 hrs, expanded for combined view)
-- Lifecycle risk summary widget
+### Phase 27e: Dashboard Widget (3 hrs -- was 2 hrs, expanded for combined view) — PARTIAL
+- ✅ LifecycleRiskPanel enhanced with EOS count and approaching-EOL count callout
 - EOL alerts list
 - **v1.1:** Combined view showing both Path 1 and Path 2 sources
 - Link to affected DPs
@@ -904,10 +904,10 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - Alert threshold configuration
 - Weekly digest job (Enterprise)
 
-### Phase 27g: Lifecycle Risk Views (NEW in v1.1, 2 hrs)
-- Create `vw_technology_tag_lifecycle_risk` (Path 1)
-- Create `vw_dp_lifecycle_risk_combined` (unified)
-- Verify existing `vw_it_service_lifecycle_risk` (Path 2)
+### Phase 27g: Lifecycle Risk Views (NEW in v1.1, 2 hrs) — DEPLOYED
+- ✅ `vw_it_service_lifecycle_risk` (Path 2) — DEPLOYED
+- ✅ `vw_dp_lifecycle_risk_combined` (unified) — DEPLOYED
+- ✅ `it_service_technology_products` junction table — DEPLOYED (with GRANT, RLS, audit trigger)
 
 **Total Estimate:** ~17 hours (was ~15 hours in v1.0)
 
@@ -988,3 +988,4 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 |---------|------|---------|
 | v1.0 | 2026-01-28 | Initial document |
 | v1.1 | 2026-02-14 | Two-path model integration. Added: Path 1 technology product entry point (S4.6), technology tagging flow (S6.1), Path 1 lifecycle risk view (S7.4), unified combined risk view (S7.4), updated architecture diagram, assessment integration shows both paths, alert engine covers both paths, implementation phases updated (+2 hrs), new open questions for deployed version and deduplication, T02 suggestion scoring table. References expanded with 5 new companion docs. |
+| v1.2 | 2026-03-05 | Status markers added. Phase 27b COMPLETE: lifecycle linking UI for TechnologyProductModal, ITServiceModal, SoftwareProductModal; lifecycle badges on DP tags; TechnologyCatalogSettings badge source fix. Phase 27e PARTIAL: LifecycleRiskPanel enhanced with EOS/approaching-EOL counts. Phase 27g DEPLOYED: vw_it_service_lifecycle_risk, vw_dp_lifecycle_risk_combined, it_service_technology_products junction table. Schema FKs deployed: it_services.lifecycle_reference_id, software_products.lifecycle_reference_id. |
