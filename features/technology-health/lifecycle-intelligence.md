@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-06
+Last updated: 2026-03-06 (v1.3)
 
 ---
 
@@ -992,10 +992,255 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 
 ---
 
-## 14. Change Log
+## 14. Phase 28 — Validated Technology Entry (endoflife.date Catalog Integration)
+
+### 14.1 Problem Statement
+
+Technology products are added via free-form text today. Users type whatever they want for name, vendor, and version, leading to:
+- **Duplicates:** "SQL Server" vs "Microsoft SQL Server" vs "MSSQL"
+- **Typos:** "Windwos Server", "Oralce Database"
+- **Unmatched lifecycle data:** Free-form names don't match any lifecycle source, so lifecycle badges show "Not linked"
+- **Inconsistent naming:** No canonical form — reporting and deduplication become impossible at scale
+
+### 14.2 Solution: Search-First Entry with Override
+
+Replace the blank "Add Technology Product" form with a **search-first flow** backed by the endoflife.date catalog (461 products, updated daily by open-source community).
+
+```
+User clicks "Add Technology Product"
+         |
+         v
++------------------------------------------+
+| Search Technology Catalog                 |
+|                                           |
+| [Search: "sql ser___"]                    |
+|                                           |
+| Matches from endoflife.date:              |
+| ┌─────────────────────────────────────┐   |
+| │ Microsoft SQL Server                │   |
+| │ 15 versions · OS: Windows/Linux     │   |
+| │ Latest: 2025 · Earliest EOL: 2026   │   |
+| ├─────────────────────────────────────┤   |
+| │ MySQL                               │   |
+| │ 12 versions · Community + Enterprise│   |
+| └─────────────────────────────────────┘   |
+|                                           |
+| [Can't find it? Add Custom Technology]    |
++------------------------------------------+
+         |                          |
+    Select match             Click override
+         |                          |
+         v                          v
++-------------------+    +-------------------+
+| Select Version    |    | Free-form entry   |
+|                   |    | (current flow)    |
+| ○ 2025 [MAIN]    |    | Marked as         |
+| ○ 2022 [EXTENDED] |    | "Unverified"     |
+| ○ 2019 [EXTENDED] |    |                   |
+| ○ 2017 [EOS]     |    +-------------------+
+| ○ 2016 [EOS]     |
++-------------------+
+         |
+         v
++-------------------+
+| Auto-populated:   |
+| Name: SQL Server  |
+| Vendor: Microsoft |
+| Version: 2022     |
+| Category: Database|
+| Lifecycle: linked |
+| Badge: [EXTENDED] |
++-------------------+
+```
+
+### 14.3 Data Flow
+
+```
+endoflife.date API                    GetInSync
+==================                    =========
+
+GET /api/all.json  ────────────►  Cache product list
+(461 product IDs)                 (Edge Function, refresh daily)
+
+GET /api/{id}.json ────────────►  Fetch cycles on selection
+(version cycles)                  (real-time, per user action)
+
+                                  Auto-populate:
+                                  ├── technology_products record
+                                  ├── technology_lifecycle_reference record
+                                  └── Link via lifecycle_reference_id FK
+```
+
+### 14.4 Architecture Components
+
+#### 14.4.1 New Edge Function: `technology-catalog-search`
+
+```
+POST /functions/v1/technology-catalog-search
+Authorization: Bearer <jwt>
+
+Request:
+  { "query": "sql server" }
+
+Response:
+  {
+    "products": [
+      {
+        "eol_product_id": "mssqlserver",
+        "display_name": "Microsoft SQL Server",
+        "category": "database",
+        "cycle_count": 15,
+        "latest_version": "2025",
+        "earliest_active_eol": "2026-07-14"
+      },
+      ...
+    ],
+    "total": 2
+  }
+```
+
+**Implementation:**
+- Maintains an in-memory cache of the endoflife.date product list (refresh every 24h)
+- Fuzzy search against product IDs and display names
+- Returns top 10 matches ranked by relevance
+- No Claude API cost — pure string matching against cached list
+
+#### 14.4.2 Enhanced `lifecycle-lookup` Edge Function
+
+Extend the existing Phase 27c Edge Function with a new mode:
+
+```
+POST /functions/v1/lifecycle-lookup
+Authorization: Bearer <jwt>
+
+Request:
+  {
+    "vendor": "Microsoft",
+    "product": "SQL Server",
+    "eol_product_id": "mssqlserver"    // NEW: skip Tier 1+3, go direct to endoflife.date
+  }
+
+Response:
+  // Same LifecycleLookupResponse as today, plus:
+  {
+    "found": true,
+    "source": "endoflife_date",
+    "all_cycles": [                     // NEW: return all versions for picker
+      { "version": "2025", "status": "mainstream", "eol": "2036-01-06" },
+      { "version": "2022", "status": "extended", "eol": "2032-01-11" },
+      ...
+    ]
+  }
+```
+
+#### 14.4.3 UI Components
+
+| Component | Purpose |
+|-----------|---------|
+| `TechnologySearchModal` | New modal replacing direct form entry. Search box, result list, version picker. |
+| `TechnologySearchResult` | Card showing product name, version count, category, latest EOL status |
+| `TechnologyVersionPicker` | Version list with lifecycle badges, radio select |
+| Existing `TechnologyProductModal` | Modified: pre-populated fields when coming from search flow, read-only for verified products |
+
+#### 14.4.4 Data Quality Indicators
+
+| Badge | Meaning | When Applied |
+|-------|---------|--------------|
+| **Verified** (green check) | Product matched against endoflife.date catalog | Auto-set on search-flow creation |
+| **Unverified** (gray question mark) | Custom entry, not validated against any catalog | Set on override/free-form entry |
+| **Stale** (yellow warning) | endoflife.date data older than 90 days since last refresh | Set by scheduled refresh job |
+
+New column on `technology_products`:
+```sql
+eol_product_id TEXT NULL  -- endoflife.date product ID (e.g., "mssqlserver")
+-- Enables re-validation and bulk refresh against endoflife.date
+```
+
+### 14.5 Category Mapping
+
+endoflife.date uses 9 categories. Map to GetInSync `technology_product_categories`:
+
+| endoflife.date Category | GetInSync Category | Examples |
+|------------------------|-------------------|----------|
+| `os` | Operating System | Windows Server, RHEL, Ubuntu |
+| `database` | Database | SQL Server, Oracle, PostgreSQL |
+| `server-app` | Middleware / Web Server | Tomcat, IIS, Nginx |
+| `framework` | Application Framework | .NET, Spring, Django |
+| `lang` | Runtime / Language | Java, Python, Node.js |
+| `device` | Hardware / Firmware | Cisco IOS, PAN-OS |
+| `app` | Application Software | Office, Exchange, SharePoint |
+| `service` | Cloud Service | EKS, GKE |
+| `standard` | Standard / Protocol | TLS, HTTP |
+
+### 14.6 UX Principles
+
+1. **Search-first, not form-first.** The search box is the primary action. Free-form entry is the escape hatch, not the default.
+2. **Guide, not gate.** Users can always override to custom entry. The system nudges toward validated data but never blocks.
+3. **Instant lifecycle.** When a user selects from endoflife.date, lifecycle data is linked immediately — no separate lookup step needed.
+4. **Visual quality signal.** Verified vs Unverified badges create a gentle incentive for users to pick from the catalog.
+5. **No vendor lock-in.** endoflife.date is MIT-licensed, community-driven, and the API is free. If it disappears, we fall back to Tier 3 (Claude extraction) — the system degrades gracefully.
+
+### 14.7 Vendor Lifecycle Sources Impact
+
+With validated entry, the `vendor_lifecycle_sources` table role changes:
+- **Before Phase 28:** Primary registry for Tier 3 Claude extraction URLs
+- **After Phase 28:** Tier 3 fallback only — used when product is NOT in endoflife.date catalog
+- **URL audit results (Mar 6, 2026):** Only 4 of 16 vendor URLs have extractable lifecycle data (Microsoft, IBM, Adobe, SUSE). 8 URLs are wrong/stale. endoflife.date covers the gap for most vendors.
+
+### 14.8 Implementation Phases
+
+#### Phase 28a: Catalog Search Edge Function (3 hrs)
+- New Edge Function: `technology-catalog-search`
+- Cache endoflife.date product list with fuzzy search
+- Return matched products with metadata (category, cycle count, latest version)
+
+#### Phase 28b: Version Picker + Auto-Population (4 hrs)
+- `TechnologySearchModal` with search box and result cards
+- Version picker with lifecycle badges per cycle
+- Auto-create `technology_lifecycle_reference` record from selected cycle
+- Auto-populate `technology_products` fields (name, version, category)
+- Link via `lifecycle_reference_id` FK
+
+#### Phase 28c: Integration into Existing Flows (3 hrs)
+- Replace "Add Technology Product" button in TechnologyCatalogSettings
+- Integrate into DP technology tagging flow (LinkedTechnologyProductsList "+ Link Technology")
+- Integrate into IT Service and Software Product modals where technology is referenced
+- Pre-populate search from existing name/version when editing
+
+#### Phase 28d: Data Quality Badges + Bulk Validation (2 hrs)
+- Add `eol_product_id` column to `technology_products`
+- Verified/Unverified badges on catalog grid and DP tags
+- Bulk validation tool: scan existing technology products, match against endoflife.date, offer to link
+- Scheduled refresh: re-validate linked products monthly
+
+**Total Estimate:** ~12 hours
+
+### 14.9 endoflife.date Vitality Assessment (Mar 6, 2026)
+
+| Metric | Value | Assessment |
+|--------|-------|------------|
+| Products tracked | 461 | Strong enterprise coverage |
+| GitHub stars | 3,200+ | Active community |
+| Total commits | 9,500+ | Mature project |
+| Update frequency | Multiple commits/day | Highly active |
+| License | MIT | Free for commercial use |
+| API auth required | No | Zero friction |
+| Rate limits | None documented | Static site on Netlify CDN |
+| Data freshness model | Hybrid: automated bots (Git, Docker Hub, npm, Maven, DistroWatch) + community PRs | Low stale-data risk |
+| Quality safeguards | Primary sources only, JSON schema validation, Netlify CI checks, maintainer review | Strong |
+
+**Risk mitigation:** If endoflife.date becomes unavailable or stale:
+- Tier 1 (DB cache) continues serving previously-cached data
+- Tier 3 (Claude extraction) provides fallback for new lookups
+- `eol_product_id` on `technology_products` enables bulk re-validation when service returns
+
+---
+
+## 15. Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-01-28 | Initial document |
 | v1.1 | 2026-02-14 | Two-path model integration. Added: Path 1 technology product entry point (S4.6), technology tagging flow (S6.1), Path 1 lifecycle risk view (S7.4), unified combined risk view (S7.4), updated architecture diagram, assessment integration shows both paths, alert engine covers both paths, implementation phases updated (+2 hrs), new open questions for deployed version and deduplication, T02 suggestion scoring table. References expanded with 5 new companion docs. |
 | v1.2 | 2026-03-05 | Status markers added. Phase 27b COMPLETE: lifecycle linking UI for TechnologyProductModal, ITServiceModal, SoftwareProductModal; lifecycle badges on DP tags; TechnologyCatalogSettings badge source fix. Phase 27e PARTIAL: LifecycleRiskPanel enhanced with EOS/approaching-EOL counts. Phase 27g DEPLOYED: vw_it_service_lifecycle_risk, vw_dp_lifecycle_risk_combined, it_service_technology_products junction table. Schema FKs deployed: it_services.lifecycle_reference_id, software_products.lifecycle_reference_id. |
+| v1.3 | 2026-03-06 | Phase 27c COMPLETE: three-tier lifecycle-lookup Edge Function deployed. Added Section 14: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first flow, auto-population, data quality badges). Vendor lifecycle URL audit: 4/16 GOOD, 8/16 BAD. endoflife.date vitality assessment (daily updates, MIT license, hybrid automation+community model). |

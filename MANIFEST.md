@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-06 (v1.42)
+Last updated: 2026-03-06 (v1.43)
 
 ---
 
@@ -209,7 +209,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/technology-health/lifecycle-intelligence.md | v1.2 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline (cache → endoflife.date → Claude), Edge Function built** |
+| features/technology-health/lifecycle-intelligence.md | v1.3 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, Phase 28 spec: validated technology entry via endoflife.date catalog** |
 | features/ai-chat/mvp.md | MVP | 🟢 | Natural language APM queries — Supabase-native |
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
 | features/ai-chat/v3-multicloud.md | v3 | 🟡 | Multi-cloud AI chat (designed, mixed refs) |
@@ -692,6 +692,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.43 | 2026-03-06 | Lifecycle Intelligence v1.2→v1.3: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first entry, auto-population, data quality badges). Vendor URL audit results. endoflife.date vitality assessment. |
 | v1.42 | 2026-03-06 | Lifecycle Intelligence v1.1→v1.2: Phase 27c Edge Function built. Three-tier lookup pipeline (DB cache → endoflife.date API → Claude extraction). §5.3 rewritten for v1.2 architecture. Phase 27c status updated to COMPLETE. |
 | v1.41 | 2026-03-05 | Session-end checklist v1.13: Added "Next Session Setup" section — handoff documents must include phase-numbered opening message for scannable Claude Code session history. |
 | v1.40 | 2026-03-05 | Mid-Session Schema Checkpoint. Added to CLAUDE.md (both repos): lightweight security posture + tsc gate after every DB change. Updated session-end-checklist.md with "do not run mid-session" note. Updated development-rules.md §2.2.1. |
