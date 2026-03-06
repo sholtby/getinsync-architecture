@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-06 (v1.4)
+Last updated: 2026-03-06 (v1.5)
 
 ---
 
@@ -896,12 +896,16 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - ✅ Returns data only — no auto-insert (Phase 27d adds user confirmation)
 - **Prerequisite for testing:** `supabase secrets set ANTHROPIC_API_KEY=...` (Tier 3 only)
 
-### Phase 27d: Auto-Population Flow (3 hrs -- was 2 hrs, expanded for Path 1)
-- Trigger lookup on IT Service creation (Path 2)
-- **v1.1:** Trigger lookup on technology product tagging on DP (Path 1)
-- **v1.1:** Trigger lookup on technology product catalog entry creation
-- User confirmation dialog
-- Save to reference table on confirm
+### Phase 27d: AI Lookup Frontend Integration (3 hrs) — COMPLETE
+- ✅ "AI Lookup" button (Sparkles icon, violet styling) on all 3 catalog modals
+- ✅ TechnologyProductModal: derives vendor from manufacturer, sends vendor/product/version
+- ✅ SoftwareProductModal: derives vendor from manufacturer org, sends vendor/product/version
+- ✅ ITServiceModal: derives vendor from service name (no manufacturer field), no version
+- ✅ Results confirmation panel: lifecycle dates, LifecycleBadge, source badge (Database/endoflife.date/AI Extracted), confidence badge, source URL link
+- ✅ "Apply & Link" saves to `technology_lifecycle_reference` and links via `lifecycle_reference_id`
+- ✅ Alternative version list when exact version not found (clickable to retry with different version)
+- ✅ Loading/error/not-found sub-states with toast notifications
+- ✅ First usage of `supabase.functions.invoke()` in frontend — Supabase client auto-attaches JWT
 
 ### Phase 27e: Dashboard Widget + Data Source Health (5 hrs -- was 3 hrs, expanded for source health) — PARTIAL
 - ✅ LifecycleRiskPanel enhanced with EOS count and approaching-EOL count callout
