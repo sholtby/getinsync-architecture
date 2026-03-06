@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-05 (v1.39)
+Last updated: 2026-03-05 (v1.41)
 
 ---
 
@@ -692,6 +692,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.41 | 2026-03-05 | Session-end checklist v1.13: Added "Next Session Setup" section — handoff documents must include phase-numbered opening message for scannable Claude Code session history. |
 | v1.40 | 2026-03-05 | Mid-Session Schema Checkpoint. Added to CLAUDE.md (both repos): lightweight security posture + tsc gate after every DB change. Updated session-end-checklist.md with "do not run mid-session" note. Updated development-rules.md §2.2.1. |
 | v1.39 | 2026-03-05 | Git workflow: feature branches for parallel Claude Code windows. Updated CLAUDE.md (both repos), development-rules.md, team-workflow.md, session-end-checklist.md. Deleted operations/CLAUDE.md (stale v24 Feb copy). Branch strategy: feature-branch → dev → main. Architecture repo stays on main. |
 | v1.38 | 2026-03-05 | Cost model primer v2.0→v3.0 (full rewrite). Removed all migration/legacy language, rewritten UI sections to match shipped Phase 3 components: Quick Calculator, Contract Expiry Widget, IT Service→Software Product linking, ITServiceDependencyList allocation column. Regenerated .docx. Status 🟡→🟢. |

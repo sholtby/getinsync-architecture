@@ -693,6 +693,18 @@ If items were added or completed, produce an updated open items priority matrix 
 
 ---
 
+## Next Session Setup
+
+When producing the handoff document, always include a suggested opening message for the next Claude Code session formatted as:
+
+> **Phase [XX] — [Short Description]**  e.g. "Phase 27c — AI Lookup Edge Function"
+
+This becomes the auto-title for the session in the Claude Code session list and keeps the history scannable.
+
+The opening message should be the **FIRST** thing pasted into the new Claude Code session, before the full handoff prompt.
+
+---
+
 ## Quick Reference: Document Map
 
 | Document | What It Does | When Referenced |
@@ -725,6 +737,7 @@ If items were added or completed, produce an updated open items priority matrix 
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.13 | 2026-03-05 | **Added "Next Session Setup" section.** Handoff documents must include a suggested opening message formatted as "Phase [XX] — [Short Description]" to auto-title the next Claude Code session for scannable history. |
 | v1.12 | 2026-03-04 | **§6d rewrite: Claude Code runs both test scripts directly.** Replaced Options A/B/C with single "Default" approach: Claude Code runs both `security-posture-validation.sql` and `pgtap-rls-coverage.sql` via `$DATABASE_READONLY_URL` every session with DB changes. pgTAP: strip line 25 (`CREATE EXTENSION`) via `sed`, write to temp file, run with `psql -f`. Added `export` note (source .env doesn't export). Sentinel check failures: Claude Code now updates test files directly instead of deferring to Stuart. Fallback: Supabase SQL Editor. |
 | v1.11 | 2026-03-03 | **Consolidation.** §2.1 expanded: added view security_invoker + DEFINER function search_path checks to bulk safety net (6 checks total). Section 4 removed (all checks now in §2.1). Section 3 narrowed to deep/niche validation only (CHECK constraints, roles, FKs, namespaces). Section 1 triggers simplified. §6d pgTAP count updated 391→408. Deprecated `security-validation-runbook.md` — fully superseded by §2.1 + §6d. |
 | v1.10 | 2026-03-03 | **Section 2 rewrite:** Renamed to "Table Security Posture Validation". §2.1 adds bulk safety-net query (GRANTs, RLS enabled, RLS policies) that runs on ANY database change — not just new tables. Returns only violations. §2.2 retains per-table audit/updated_at trigger checks for new tables only, with guidance on when triggers are expected. Updated Section 1 trigger: "Any database changes" now includes Section 2. Bulk catch-up validation run against all 90 tables: checks 1-4 PASS, checks 5-6 have expected gaps (reference/junction tables). |
