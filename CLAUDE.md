@@ -50,20 +50,23 @@ If you built something that has NO architecture doc, tell Stuart: "This feature 
 
 This project spans two git repos. When you modify files in `./docs-architecture/`, those changes write to `~/getinsync-architecture/` (a separate repo).
 
+**Code repo:** commits go to your current feature branch.
+**Architecture repo:** commits always go to `main` (no feature branches needed for docs).
+
 **When you modify files in ./docs-architecture/:**
-1. Commit and push the code repo as normal:
+1. Commit and push the code repo on your feature branch:
    ```bash
    cd ~/Dev/getinsync-nextgen-ag
    git add -A
    git commit -m "description of code changes"
-   git push
+   git push -u origin $(git branch --show-current)
    ```
-2. Also commit and push the architecture repo:
+2. Also commit and push the architecture repo (always on main):
    ```bash
    cd ~/getinsync-architecture
    git add -A
    git commit -m "description of doc changes"
-   git push
+   git push origin main
    cd ~/Dev/getinsync-nextgen-ag
    ```
 
@@ -191,17 +194,66 @@ The budget page broke because `vw_workspace_budget_summary` was changed to read 
 
 ## Git Workflow
 
-- **Branch:** Work on `dev`, merge to `main` for deployment
+### Branch Strategy
+
+Each Claude Code window works on its own **feature branch**, branched from `dev`. Multiple windows can run simultaneously on separate branches.
+
+- **Branch naming:** `feat/<description>`, `fix/<description>`, `refactor/<description>`, `chore/<description>`, `docs/<description>`
+- **Base branch:** Always branch from `dev` (not `main`)
 - **Commit messages:** Use prefixes: `feat:` / `fix:` / `refactor:` / `chore:` / `docs:`
-- **Push after commits:** Always push to origin
-- **Deploy flow:** dev -> main -> Netlify auto-deploys from main
+- **Push after commits:** Always push to origin with `-u` on first push
+- **Deploy flow:** feature-branch -> dev -> main -> Netlify auto-deploys from main
 - **Dual-repo:** If you modified `./docs-architecture/`, commit and push that repo too (see Dual-Repo Commits above)
+
+### Starting Work
+
+At the start of every session, before writing any code:
+1. Run: `git status` (confirm which branch you're on)
+2. If on `dev`: ask Stuart "What are we building? I'll create a feature branch before we start."
+3. If already on a feature branch: confirm with Stuart "I'm on `feat/xxx` — continuing this work?"
+4. Never start writing code while on the `dev` branch.
+
+```bash
+# At the start of a session, create a feature branch from dev
+cd ~/Dev/getinsync-nextgen-ag
+git checkout dev
+git pull origin dev
+git checkout -b feat/my-feature-name
+```
+
+### Finishing Work (feature complete)
+
+```bash
+# Merge your feature branch into dev when work is complete
+cd ~/Dev/getinsync-nextgen-ag
+git checkout dev
+git pull origin dev
+git merge feat/my-feature-name
+git push origin dev
+git branch -d feat/my-feature-name
+```
+
+### Finishing Work (feature in progress)
+
+```bash
+# Push your feature branch and note the branch name in the session handover
+git push -u origin $(git branch --show-current)
+```
+
+### Parallel Windows — Conflict Avoidance
+
+When multiple Claude Code windows run simultaneously:
+- Each window works on a **separate feature branch** touching **non-overlapping files**
+- Stuart assigns features to windows that do not conflict
+- If you discover you need to modify a file another window likely owns, **stop and tell Stuart**
+- Before merging to `dev`, always `git pull origin dev` first and resolve any conflicts
+- The architecture repo (`~/getinsync-architecture/`) stays on `main` — no feature branches needed for docs
 
 ---
 
 ## What You Must NOT Do
 
-- Do NOT create or use git worktrees — always work directly in ~/Dev/getinsync-nextgen-ag on the dev branch
+- Do NOT create or use git worktrees — use feature branches for parallel work instead (see Git Workflow above)
 - Do NOT modify database schema (Stuart handles that via Supabase SQL Editor)
 - Do NOT create database migrations, tables, columns, or constraints
 - Do NOT use `sudo` for npm installs
@@ -227,6 +279,27 @@ The budget page broke because `vw_workspace_budget_summary` was changed to read 
 - Do NOT use this for application data queries — only for schema validation
 - Before modifying any TypeScript that queries a view, use this connection to check the actual view definition first
 - Session-end checklist also uses this connection for security posture validation and stats alignment
+
+---
+
+## Mid-Session Schema Checkpoint
+
+Run this checkpoint after Stuart confirms a complete unit of database work is finished. A unit may involve multiple SQL chunks (e.g., table + columns + triggers + RLS policies applied in sequence). Wait for Stuart to signal completion — phrases like "schema done", "that's the last chunk", or "all scripts applied" — before running the checkpoint. Do NOT run after each individual script chunk mid-sequence. Do NOT wait for the session-end checklist.
+
+```bash
+# 1. Security posture validation (zero FAIL rows = pass)
+cd ~/Dev/getinsync-nextgen-ag
+export $(grep DATABASE_READONLY_URL .env | xargs)
+psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/security-posture-validation.sql
+
+# 2. TypeScript check (zero errors = pass)
+npx tsc --noEmit
+```
+
+- **All pass:** Say "Schema checkpoint passed" and continue working
+- **Any failure:** STOP. Report the specific failures to Stuart. Do not continue feature work until resolved.
+- This does NOT replace the session-end checklist — that still runs at session end
+- Do NOT run the full session-end checklist after every DB change — use this checkpoint instead
 
 ---
 
@@ -334,5 +407,5 @@ Track these for future sessions. When Stuart asks to continue refactoring, start
 
 ---
 
-*Last updated: March 3, 2026*
+*Last updated: March 5, 2026*
 *Update this file when architecture rules change.*

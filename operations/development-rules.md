@@ -156,6 +156,9 @@ SELECT trigger_name FROM information_schema.triggers
 WHERE event_object_table = 'new_table' AND trigger_name LIKE '%audit%';
 ```
 
+### 2.2.1 Mid-Session Schema Checkpoint
+After Stuart applies any database change, Claude Code runs the **Mid-Session Schema Checkpoint** (see CLAUDE.md) — security posture validation + TypeScript check. Silent on pass, stop on failure. This supplements §2.2 individual checks with a full-posture sweep.
+
 ### 2.3 pgTAP Security Regression Suite
 After any session with database changes, run the pgTAP security regression suite to verify no regressions across all tables. This supplements (not replaces) the manual validation in §2.2.
 
@@ -210,8 +213,8 @@ When the context window is getting low on tokens (or at the end of a productive 
 ### 4.2 Remind to Commit, Push, and Deploy After Major UI Changes
 After any significant UI change that needs to be accessible on production (`nextgen.getinsync.ca` via Netlify), remind Stuart to:
 
-1. **Commit** changes in Claude Code / local repo
-2. **Push** to `dev` branch on GitHub
+1. **Commit** changes on the feature branch
+2. **Merge** feature branch into `dev` and push
 3. **Merge** `dev` → `main` to trigger Netlify production deployment
 4. **Verify** the change is live on `nextgen.getinsync.ca`
 
@@ -243,7 +246,7 @@ This checklist determines which checks apply based on what changed, dispatches t
 | **pgTAP regression** | **After any DB changes** | **Run `testing/pgtap-rls-coverage.sql` or standalone — all green** |
 | Read latest schema | Before any DB design | `nextgen-schema-current.sql` |
 | Handover document | Session end / low tokens | Full context for next session |
-| Commit/push/deploy | After UI changes for production | dev → main → Netlify verify |
+| Commit/push/deploy | After UI changes for production | feature-branch → dev → main → Netlify verify |
 | Session-end checklist | Session end (if DB changes) | `operations/session-end-checklist.md` |
 
 ---

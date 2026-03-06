@@ -103,10 +103,9 @@ last_updated: 2026-02-23
   - **Logic fix needed:** Claude Code + Stuart refine requirements → Claude Code updates
 
 **3. Deploy**
-- Stuart commits to `dev` branch
-- Auto-deploys to dev Netlify site
-- Test in dev environment
-- Merge `dev` → `main` for production deploy to `nextgen.getinsync.ca`
+- Claude Code pushes feature branch and merges to `dev`
+- Stuart reviews and merges `dev` → `main` for production deploy to `nextgen.getinsync.ca`
+- Verify on `nextgen.getinsync.ca`
 
 ---
 
@@ -180,17 +179,17 @@ Did we change:
 When Claude Code modifies files in `./docs-architecture/`, those changes write to the architecture repo. Both repos must be committed:
 
 ```bash
-# 1. Commit code repo
+# 1. Commit code repo (on your feature branch)
 cd ~/Dev/getinsync-nextgen-ag
 git add <changed files>
 git commit -m "feat: description"
-git push
+git push -u origin $(git branch --show-current)
 
-# 2. Commit architecture repo (if docs changed)
+# 2. Commit architecture repo (always on main — no feature branches for docs)
 cd ~/getinsync-architecture
 git add <changed files>
 git commit -m "docs: description"
-git push
+git push origin main
 cd ~/Dev/getinsync-nextgen-ag
 ```
 

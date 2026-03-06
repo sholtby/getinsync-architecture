@@ -6,6 +6,8 @@
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
 **Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
 
+> **Note:** Do NOT run this full checklist after every mid-session database change. Use the **Mid-Session Schema Checkpoint** (CLAUDE.md) for that. This checklist runs once at session end.
+
 ---
 
 ## How To Use
@@ -182,7 +184,7 @@ Section 2.1 covers the common checks (GRANTs, RLS, views, functions). For niche 
 
 Remind Stuart to:
 1. **Commit** changes in Claude Code / local repo
-2. **Push** to `dev` branch on GitHub
+2. **Merge** feature branch into `dev` and push
 3. **Merge** `dev` → `main` to trigger Netlify production deployment
 4. **Verify** the change is live on `nextgen.getinsync.ca`
 
@@ -224,7 +226,7 @@ Expected: ~500-700KB file, starts with `-- PostgreSQL database dump`.
 ```bash
 git add getinsync-nextgen-schema-YYYY-MM-DD.sql
 git commit -m "Schema backup YYYY-MM-DD: [brief description of changes]"
-git push origin dev
+git push -u origin $(git branch --show-current)
 ```
 
 ### Copy to Architecture Repo
@@ -285,7 +287,7 @@ This Claude Project chat cannot push to git. When architecture docs are created 
    cd ~/getinsync-architecture
    git add -A
    git commit -m "docs: [description of new/updated doc]"
-   git push
+   git push origin main
    cd ~/Dev/getinsync-nextgen-ag
    ```
 
@@ -631,7 +633,7 @@ After updating, commit the architecture repo:
 cd ~/getinsync-architecture
 git add -A
 git commit -m "docs: stats alignment"
-git push
+git push origin main
 cd ~/Dev/getinsync-nextgen-ag
 ```
 

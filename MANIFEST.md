@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-04
+Last updated: 2026-03-05 (v1.39)
 
 ---
 
@@ -120,7 +120,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/cost-budget/vendor-cost.md | v2.0 | 🟡 | Vendor attribution — two channels (IT Services + Cost Bundles), dpsp vendor DEPRECATED (updated Mar 4) |
 | features/cost-budget/software-contract.md | v2.0 | 🟡 | Software contracts — contracts live on IT Services, dpsp cost columns DEPRECATED (updated Mar 4) |
 | features/cost-budget/cost-model-validation-2026-03-04.md | — | 🟢 | **Cost model validation report — schema debt, view bugs, frontend audit, refactoring plan** |
-| features/cost-budget/cost-model-primer.md (.docx) | v2.0 | 🟡 | **Cost model primer — end-to-end guide for internal team: 2 channels, inventory-only software, data flow, UI, maturity levels (updated Mar 4)** |
+| features/cost-budget/cost-model-primer.md (.docx) | v3.0 | 🟢 | **Cost model primer — end-to-end guide: 2 channels, Quick Calculator, Contract Expiry Widget, IT Service→Software Product linking, data flow, maturity levels (rewritten Mar 5)** |
 | features/cost-budget/adr-cost-model-reunification.md | v1.0 | ☪ | **ADR: IT Services absorb contract role. Software Products become inventory. Reverses v2.5 fork. Schema changes, migration path, budget impact analysis.** |
 
 ### Identity, Security & Access
@@ -692,6 +692,9 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.40 | 2026-03-05 | Mid-Session Schema Checkpoint. Added to CLAUDE.md (both repos): lightweight security posture + tsc gate after every DB change. Updated session-end-checklist.md with "do not run mid-session" note. Updated development-rules.md §2.2.1. |
+| v1.39 | 2026-03-05 | Git workflow: feature branches for parallel Claude Code windows. Updated CLAUDE.md (both repos), development-rules.md, team-workflow.md, session-end-checklist.md. Deleted operations/CLAUDE.md (stale v24 Feb copy). Branch strategy: feature-branch → dev → main. Architecture repo stays on main. |
+| v1.38 | 2026-03-05 | Cost model primer v2.0→v3.0 (full rewrite). Removed all migration/legacy language, rewritten UI sections to match shipped Phase 3 components: Quick Calculator, Contract Expiry Widget, IT Service→Software Product linking, ITServiceDependencyList allocation column. Regenerated .docx. Status 🟡→🟢. |
 | v1.37 | 2026-03-04 | ADR: Cost Model Reunification. IT Services absorb contract role; Software Products become pure inventory. Reverses v2.5 fork that created two parallel cost streams. Documents: rationale for original fork (budget management complexity), schema changes needed (4 cols on it_services, new junction it_service_software_products), migration path (5 phases), budget impact (none — IT Service track already handles it). Document count 92→93, REFERENCE 15→16. |
 | v1.36 | 2026-03-04 | Realtime + Edge Functions architecture. Added features/realtime-subscriptions/realtime-subscriptions-architecture.md v1.0 🟡 and infrastructure/edge-functions-layer-architecture.md v1.0 🟡. Principles 14–15 added. Cross-refs in roadmap, ai-chat, gamification docs. Document count 90→92, AS-DESIGNED 7→9. |
 | v1.35 | 2026-03-04 | Feature rename: "IT Value Creation" → "Roadmap". Updated section heading, file paths (it-value-creation → roadmap), component references, route paths across 10 architecture docs. Lexicon change only — no database or schema changes. |
