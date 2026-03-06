@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-05
+Last updated: 2026-03-06
 
 ---
 
@@ -381,29 +381,35 @@ interface LifecycleLookupResponse {
 }
 ```
 
-### 5.3 Extraction Strategy
+### 5.3 Extraction Strategy — Three-Tier Pipeline (v1.2)
 
-**General Pattern:**
+**v1.2 Architecture:** The lookup uses a three-tier pipeline, ordered by cost and reliability:
 
 ```
-1. Identify vendor from registry (fuzzy match vendor_name + aliases)
-2. Fetch lifecycle_url for vendor
-3. Search page for product/version
-4. If not found, try lifecycle_url_pattern with product name
-5. Extract dates using LLM with structured output
-6. Normalize status based on date logic
-7. Return structured result with confidence score
+Tier 1: Check technology_lifecycle_reference table (DB cache)
+        → Zero external calls, instant, free
+        → Returns existing records with confidence 'high'
+
+Tier 2: Query endoflife.date API (https://endoflife.date)
+        → Free, structured JSON, ~200ms latency, 400+ products
+        → Community-curated, covers all major enterprise vendors
+        → Product mapping table in Edge Function code (30-50 entries)
+
+Tier 3: Claude LLM extraction (fallback)
+        → Fetches vendor page from vendor_lifecycle_sources registry
+        → Sends page content to Claude Sonnet with structured prompt
+        → ~5-10s latency, ~$0.005 per call
+        → Used for niche vendors not covered by endoflife.date
 ```
 
-**Vendor-Specific Strategies:**
+**Why endoflife.date first (v1.2 change):** Investigation found that Microsoft does NOT expose a public lifecycle REST API — the "lifecycle API" is a web search page. The endoflife.date project provides free, structured JSON covering Microsoft, Oracle, VMware, Red Hat, Adobe, and 400+ more products. This handles ~80% of requests without Claude API costs, with higher reliability than web scraping.
+
+**Vendor-Specific Strategies (Tier 3 only):**
 
 | Vendor | Strategy | Notes |
 |--------|----------|-------|
-| Microsoft | API-first | Microsoft has a lifecycle API, use when available |
-| Oracle | Table parsing | Lifecycle data in HTML tables |
-| VMware | Matrix parsing | Product/version matrix format |
-| Red Hat | Structured page | Well-organized lifecycle pages |
-| General | LLM extraction | For vendors without structured data |
+| General | LLM extraction | Claude Sonnet, temperature 0, structured JSON output |
+| All major vendors | endoflife.date (Tier 2) | Bypasses Tier 3 entirely for covered products |
 
 ### 5.4 Skill Implementation Sketch
 
@@ -880,11 +886,15 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - ✅ 27b.4: ITServiceModal lifecycle reference linking (search/create/display pattern)
 - ✅ 27b.5: SoftwareProductModal lifecycle reference linking (search/create/display pattern)
 
-### Phase 27c: AI Lookup Skill (4 hrs)
-- Implement extraction skill using Claude
-- Vendor-specific strategies for major vendors
-- Confidence scoring logic
-- Reference table upsert
+### Phase 27c: AI Lookup Edge Function (4 hrs) — COMPLETE
+- ✅ Supabase Edge Function: `supabase/functions/lifecycle-lookup/`
+- ✅ Three-tier pipeline: DB cache → endoflife.date API → Claude extraction
+- ✅ endoflife.date product mapping (30+ enterprise products across 15+ vendors)
+- ✅ Claude Sonnet extraction with structured prompts, date validation, retry
+- ✅ Status normalization mirroring `compute_lifecycle_status()` trigger
+- ✅ Confidence scoring (high/medium/low based on source + match quality)
+- ✅ Returns data only — no auto-insert (Phase 27d adds user confirmation)
+- **Prerequisite for testing:** `supabase secrets set ANTHROPIC_API_KEY=...` (Tier 3 only)
 
 ### Phase 27d: Auto-Population Flow (3 hrs -- was 2 hrs, expanded for Path 1)
 - Trigger lookup on IT Service creation (Path 2)
