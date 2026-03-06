@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-06 (v1.3)
+Last updated: 2026-03-06 (v1.4)
 
 ---
 
@@ -903,11 +903,55 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - User confirmation dialog
 - Save to reference table on confirm
 
-### Phase 27e: Dashboard Widget (3 hrs -- was 2 hrs, expanded for combined view) — PARTIAL
+### Phase 27e: Dashboard Widget + Data Source Health (5 hrs -- was 3 hrs, expanded for source health) — PARTIAL
 - ✅ LifecycleRiskPanel enhanced with EOS count and approaching-EOL count callout
 - EOL alerts list
 - **v1.1:** Combined view showing both Path 1 and Path 2 sources
 - Link to affected DPs
+- **v1.3:** Vendor Lifecycle Source Health (see below)
+
+#### 27e.1: Vendor Lifecycle Source Health
+
+**Problem:** Tier 3 (Claude extraction) depends on vendor lifecycle URLs in `vendor_lifecycle_sources`. URL audit (March 2026) found only 4/16 URLs are healthy — 8 are broken (wrong page, JS-only, redirected, timeout). Bad URLs waste Tier 3 lookup time and return no data. Platform admins have no visibility into data source health.
+
+**Immediate action (no code — Stuart SQL):**
+- Set `is_active = false` on the 8 broken vendor URLs to prevent wasted Tier 3 attempts
+- Or update `lifecycle_url` to corrected URLs where known
+
+**Schema additions to `vendor_lifecycle_sources`:**
+- `url_status` (text, CHECK: 'healthy' / 'degraded' / 'broken', default 'healthy')
+- `last_verified_at` (timestamptz, nullable)
+- `last_verification_notes` (text, nullable — reason for status)
+
+**Technology Health Dashboard — "Data Source Health" card:**
+- Lifecycle coverage: X% of technology products have lifecycle reference linked
+- Source breakdown: pie/bar showing cache vs endoflife.date vs Claude-extracted origins
+- Vendor source status: X/Y vendor URLs healthy (platform admin only)
+- Link to Settings > Vendor Sources management
+
+**Settings > Technology Catalog — "Vendor Lifecycle Sources" table (platform admin):**
+- Table columns: Vendor | URL | Status badge (healthy/degraded/broken) | Last Verified | Notes
+- "Verify URL" button per row (calls Edge Function to test-fetch, updates status)
+- "Verify All" bulk action
+- Inline edit for `lifecycle_url` corrections
+- Filter by status
+
+**URL verification logic (extend `lifecycle-lookup` or new Edge Function):**
+- HEAD/GET request to URL with 10s timeout
+- Check for: HTTP 200, content-type text/html, response body > 1KB (not empty/redirect page)
+- JS-only pages (no text content) → 'degraded'
+- Non-200, timeout, redirect to different domain → 'broken'
+- Record result in `url_status`, `last_verified_at`, `last_verification_notes`
+
+**Audit baseline (March 6, 2026):**
+
+| Status | Count | Vendors |
+|--------|-------|---------|
+| GOOD | 4 | Microsoft, IBM, Adobe, SUSE |
+| WEAK | 4 | Oracle, Red Hat, SAP, Cisco (JS-rendered or partial data) |
+| BAD | 8 | VMware/Broadcom, AWS, Apache, Google, HCL, HP, Nginx, Salesforce |
+
+**Note:** endoflife.date (Tier 2) covers most products from BAD-URL vendors, so the practical impact is limited to niche/version-specific lookups that fall through to Tier 3.
 
 ### Phase 27f: Alert Configuration (2 hrs)
 - Namespace-level alert settings
@@ -919,7 +963,7 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - ✅ `vw_dp_lifecycle_risk_combined` (unified) — DEPLOYED
 - ✅ `it_service_technology_products` junction table — DEPLOYED (with GRANT, RLS, audit trigger)
 
-**Total Estimate:** ~17 hours (was ~15 hours in v1.0)
+**Total Estimate:** ~19 hours (was ~17 hrs in v1.1, ~15 hrs in v1.0)
 
 ---
 
@@ -1243,4 +1287,5 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 | v1.0 | 2026-01-28 | Initial document |
 | v1.1 | 2026-02-14 | Two-path model integration. Added: Path 1 technology product entry point (S4.6), technology tagging flow (S6.1), Path 1 lifecycle risk view (S7.4), unified combined risk view (S7.4), updated architecture diagram, assessment integration shows both paths, alert engine covers both paths, implementation phases updated (+2 hrs), new open questions for deployed version and deduplication, T02 suggestion scoring table. References expanded with 5 new companion docs. |
 | v1.2 | 2026-03-05 | Status markers added. Phase 27b COMPLETE: lifecycle linking UI for TechnologyProductModal, ITServiceModal, SoftwareProductModal; lifecycle badges on DP tags; TechnologyCatalogSettings badge source fix. Phase 27e PARTIAL: LifecycleRiskPanel enhanced with EOS/approaching-EOL counts. Phase 27g DEPLOYED: vw_it_service_lifecycle_risk, vw_dp_lifecycle_risk_combined, it_service_technology_products junction table. Schema FKs deployed: it_services.lifecycle_reference_id, software_products.lifecycle_reference_id. |
-| v1.3 | 2026-03-06 | Phase 27c COMPLETE: three-tier lifecycle-lookup Edge Function deployed. Added Section 14: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first flow, auto-population, data quality badges). Vendor lifecycle URL audit: 4/16 GOOD, 8/16 BAD. endoflife.date vitality assessment (daily updates, MIT license, hybrid automation+community model). |
+| v1.3 | 2026-03-06 | Phase 27c COMPLETE: three-tier lifecycle-lookup Edge Function deployed (`--no-verify-jwt` for ES256 gateway compat, function-level auth via `getUser()`). Added Section 14: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first flow, auto-population, data quality badges). Vendor lifecycle URL audit: 4/16 GOOD, 8/16 BAD. endoflife.date vitality assessment (daily updates, MIT license, hybrid automation+community model). |
+| v1.4 | 2026-03-06 | Phase 27e expanded (+2 hrs): Added 27e.1 Vendor Lifecycle Source Health — schema additions (`url_status`, `last_verified_at`, `last_verification_notes`), Technology Health Dashboard "Data Source Health" card spec, Settings vendor sources management table, URL verification logic, audit baseline table. Total estimate now ~19 hrs. |

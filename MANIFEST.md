@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-06 (v1.43)
+Last updated: 2026-03-06 (v1.44)
 
 ---
 
@@ -209,7 +209,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/technology-health/lifecycle-intelligence.md | v1.3 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, Phase 28 spec: validated technology entry via endoflife.date catalog** |
+| features/technology-health/lifecycle-intelligence.md | v1.4 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, Phase 28 spec: validated technology entry via endoflife.date catalog** |
+| features/reference-data/hybrid-reference-table-migration.md | v1.0 | PARKED | **Reference table unification: 18 tables → hybrid pattern (is_system + nullable namespace_id). Execute after City of Garland import.** |
 | features/ai-chat/mvp.md | MVP | 🟢 | Natural language APM queries — Supabase-native |
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
 | features/ai-chat/v3-multicloud.md | v3 | 🟡 | Multi-cloud AI chat (designed, mixed refs) |
@@ -692,6 +693,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.44 | 2026-03-06 | NEW: features/reference-data/hybrid-reference-table-migration.md v1.0 — full migration plan for 18 reference tables (5 Group A namespace-scoped + 13 Group B system-only → unified hybrid pattern). Status: PARKED. Lifecycle Intelligence v1.3→v1.4: Phase 27e expanded with vendor source health + endoflife.date category alignment. |
 | v1.43 | 2026-03-06 | Lifecycle Intelligence v1.2→v1.3: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first entry, auto-population, data quality badges). Vendor URL audit results. endoflife.date vitality assessment. |
 | v1.42 | 2026-03-06 | Lifecycle Intelligence v1.1→v1.2: Phase 27c Edge Function built. Three-tier lookup pipeline (DB cache → endoflife.date API → Claude extraction). §5.3 rewritten for v1.2 architecture. Phase 27c status updated to COMPLETE. |
 | v1.41 | 2026-03-05 | Session-end checklist v1.13: Added "Next Session Setup" section — handoff documents must include phase-numbered opening message for scannable Claude Code session history. |
