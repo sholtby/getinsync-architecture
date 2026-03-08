@@ -1,6 +1,6 @@
 # core/deployment-profile.md
 Deployment Profile Architecture - Data Residency & Location Tracking
-Last updated: 2026-01-31
+Last updated: 2026-03-08
 
 ---
 
@@ -366,9 +366,58 @@ CREATE POLICY "Workspace admins can insert data centers" ON data_centers
 
 ---
 
-## 9. Future Enhancements
+## 9. Suite Tech Score Inheritance (NEW in v1.9)
 
-### 9.1 Data Center Costs (Phase 26+)
+### 9.1 `inherits_tech_from` Column
+
+```sql
+ALTER TABLE deployment_profiles
+  ADD COLUMN inherits_tech_from UUID REFERENCES deployment_profiles(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_dp_inherits_tech_from ON deployment_profiles(inherits_tech_from)
+  WHERE inherits_tech_from IS NOT NULL;
+```
+
+**Purpose:** When a suite child application (architecture_type = `platform_application`) has its own DP, that DP's `inherits_tech_from` points to the parent's primary DP. This allows the child to exist as a full DP record (avoiding null-DP edge cases) while inheriting its parent's T-scores.
+
+### 9.2 Behavior
+
+When `inherits_tech_from` IS NOT NULL:
+
+| Aspect | Behavior |
+|--------|----------|
+| T01-T14 columns | Stay NULL on child DP |
+| tech_health | NULL (auto-calculate trigger returns NULL when all factors NULL) |
+| tech_risk | NULL (same — returns NULL when all factors NULL) |
+| Frontend display | Resolves `inherits_tech_from` FK to show parent's T-scores with "(inherited)" indicator |
+| Scoring patterns | NOT offered — T-scores come from parent |
+| B-scores | Independent — assessed via child's DP portfolio assignment |
+| hosting_type, region | Set independently (typically matches parent) |
+| IT Services | Can be linked independently (for add-on module costs) |
+| Cost Bundles | Can be linked independently |
+
+### 9.3 Auto-Calculate Trigger Compatibility
+
+The existing `auto_calculate_deployment_profile_tech_scores()` trigger is compatible:
+- `calculate_tech_health()` skips NULL factors (`IF p_tXX IS NOT NULL THEN`)
+- Returns NULL if `v_total_weight = 0` (all factors NULL)
+- Suite children with all-NULL T-scores correctly get `tech_health = NULL`, `tech_risk = NULL`
+- No trigger modifications needed
+
+### 9.4 ON DELETE SET NULL Rationale
+
+If the parent DP is deleted, `inherits_tech_from` becomes NULL. The child reverts to a standalone DP with no inherited scores — T-scores show as unassessed until re-linked or independently scored.
+
+### 9.5 Cross-References
+
+- `core/composite-application.md` v2.0 — Full suite architecture, design decisions
+- `features/assessment/tech-scoring-patterns.md` §12 — Suite auto-suggestion future enhancement
+
+---
+
+## 10. Future Enhancements
+
+### 10.1 Data Center Costs (Phase 26+)
 
 Track costs associated with data centers:
 ```sql
@@ -379,7 +428,7 @@ ADD COLUMN cost_allocation_basis text; -- 'square_footage', 'rack_units', 'equal
 
 Then allocate to apps based on their presence in that DC.
 
-### 9.2 Multi-Region Deployments (Phase 27+)
+### 10.2 Multi-Region Deployments (Phase 27+)
 
 Some apps span multiple regions (e.g., global CDN):
 ```sql
@@ -391,7 +440,7 @@ CREATE TABLE deployment_profile_regions (
 );
 ```
 
-### 9.3 Additional Cloud Providers
+### 10.3 Additional Cloud Providers
 
 As needed, add more providers to standard_regions:
 - IBM Cloud (ibm)
@@ -401,11 +450,12 @@ As needed, add more providers to standard_regions:
 
 ---
 
-## 10. Related Documents
+## 11. Related Documents
 
 | Document | Content |
 |----------|---------|
 | core/conceptual-erd.md | Full data model |
+| core/composite-application.md | Suite relationships, `inherits_tech_from` usage |
 | catalogs/csdm-application-attributes.md | CSDM alignment |
 | CHANGELOG.md | Change history |
 
@@ -415,10 +465,11 @@ As needed, add more providers to standard_regions:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.9 | 2026-03-08 | Add `inherits_tech_from` column for suite T-score inheritance. New §9 documenting behavior, trigger compatibility, and cross-references. |
 | v1.8 | 2026-01-31 | Add data_centers table, standard_regions table, data_center_id field, remove "N/A (Vendor Managed)", context-sensitive location tracking |
 | v1.7 | 2026-01-15 | Previous version with static region dropdown |
 
 ---
 
 *Document: core/deployment-profile.md*
-*January 2026*
+*March 2026*

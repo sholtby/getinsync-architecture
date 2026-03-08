@@ -707,7 +707,7 @@ ORDER BY tsp.usage_count DESC;
 | Document | Relevance |
 |----------|-----------|
 | core/deployment-profile.md | DP-centric assessment model (scoring pattern attaches here) |
-| core/composite-application.md | Suite relationships (future: inherited patterns for suite children) |
+| core/composite-application.md | Suite relationships — v2.0: child DPs with `inherits_tech_from` are NOT offered scoring patterns (§13) |
 | catalogs/software-product.md | Software Product catalog (optional pattern link) |
 | features/technology-health/technology-stack-erd.md | Technology stack architecture |
 | operations/development-rules.md | Schema creation checklist (§2.1) |
@@ -722,9 +722,19 @@ ORDER BY tsp.usage_count DESC;
 | Deviation reporting | Surface DPs that deviate from their applied pattern | Phase D deployed |
 | Re-apply pattern (bulk) | Update all DPs using pattern X with latest values | Phase D deployed |
 | Pattern versioning | Track when pattern scores change, show diff | Phase C deployed |
-| Suite auto-suggestion | When a suite child inherits parent's DP, suggest parent's pattern | Suite relationships feature |
+| Suite auto-suggestion | When a parent DP has a pattern applied, display that pattern name on child DPs as context (informational only — child T-scores are inherited, not pattern-applied) | Suite relationships feature |
 | CSV import pattern assignment | Bulk-assign patterns during large imports | CSV import feature |
 | Validated vs Draft status | Admin marks patterns as organizational standard; visual trust indicator | Phase C deployed |
+
+### Suite Interaction Rule (Updated Mar 2026)
+
+When a DP has `inherits_tech_from` set (i.e., it is a suite child):
+- **Scoring patterns are NOT offered** during assessment — the child's T-scores come from the parent's DP, not from a pattern
+- The parent DP can use scoring patterns normally
+- If the parent re-applies or changes its pattern, the child's displayed scores update automatically (child has no local T-scores to conflict)
+- The "Suite auto-suggestion" enhancement above is informational only — it shows which pattern the parent uses, but does not apply scores to the child
+
+**Cross-reference:** `core/composite-application.md` v2.0 §13
 
 ---
 

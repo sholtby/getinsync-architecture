@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-08 (v1.47)
+Last updated: 2026-03-08 (v1.48)
 
 ---
 
@@ -88,9 +88,9 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | core/core-architecture.md | v2.5 | 🟡 | Core architecture — ProductContract merged into IT Service, two cost channels (updated Mar 4) |
 | core/conceptual-erd.md | v2.0 | 🟡 | Conceptual ERD — ProductContract replaced by ITServiceSoftwareProduct junction (updated Mar 4) |
-| core/composite-application.md | v1.1 | 🟡 | Composite applications (Supabase-native) |
-| core/composite-application-erd.md | v1.0 | 🟡 | Composite application ERD |
-| core/deployment-profile.md | v1.8 | 🟢 | DP-centric assessment, clone/move, naming |
+| core/composite-application.md | v2.0 | 🟡 | **Application Relationships — v2.0: suite children get own DP with `inherits_tech_from`, `architecture_type` field, CSDM-aligned, badge/tag UI, suite-only Phase 1 (updated Mar 8)** |
+| core/composite-application-erd.md | v2.0 | 🟡 | **Composite application ERD — v2.0: replaces `parent_application_id` with relationship table + `inherits_tech_from` (updated Mar 8)** |
+| core/deployment-profile.md | v1.9 | 🟢 | **DP-centric assessment, clone/move, naming, `inherits_tech_from` suite inheritance (updated Mar 8)** |
 | core/workspace-group.md | v1.6 | 🟢 | Workspace groups — stack-agnostic, no AWS refs found |
 | features/technology-health/technology-stack-erd.md | v1.0 | 🟢 | CSDM-aligned ERD — SP, TP, IT Services parallel to DPs |
 | features/technology-health/technology-stack-erd-addendum.md | v1.1 | 🟢 | **Two-path model: inventory tags vs IT Service cost/blast radius — DEPLOYED** |
@@ -256,7 +256,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.36** | 🟢 | **Architecture manifest — v1.36: Cost Model Reunification Phase 0 (9 docs updated)** |
+| **THIS FILE: MANIFEST.md** | **v1.48** | 🟢 | **Architecture manifest — v1.48: Composite Application v2.0 (suite-first, CSDM-aligned DP inheritance)** |
 
 ---
 
@@ -308,6 +308,10 @@ The following documents were removed during the architecture audit. They describ
 | *(new view)* | vw_it_service_contract_expiry | ADR: Cost Model Reunification |
 | *(new view)* | flag_summary_by_workspace | Gamification Architecture v1.2 |
 | *(new functions x9)* | check_achievements, generate_activity_feed, etc. | Gamification Architecture v1.2 |
+| *(new table)* | architecture_types (reference table: standalone, platform_host, platform_application) | Composite Application v2.0 |
+| applications | +`architecture_type TEXT DEFAULT 'standalone' REFERENCES architecture_types(code)` | Composite Application v2.0 |
+| deployment_profiles | +`inherits_tech_from UUID REFERENCES deployment_profiles(id) ON DELETE SET NULL` | Composite Application v2.0 / DP v1.9 |
+| *(new table)* | application_relationships (constitutes, depends_on, replaces) | Composite Application v2.0 |
 
 **Deployed since v1.24 (removed from pending):**
 - ✅ applications: management_classification, csdm_stage, branch — deployed Feb 18
