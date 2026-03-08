@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-06 (v1.5)
+Last updated: 2026-03-08 (v1.6)
 
 ---
 
@@ -1121,37 +1121,53 @@ GET /api/{id}.json ────────────►  Fetch cycles on sele
 
 ### 14.4 Architecture Components
 
-#### 14.4.1 New Edge Function: `technology-catalog-search`
+#### 14.4.1 New Edge Function: `technology-catalog-search` — DEPLOYED
 
 ```
 POST /functions/v1/technology-catalog-search
 Authorization: Bearer <jwt>
 
-Request:
-  { "query": "sql server" }
-
+# Action 1: Search
+Request:  { "action": "search", "query": "sql server" }
 Response:
   {
     "products": [
       {
         "eol_product_id": "mssqlserver",
         "display_name": "Microsoft SQL Server",
+        "vendor_name": "Microsoft",
         "category": "database",
-        "cycle_count": 15,
-        "latest_version": "2025",
-        "earliest_active_eol": "2026-07-14"
-      },
-      ...
+        "aliases": ["mssql", "sql-server"]
+      }
     ],
-    "total": 2
+    "total": 1
+  }
+
+# Action 2: Get Cycles
+Request:  { "action": "get-cycles", "product_id": "mssqlserver" }
+Response:
+  {
+    "product_id": "mssqlserver",
+    "display_name": "Microsoft SQL Server",
+    "vendor_name": "Microsoft",
+    "category": "database",
+    "cycles": [
+      { "cycle": "2022", "version": "2022", "release_date": "2022-11-16",
+        "eol_date": "2032-01-11", "support_date": "2027-01-11",
+        "status": "mainstream", "lts": false, "latest": "16.0.4185.1" }
+    ]
   }
 ```
 
-**Implementation:**
-- Maintains an in-memory cache of the endoflife.date product list (refresh every 24h)
-- Fuzzy search against product IDs and display names
-- Returns top 10 matches ranked by relevance
-- No Claude API cost — pure string matching against cached list
+**Implementation (files):**
+- `supabase/functions/technology-catalog-search/index.ts` — Deno.serve, JWT auth, two actions
+- `supabase/functions/technology-catalog-search/vendor-map.ts` — ~130 product→vendor entries
+- `supabase/functions/technology-catalog-search/types.ts` — Request/response types
+- `supabase/functions/_shared/lifecycle-utils.ts` — Shared lifecycle status computation (moved from lifecycle-lookup/)
+- Caches endoflife.date v1 API product list per invocation (Deno Edge Functions are ephemeral)
+- Fuzzy search scoring: exact ID (100) > label-starts-with (80) > alias-exact (70) > label-contains (60) > ID-contains (50) > alias-contains (40) > all-terms (30) + vendor boost (+10)
+- Returns top 10 matches enriched with vendor name
+- No Claude API cost — pure string matching
 
 #### 14.4.2 Enhanced `lifecycle-lookup` Edge Function
 
@@ -1181,14 +1197,14 @@ Response:
   }
 ```
 
-#### 14.4.3 UI Components
+#### 14.4.3 UI Components — DEPLOYED
 
-| Component | Purpose |
-|-----------|---------|
-| `TechnologySearchModal` | New modal replacing direct form entry. Search box, result list, version picker. |
-| `TechnologySearchResult` | Card showing product name, version count, category, latest EOL status |
-| `TechnologyVersionPicker` | Version list with lifecycle badges, radio select |
-| Existing `TechnologyProductModal` | Modified: pre-populated fields when coming from search flow, read-only for verified products |
+| Component | File | Purpose |
+|-----------|------|---------|
+| `TechnologyCatalogSearchModal` | `src/components/TechnologyCatalogSearchModal.tsx` | Search-first modal with product search (300ms debounce) + version picker. Two internal views. |
+| `TechnologyProductModal` | `src/components/TechnologyProductModal.tsx` | Modified: accepts `prePopulated` prop for auto-fill from catalog search. Auto-matches manufacturer (fuzzy), category (EOL_CATEGORY_MAPPING), and auto-creates lifecycle reference on save. |
+| `TechnologyCatalogSettings` | `src/pages/settings/TechnologyCatalogSettings.tsx` | Modified: "Add Technology" opens search modal first. Edit flow unchanged (opens product modal directly). |
+| `PrePopulatedTechProduct` | `src/types/index.ts` | Type carrying search selection data between modals (name, vendor, version, category_hint, lifecycle_data). |
 
 #### 14.4.4 Data Quality Indicators
 
@@ -1237,20 +1253,23 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 
 ### 14.8 Implementation Phases
 
-#### Phase 28a: Catalog Search Edge Function (3 hrs)
-- New Edge Function: `technology-catalog-search`
-- Cache endoflife.date product list with fuzzy search
-- Return matched products with metadata (category, cycle count, latest version)
+#### Phase 28a: Catalog Search Edge Function — COMPLETE (Mar 8)
+- Edge Function `technology-catalog-search` deployed with two actions: `search` and `get-cycles`
+- Shared `_shared/lifecycle-utils.ts` (moved from lifecycle-lookup/) for lifecycle status computation
+- `vendor-map.ts` with ~130 product→vendor entries
+- v1 API integration (`/api/v1/products/` returns `{ result: [...] }`)
+- Fuzzy search with 7-tier scoring + vendor boost
 
-#### Phase 28b: Version Picker + Auto-Population (4 hrs)
-- `TechnologySearchModal` with search box and result cards
-- Version picker with lifecycle badges per cycle
-- Auto-create `technology_lifecycle_reference` record from selected cycle
-- Auto-populate `technology_products` fields (name, version, category)
-- Link via `lifecycle_reference_id` FK
+#### Phase 28b: Version Picker + Auto-Population — COMPLETE (Mar 8)
+- `TechnologyCatalogSearchModal` with search view (300ms debounce) + version picker
+- LifecycleBadge reused for version status display
+- Auto-creates `technology_lifecycle_reference` record from selected cycle on save
+- Auto-populates name, version, category (EOL_CATEGORY_MAPPING), manufacturer (fuzzy match)
+- `TechnologyCatalogSettings` rewired: "Add Technology" opens search modal first, edit flow unchanged
+- Bug fix: category query in modal now filters by namespace_id (was returning cross-namespace categories)
 
 #### Phase 28c: Integration into Existing Flows (3 hrs)
-- Replace "Add Technology Product" button in TechnologyCatalogSettings
+- ~~Replace "Add Technology Product" button in TechnologyCatalogSettings~~ DONE in 28b
 - Integrate into DP technology tagging flow (LinkedTechnologyProductsList "+ Link Technology")
 - Integrate into IT Service and Software Product modals where technology is referenced
 - Pre-populate search from existing name/version when editing
@@ -1261,7 +1280,7 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 - Bulk validation tool: scan existing technology products, match against endoflife.date, offer to link
 - Scheduled refresh: re-validate linked products monthly
 
-**Total Estimate:** ~12 hours
+**Total Estimate:** ~12 hours (28a+28b complete, ~5 hrs remaining)
 
 ### 14.9 endoflife.date Vitality Assessment (Mar 6, 2026)
 
@@ -1293,3 +1312,4 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 | v1.2 | 2026-03-05 | Status markers added. Phase 27b COMPLETE: lifecycle linking UI for TechnologyProductModal, ITServiceModal, SoftwareProductModal; lifecycle badges on DP tags; TechnologyCatalogSettings badge source fix. Phase 27e PARTIAL: LifecycleRiskPanel enhanced with EOS/approaching-EOL counts. Phase 27g DEPLOYED: vw_it_service_lifecycle_risk, vw_dp_lifecycle_risk_combined, it_service_technology_products junction table. Schema FKs deployed: it_services.lifecycle_reference_id, software_products.lifecycle_reference_id. |
 | v1.3 | 2026-03-06 | Phase 27c COMPLETE: three-tier lifecycle-lookup Edge Function deployed (`--no-verify-jwt` for ES256 gateway compat, function-level auth via `getUser()`). Added Section 14: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first flow, auto-population, data quality badges). Vendor lifecycle URL audit: 4/16 GOOD, 8/16 BAD. endoflife.date vitality assessment (daily updates, MIT license, hybrid automation+community model). |
 | v1.4 | 2026-03-06 | Phase 27e expanded (+2 hrs): Added 27e.1 Vendor Lifecycle Source Health — schema additions (`url_status`, `last_verified_at`, `last_verification_notes`), Technology Health Dashboard "Data Source Health" card spec, Settings vendor sources management table, URL verification logic, audit baseline table. Total estimate now ~19 hrs. |
+| v1.6 | 2026-03-08 | Phase 28a+28b COMPLETE. `technology-catalog-search` Edge Function deployed (search + get-cycles). `TechnologyCatalogSearchModal` created with search-first flow + version picker. `TechnologyProductModal` modified with prePopulated prop, auto-match for manufacturer/category, lifecycle auto-creation. `lifecycle-utils.ts` moved to `_shared/`. Bug fix: category query missing namespace_id filter caused cross-namespace category match. |

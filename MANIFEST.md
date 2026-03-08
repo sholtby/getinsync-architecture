@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-06 (v1.45)
+Last updated: 2026-03-08 (v1.46)
 
 ---
 
@@ -209,7 +209,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/technology-health/lifecycle-intelligence.md | v1.5 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, AI Lookup button on all 3 catalog modals, Phase 28 spec: validated technology entry via endoflife.date catalog** |
+| features/technology-health/lifecycle-intelligence.md | v1.6 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, AI Lookup button on all 3 catalog modals, Phase 28a+28b DEPLOYED: validated technology entry via endoflife.date catalog search-first flow** |
 | features/reference-data/hybrid-reference-table-migration.md | v1.0 | PARKED | **Reference table unification: 18 tables → hybrid pattern (is_system + nullable namespace_id). Execute after City of Garland import.** |
 | features/ai-chat/mvp.md | MVP | 🟢 | Natural language APM queries — Supabase-native |
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
