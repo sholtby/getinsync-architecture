@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-08 (v1.6)
+Last updated: 2026-03-08 (v1.7)
 
 ---
 
@@ -1268,11 +1268,11 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 - `TechnologyCatalogSettings` rewired: "Add Technology" opens search modal first, edit flow unchanged
 - Bug fix: category query in modal now filters by namespace_id (was returning cross-namespace categories)
 
-#### Phase 28c: Integration into Existing Flows (3 hrs)
+#### Phase 28c: Integration into Existing Flows — COMPLETE (Mar 8)
 - ~~Replace "Add Technology Product" button in TechnologyCatalogSettings~~ DONE in 28b
-- Integrate into DP technology tagging flow (LinkedTechnologyProductsList "+ Link Technology")
-- Integrate into IT Service and Software Product modals where technology is referenced
-- Pre-populate search from existing name/version when editing
+- ~~Integrate into DP technology tagging flow (LinkTechnologyProductModal "+ Link Technology")~~ DONE
+- IT Service and Software Product modals: DEFERRED — both already have AI Lookup (Tier 2)
+- Pre-populate search from existing name/version when editing: DEFERRED
 
 #### Phase 28d: Data Quality Badges + Bulk Validation (2 hrs)
 - Add `eol_product_id` column to `technology_products`
@@ -1280,7 +1280,7 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 - Bulk validation tool: scan existing technology products, match against endoflife.date, offer to link
 - Scheduled refresh: re-validate linked products monthly
 
-**Total Estimate:** ~12 hours (28a+28b complete, ~5 hrs remaining)
+**Total Estimate:** ~12 hours (28a+28b+28c complete, ~2 hrs remaining for 28d)
 
 ### 14.9 endoflife.date Vitality Assessment (Mar 6, 2026)
 
@@ -1313,3 +1313,4 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 | v1.3 | 2026-03-06 | Phase 27c COMPLETE: three-tier lifecycle-lookup Edge Function deployed (`--no-verify-jwt` for ES256 gateway compat, function-level auth via `getUser()`). Added Section 14: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first flow, auto-population, data quality badges). Vendor lifecycle URL audit: 4/16 GOOD, 8/16 BAD. endoflife.date vitality assessment (daily updates, MIT license, hybrid automation+community model). |
 | v1.4 | 2026-03-06 | Phase 27e expanded (+2 hrs): Added 27e.1 Vendor Lifecycle Source Health — schema additions (`url_status`, `last_verified_at`, `last_verification_notes`), Technology Health Dashboard "Data Source Health" card spec, Settings vendor sources management table, URL verification logic, audit baseline table. Total estimate now ~19 hrs. |
 | v1.6 | 2026-03-08 | Phase 28a+28b COMPLETE. `technology-catalog-search` Edge Function deployed (search + get-cycles). `TechnologyCatalogSearchModal` created with search-first flow + version picker. `TechnologyProductModal` modified with prePopulated prop, auto-match for manufacturer/category, lifecycle auto-creation. `lifecycle-utils.ts` moved to `_shared/`. Bug fix: category query missing namespace_id filter caused cross-namespace category match. |
+| v1.7 | 2026-03-08 | Phase 28c COMPLETE. `LinkTechnologyProductModal` enhanced with "Search catalog & create new" escape hatch. Chained modal flow: LinkTechnologyProductModal → TechnologyCatalogSearchModal → TechnologyProductModal → auto-link. Z-index fix: hide parent modal when sub-modal is open. IT Service/Software Product integration deferred (already have AI Lookup). |

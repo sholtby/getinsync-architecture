@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-08 (v1.46)
+Last updated: 2026-03-08 (v1.47)
 
 ---
 
@@ -209,7 +209,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/technology-health/lifecycle-intelligence.md | v1.6 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, AI Lookup button on all 3 catalog modals, Phase 28a+28b DEPLOYED: validated technology entry via endoflife.date catalog search-first flow** |
+| features/technology-health/lifecycle-intelligence.md | v1.7 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, AI Lookup button on all 3 catalog modals, Phase 28a+28b+28c DEPLOYED: validated technology entry via endoflife.date catalog search-first flow, DP linking flow with inline catalog search** |
 | features/reference-data/hybrid-reference-table-migration.md | v1.0 | PARKED | **Reference table unification: 18 tables → hybrid pattern (is_system + nullable namespace_id). Execute after City of Garland import.** |
 | features/ai-chat/mvp.md | MVP | 🟢 | Natural language APM queries — Supabase-native |
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
@@ -693,6 +693,8 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.47 | 2026-03-08 | Lifecycle Intelligence v1.6→v1.7: Phase 28c COMPLETE — `LinkTechnologyProductModal` enhanced with inline catalog search + product creation + auto-link. Chained modal flow with z-index fix. IT Service/Software Product integration deferred (already have AI Lookup). |
+| v1.46 | 2026-03-08 | Lifecycle Intelligence v1.5→v1.6: Phase 28a+28b COMPLETE — `technology-catalog-search` Edge Function deployed, `TechnologyCatalogSearchModal` with search-first flow + version picker, `TechnologyProductModal` prePopulated prop with auto-match. Bug fix: namespace_id filter on category query. |
 | v1.45 | 2026-03-06 | Lifecycle Intelligence v1.4→v1.5: Phase 27d COMPLETE — AI Lookup button on all 3 catalog modals (TechnologyProduct, SoftwareProduct, ITService). Sparkles icon, violet styling, results confirmation panel with source/confidence badges, Apply & Link saves to reference table. First frontend usage of `supabase.functions.invoke()`. |
 | v1.44 | 2026-03-06 | NEW: features/reference-data/hybrid-reference-table-migration.md v1.0 — full migration plan for 18 reference tables (5 Group A namespace-scoped + 13 Group B system-only → unified hybrid pattern). Status: PARKED. Lifecycle Intelligence v1.3→v1.4: Phase 27e expanded with vendor source health + endoflife.date category alignment. |
 | v1.43 | 2026-03-06 | Lifecycle Intelligence v1.2→v1.3: Phase 28 — Validated Technology Entry spec. endoflife.date catalog integration (461 products, search-first entry, auto-population, data quality badges). Vendor URL audit results. endoflife.date vitality assessment. |
