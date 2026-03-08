@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 5, 2026 (Phase 27b Lifecycle UI Complete)
+**As of:** March 8, 2026 (Phase 28c DP Catalog Search Complete)
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -63,7 +63,15 @@
 
 ---
 
-## Completed This Session (Mar 5 — Session 3)
+## Completed This Session (Mar 8)
+
+| Item | Resolution |
+|------|------------|
+| Phase 28a — Catalog Search Edge Function | ✅ COMPLETE. `technology-catalog-search` Edge Function deployed with search + get-cycles endpoints. Vendor map for 461 endoflife.date products. |
+| Phase 28b — Version Picker + Auto-Population | ✅ COMPLETE. `TechnologyCatalogSearchModal` with search-first flow + version picker. `TechnologyProductModal` prePopulated prop with auto-match for manufacturer/category/lifecycle. Bug fix: namespace_id filter on category query. |
+| Phase 28c — DP Technology Linking Flow | ✅ COMPLETE. `LinkTechnologyProductModal` enhanced with "Search catalog & create new" escape hatch. Chained modal flow with z-index fix. IT Service/Software Product deferred (already have AI Lookup). |
+
+## Completed Mar 5 — Session 3
 
 | Item | Resolution |
 |------|------------|
@@ -120,7 +128,7 @@
 | **HIGH** | 5 | 3 SOC2 policies (OVERDUE) + RBAC UI gating + Edit App refactoring |
 | **MEDIUM** | 19 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC enforcement, filter drawer, scope indicator, Cost Analysis bug |
 | **LOW** | 13 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail |
-| **Total Open** | 37 | No new open items this session. Phase 27b lifecycle UI complete (all 5 sub-items). |
+| **Total Open** | 37 | No new open items this session. Phase 28a+28b+28c complete. 28d (data quality badges) remains. |
 
 ### SOC2 Policy Scorecard
 
@@ -146,4 +154,4 @@
 ---
 
 *Document: planning/open-items-priority-matrix.md*
-*Replaces: March 5, 2026 Session 2 version*
+*Replaces: March 8, 2026 version*
