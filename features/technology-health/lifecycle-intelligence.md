@@ -1,6 +1,6 @@
 # features/technology-health/lifecycle-intelligence.md
 GetInSync Technology Lifecycle Intelligence Architecture
-Last updated: 2026-03-08 (v1.7)
+Last updated: 2026-03-09 (v1.8)
 
 ---
 
@@ -1121,53 +1121,39 @@ GET /api/{id}.json ────────────►  Fetch cycles on sele
 
 ### 14.4 Architecture Components
 
-#### 14.4.1 New Edge Function: `technology-catalog-search` — DEPLOYED
+#### 14.4.1 Direct Browser Client: `endoflife-client.ts` (v1.8 — replaces Edge Function)
 
-```
-POST /functions/v1/technology-catalog-search
-Authorization: Bearer <jwt>
+**Architecture change (Mar 9):** The `technology-catalog-search` Edge Function was replaced by a direct browser client (`src/lib/endoflife-client.ts`). The endoflife.date API supports CORS (`Access-Control-Allow-Origin: *`), so no auth proxy is needed. This eliminates Edge Function cold starts, JWT auth overhead, and a class of 401 auth errors caused by `supabase.functions.invoke()` token forwarding.
 
-# Action 1: Search
-Request:  { "action": "search", "query": "sql server" }
-Response:
-  {
-    "products": [
-      {
-        "eol_product_id": "mssqlserver",
-        "display_name": "Microsoft SQL Server",
-        "vendor_name": "Microsoft",
-        "category": "database",
-        "aliases": ["mssql", "sql-server"]
-      }
-    ],
-    "total": 1
-  }
+The Edge Function code remains in `supabase/functions/technology-catalog-search/` for reference but is no longer called by the frontend.
 
-# Action 2: Get Cycles
-Request:  { "action": "get-cycles", "product_id": "mssqlserver" }
-Response:
-  {
-    "product_id": "mssqlserver",
-    "display_name": "Microsoft SQL Server",
-    "vendor_name": "Microsoft",
-    "category": "database",
-    "cycles": [
-      { "cycle": "2022", "version": "2022", "release_date": "2022-11-16",
-        "eol_date": "2032-01-11", "support_date": "2027-01-11",
-        "status": "mainstream", "lts": false, "latest": "16.0.4185.1" }
-    ]
-  }
+```typescript
+// Client-side API (src/lib/endoflife-client.ts)
+import { searchCatalog, getCatalogCycles, searchCatalogSingle } from '../lib/endoflife-client';
+
+// Action 1: Search (returns top 10)
+const results = await searchCatalog("sql server");
+// → [{ eol_product_id: "mssqlserver", display_name: "Microsoft SQL Server", vendor_name: "Microsoft", ... }]
+
+// Action 2: Get Cycles (with website URL extraction)
+const data = await getCatalogCycles("mssqlserver");
+// → { product_id, display_name, vendor_name, category, website_url, cycles: [...] }
+
+// Action 3: Single best match (for bulk validation)
+const match = await searchCatalogSingle("Windows Server");
+// → CatalogSearchResult | null
 ```
 
 **Implementation (files):**
-- `supabase/functions/technology-catalog-search/index.ts` — Deno.serve, JWT auth, two actions
-- `supabase/functions/technology-catalog-search/vendor-map.ts` — ~130 product→vendor entries
-- `supabase/functions/technology-catalog-search/types.ts` — Request/response types
-- `supabase/functions/_shared/lifecycle-utils.ts` — Shared lifecycle status computation (moved from lifecycle-lookup/)
-- Caches endoflife.date v1 API product list per invocation (Deno Edge Functions are ephemeral)
-- Fuzzy search scoring: exact ID (100) > label-starts-with (80) > alias-exact (70) > label-contains (60) > ID-contains (50) > alias-contains (40) > all-terms (30) + vendor boost (+10)
-- Returns top 10 matches enriched with vendor name
-- No Claude API cost — pure string matching
+- `src/lib/endoflife-client.ts` — Direct browser client (592 lines). Contains:
+  - `PRODUCT_VENDOR_MAP` — ~250 product→vendor entries (expanded from Edge Function's ~130)
+  - Product list cache (in-memory, fetched once per session from `endoflife.date/api/v1/products/`)
+  - Fuzzy search scoring: exact ID (100) > label-starts-with (80) > alias-exact (70) > label-contains (60) > ID-contains (50) > alias-contains (40) > all-terms (30) + vendor boost (+10)
+  - Lifecycle status computation (mirrors DB trigger `compute_lifecycle_status()`)
+  - Version string cleanup, date sanitization
+  - Returns top 10 matches enriched with vendor name
+- `supabase/functions/technology-catalog-search/` — **RETIRED** Edge Function (kept for reference)
+- No Claude API cost — pure string matching, no auth required
 
 #### 14.4.2 Enhanced `lifecycle-lookup` Edge Function
 
@@ -1201,10 +1187,12 @@ Response:
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `TechnologyCatalogSearchModal` | `src/components/TechnologyCatalogSearchModal.tsx` | Search-first modal with product search (300ms debounce) + version picker. Two internal views. |
-| `TechnologyProductModal` | `src/components/TechnologyProductModal.tsx` | Modified: accepts `prePopulated` prop for auto-fill from catalog search. Auto-matches manufacturer (fuzzy), category (EOL_CATEGORY_MAPPING), and auto-creates lifecycle reference on save. |
-| `TechnologyCatalogSettings` | `src/pages/settings/TechnologyCatalogSettings.tsx` | Modified: "Add Technology" opens search modal first. Edit flow unchanged (opens product modal directly). |
-| `PrePopulatedTechProduct` | `src/types/index.ts` | Type carrying search selection data between modals (name, vendor, version, category_hint, lifecycle_data). |
+| `TechnologyCatalogSearchModal` | `src/components/TechnologyCatalogSearchModal.tsx` | Search-first modal with product search (300ms debounce) + version picker. Uses `endoflife-client.ts` directly (no Edge Function). |
+| `TechnologyProductModal` | `src/components/TechnologyProductModal.tsx` | Modified: accepts `prePopulated` prop for auto-fill from catalog search. Auto-matches manufacturer (fuzzy), category (EOL_CATEGORY_MAPPING), auto-creates lifecycle reference on save. **Phase 28d:** "Create & Link" prompt for unmatched manufacturers (creates org with `is_manufacturer: true`). |
+| `BulkValidateTechnologyProducts` | `src/components/BulkValidateTechnologyProducts.tsx` | **NEW (Phase 28d).** Scans unvalidated products, fuzzy-matches against endoflife.date catalog, offers link/skip/manual-search per product. Batch "Link All" + "Create All" for missing manufacturers. |
+| `DataQualityBadge` | `src/components/technology-health/DataQualityBadge.tsx` | **NEW (Phase 28d).** Verified (green)/Unverified (gray) badge based on `eol_product_id` presence. |
+| `TechnologyCatalogSettings` | `src/pages/settings/TechnologyCatalogSettings.tsx` | Modified: "Add Technology" opens search modal first. "Bulk Validate" button opens BulkValidateTechnologyProducts. DataQualityBadge on catalog grid. |
+| `PrePopulatedTechProduct` | `src/types/index.ts` | Type carrying search selection data between modals (name, vendor, version, category_hint, website_url, lifecycle_data). |
 
 #### 14.4.4 Data Quality Indicators
 
@@ -1274,13 +1262,17 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 - IT Service and Software Product modals: DEFERRED — both already have AI Lookup (Tier 2)
 - Pre-populate search from existing name/version when editing: DEFERRED
 
-#### Phase 28d: Data Quality Badges + Bulk Validation (2 hrs)
-- Add `eol_product_id` column to `technology_products`
-- Verified/Unverified badges on catalog grid and DP tags
-- Bulk validation tool: scan existing technology products, match against endoflife.date, offer to link
-- Scheduled refresh: re-validate linked products monthly
+#### Phase 28d: Data Quality Badges + Bulk Validation — COMPLETE (Mar 9)
+- `DataQualityBadge` component: Verified (green check) / Unverified (gray question mark) based on `eol_product_id` presence
+- Badges on TechnologyCatalogSettings grid and LinkedTechnologyProductsList (DP technology tags)
+- `BulkValidateTechnologyProducts` modal: scans all products without `eol_product_id`, fuzzy-matches against endoflife.date, offers Link/Skip/Search per product with batch "Link All Suggested"
+- Manufacturer auto-link: when catalog search provides a vendor name with no matching org, shows "Create & Link" prompt in TechnologyProductModal (creates org with `is_manufacturer: true`, `is_shared: true`, `owner_workspace_id`, website URL from API, notes tag)
+- Batch manufacturer creation in BulkValidateTechnologyProducts: "Create All" for missing manufacturer orgs after linking
+- Lifecycle search improved: multi-word queries now split into individual terms, each checked against vendor_name/product_name/version with AND semantics (all 3 modals)
+- **Architecture change:** Replaced Edge Function with direct browser client (`src/lib/endoflife-client.ts`) — endoflife.date API supports CORS, eliminating auth proxy overhead and 401 errors
+- Scheduled refresh (monthly re-validation): NOT YET — deferred to open item #10
 
-**Total Estimate:** ~12 hours (28a+28b+28c complete, ~2 hrs remaining for 28d)
+**Total: Phase 28 COMPLETE** (~12 hours across 28a-28d)
 
 ### 14.9 endoflife.date Vitality Assessment (Mar 6, 2026)
 
@@ -1314,3 +1306,4 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 | v1.4 | 2026-03-06 | Phase 27e expanded (+2 hrs): Added 27e.1 Vendor Lifecycle Source Health — schema additions (`url_status`, `last_verified_at`, `last_verification_notes`), Technology Health Dashboard "Data Source Health" card spec, Settings vendor sources management table, URL verification logic, audit baseline table. Total estimate now ~19 hrs. |
 | v1.6 | 2026-03-08 | Phase 28a+28b COMPLETE. `technology-catalog-search` Edge Function deployed (search + get-cycles). `TechnologyCatalogSearchModal` created with search-first flow + version picker. `TechnologyProductModal` modified with prePopulated prop, auto-match for manufacturer/category, lifecycle auto-creation. `lifecycle-utils.ts` moved to `_shared/`. Bug fix: category query missing namespace_id filter caused cross-namespace category match. |
 | v1.7 | 2026-03-08 | Phase 28c COMPLETE. `LinkTechnologyProductModal` enhanced with "Search catalog & create new" escape hatch. Chained modal flow: LinkTechnologyProductModal → TechnologyCatalogSearchModal → TechnologyProductModal → auto-link. Z-index fix: hide parent modal when sub-modal is open. IT Service/Software Product integration deferred (already have AI Lookup). |
+| v1.8 | 2026-03-09 | **Phase 28d COMPLETE — Phase 28 DONE.** DataQualityBadge (Verified/Unverified) on catalog grid + DP tags. BulkValidateTechnologyProducts modal with scan/link/skip/search workflow + batch manufacturer creation. Manufacturer auto-link: "Create & Link" prompt in TechnologyProductModal for unmatched vendors (creates org with is_manufacturer, website, notes). Lifecycle search: multi-word query splitting across vendor_name/product_name/version (all 3 modals). **Architecture change:** Replaced `technology-catalog-search` Edge Function with direct browser client `src/lib/endoflife-client.ts` — endoflife.date API supports CORS, eliminates JWT auth overhead and 401 errors. Vendor map expanded to ~250 entries. |
