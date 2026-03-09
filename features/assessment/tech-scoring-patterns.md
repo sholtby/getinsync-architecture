@@ -1,6 +1,6 @@
 # features/assessment/tech-scoring-patterns.md
 Tech Scoring Patterns Architecture
-Last updated: 2026-03-08
+Last updated: 2026-03-09
 
 ---
 
@@ -148,7 +148,11 @@ CREATE TABLE tech_scoring_patterns (
   t12 INTEGER CHECK (t12 BETWEEN 1 AND 5),
   t13 INTEGER CHECK (t13 BETWEEN 1 AND 5),
   t14 INTEGER CHECK (t14 BETWEEN 1 AND 5),
-  
+
+  -- NOTE: T15 exists on deployment_profiles as a legacy column but is excluded from
+  -- scoring patterns because it is not used by the auto_calculate trigger.
+  -- The trigger computes tech_health from T01-T14 only (see calculate_tech_health function).
+
   -- Metadata
   is_seeded BOOLEAN DEFAULT false NOT NULL,
   usage_count INTEGER DEFAULT 0 NOT NULL,
@@ -204,17 +208,27 @@ CREATE INDEX idx_dp_scoring_pattern ON deployment_profiles(tech_scoring_pattern_
 ```sql
 ALTER TABLE tech_scoring_patterns ENABLE ROW LEVEL SECURITY;
 
--- All namespace users can view patterns
+-- All namespace users can view patterns (platform admins can view across namespaces)
 CREATE POLICY "Users can view scoring patterns in current namespace"
   ON tech_scoring_patterns FOR SELECT
-  USING (namespace_id = get_current_namespace_id());
+  USING (namespace_id = get_current_namespace_id() OR check_is_platform_admin());
 
--- Admins can manage patterns
-CREATE POLICY "Admins can insert scoring patterns in current namespace"
+-- Editors+ can create patterns (via "Save as" from assessment); admins manage in Settings
+CREATE POLICY "Editors can insert scoring patterns in current namespace"
   ON tech_scoring_patterns FOR INSERT
   WITH CHECK (
     namespace_id = get_current_namespace_id()
-    AND (check_is_platform_admin() OR check_is_namespace_admin_of_namespace(get_current_namespace_id()))
+    AND (
+      check_is_platform_admin()
+      OR check_is_namespace_admin_of_namespace(get_current_namespace_id())
+      OR EXISTS (
+        SELECT 1 FROM workspace_users wu
+        JOIN workspaces w ON w.id = wu.workspace_id
+        WHERE w.namespace_id = get_current_namespace_id()
+        AND wu.user_id = auth.uid()
+        AND wu.role IN ('admin', 'editor')
+      )
+    )
   );
 
 CREATE POLICY "Admins can update scoring patterns in current namespace"
@@ -235,9 +249,8 @@ CREATE POLICY "Admins can delete scoring patterns in current namespace"
     AND (check_is_platform_admin() OR check_is_namespace_admin_of_namespace(get_current_namespace_id()))
   );
 
--- GRANTs
-GRANT SELECT ON tech_scoring_patterns TO authenticated;
-GRANT SELECT ON tech_scoring_patterns TO service_role;
+-- GRANTs (GRANT ALL per project standard — RLS policies enforce access control)
+GRANT ALL ON tech_scoring_patterns TO authenticated, service_role;
 ```
 
 ### 4.5 Audit Trigger
@@ -513,6 +526,8 @@ After completing a tech assessment, if the DP was scored manually (no pattern ap
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Permissions:** Any user with editor role or above can save a scoring pattern. Pattern editing and deletion is restricted to namespace admins via Settings.
+
 When saving, all 14 T-score values from the DP are copied to the pattern (including auto-scored values). The UI rendering logic filters at display time.
 
 If the DP was assessed using a pattern but the user modified scores, offer a variation: *"Your scores differ from the SharePoint Online pattern. Save as a new pattern?"*
@@ -677,6 +692,8 @@ ORDER BY tsp.usage_count DESC;
 
 **Total estimate:** ~12-14 hours
 
+**Phase D note:** Requires a new data fetch in `PortfolioAssessmentWizard.tsx` to query `deployment_profile_software_products` for the current DP. This junction table is not currently queried in the wizard — it's needed to power the pattern matching hierarchy (product-specific → hosting-type generic fallback).
+
 **Phase A+B** are pure SQL with no frontend — can be deployed independently and validated with pgTAP.
 
 **Phase C** can be developed in parallel with D since it's a standalone settings page.
@@ -692,7 +709,7 @@ ORDER BY tsp.usage_count DESC;
 | Store pattern values for auto_score factors? | Yes — store all, render selectively | Simpler save logic; future-proofs against applicability rule changes |
 | Pattern linked or copied to DP? | Copied | Assessment integrity — completed assessment is point-in-time |
 | Pattern per hosting type or span multiple? | One hosting type per pattern | Applicability rules are keyed by hosting type; spanning would create ambiguity |
-| Who can create patterns? | Admin/namespace admin via Settings; any assessor via "Save as" | Top-down planning + bottom-up organic creation |
+| Who can create patterns? | Editor+ (create via "Save as"). Admin-only for update/delete in Settings. | Organic pattern creation shouldn't be bottlenecked on admin availability. Admins curate (edit/delete) in Settings. |
 | Who can apply patterns? | Any user who can assess (editor+) | Pattern application is part of assessment workflow |
 | Seeded patterns editable? | Yes | Namespace admin should customize baselines for their context |
 | Seeded patterns deletable? | Yes | No locked system records |
@@ -743,6 +760,7 @@ When a DP has `inherits_tech_from` set (i.e., it is a suite child):
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-03-08 | Initial design. Schema, applicability rules integration, seeded patterns, UX flows, implementation phases. |
+| v1.1 | 2026-03-09 | Validation fixes: SELECT RLS + platform admin fallback, GRANT ALL per project standard, INSERT policy broadened to editor+ for "Save as", T15 legacy note, Phase D implementation note. |
 
 ---
 
