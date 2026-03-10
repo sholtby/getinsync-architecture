@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-09 (v1.49)
+Last updated: 2026-03-09 (v1.54)
 
 ---
 
@@ -197,13 +197,21 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | core/namespace-management-ui.md | v1.0 | 🟢 | Phase 25.10 namespace management UI |
 | core/namespace-workspace-ui.md | v1.0 | ☪ | Namespace/Workspace UI patterns |
 | features/realtime-subscriptions/realtime-subscriptions-architecture.md | v1.0 | 🟡 | **Supabase Realtime** — Postgres Changes, Presence, Broadcast. 6 use cases (P1–P6), 3 React hooks. P1 ships with Roadmap Kanban. |
-| infrastructure/edge-functions-layer-architecture.md | v1.0 | 🟡 | **Edge Functions layer** — Deno runtime, 8 consumers, 6 functions. Secret mgmt, two-client auth, MCP inline tools. E1+E2 ship with AI Chat MVP. |
+| infrastructure/edge-functions-layer-architecture.md | v1.2 | 🟡 | **Edge Functions layer** — Deno runtime, 8 consumers, 6 functions. jose/JWKS auth, 6-tool MCP registry, search-to-chat handoff contract. §16.4 multi-region placeholder, §17 inbound API placeholder. |
 
 ### Global Search
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | features/global-search/architecture.md | v1.0 | 🟡 | **Global search — Ctrl+K overlay, 12 entity types, categorized results, cascading to AI chat. Prerequisite for AI chat UX.** |
+
+### In-App Support
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| features/support/in-app-support-architecture.md | v1.1 | 🟡 | In-app support — provider abstraction (Crisp/Chatwoot/Shepherd/GitBook), 7 phases (S.1–S.7). v1.1: §13.1 AI Chat convergence subsection. |
+| features/support/implementation-plan.md | v1.0 | 🟡 | Support implementation plan — codebase-validated file list, z-index allocation, S.1–S.7 execution order. |
+| features/support/unified-chat-integration.md | v1.0 | 🟡 | **Unified chat integration — ChatRouter, NativeChatPanel, UnifiedChatContext, 5-step sequencing (support + AI chat + impersonation convergence).** |
 
 ### AI & Technology Intelligence (Future)
 
@@ -251,12 +259,19 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | operations/demo-credentials.md | v1.1 | 🟢 | Demo environment credentials |
 | test-data-load-green-fields-v2.txt | v2.0 | ☪ | Green field test data |
 
+### Reviews & Gap Analyses
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| reviews/edge-functions-gap-analysis.md | v1.0 | 🟡 | **Edge Functions gap analysis** — 12 gaps across data residency (4), inbound API (4), MCP strategy (4). 4 HIGH: multi-region secrets, JWKS routing, inbound API design, external auth. |
+| reviews/ai-chat-context-window-review.md | v1.0 | 🟡 | **AI Chat context window & conversation lifecycle review** — 11 gaps across context management (4), conversation lifecycle (3), cross-doc alignment (3), consistency (1). 4 HIGH: no context budget, no conversation persistence, no token counting, RAG vs MCP mismatch. |
+
 ### Change Management
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.48** | 🟢 | **Architecture manifest — v1.48: Composite Application v2.0 (suite-first, CSDM-aligned DP inheritance)** |
+| **THIS FILE: MANIFEST.md** | **v1.54** | 🟢 | **Architecture manifest — v1.54: In-App Support section, unified chat integration** |
 
 ---
 
@@ -655,11 +670,11 @@ The following documents were removed during the architecture audit. They describ
 | Status | Count |
 |--------|-------|
 | 🟢 AS-BUILT | 54 |
-| 🟡 AS-DESIGNED | 9 |
+| 🟡 AS-DESIGNED | 12 |
 | 🟠 NEEDS UPDATE | 0 |
 | ☪ REFERENCE | 16 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **93** |
+| **Total tracked** | **98** |
 
 ---
 
@@ -697,6 +712,11 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.54 | 2026-03-09 | NEW: In-App Support section (3 documents). features/support/in-app-support-architecture.md v1.1 🟡, features/support/implementation-plan.md v1.0 🟡, features/support/unified-chat-integration.md v1.0 🟡. Unified chat integration: ChatRouter, NativeChatPanel, UnifiedChatContext, 5-step convergence plan. Prerequisite gaps acknowledged from AI Chat context window review (4 HIGH). in-app-support-architecture v1.0→v1.1 (§13.1 AI Chat convergence). Document count 95→98, AS-DESIGNED 9→12. |
+| v1.53 | 2026-03-09 | NEW: reviews/ai-chat-context-window-review.md v1.0 🟡. Cross-reference review of AI Chat MVP/v2/v3 against Edge Functions §15 and Global Search §10. 11 gaps identified (4 HIGH): no context window budget, no conversation persistence, no token counting, RAG vs MCP architectural mismatch. Document count 94→95. |
+| v1.52 | 2026-03-09 | Edge Functions layer v1.1→v1.2: **Gap analysis response.** §15.3 expanded with 6-tool MCP registry + extraction criteria. §15.4 search-to-chat handoff contract. §16.4 multi-region placeholder (deferred). §17 inbound API layer placeholder (Q3 trigger). §19 updated with api-gateway + gap analysis refs. Sections renumbered §17→§18, §18→§19, §19→§20. |
+| v1.51 | 2026-03-09 | NEW: reviews/edge-functions-gap-analysis.md v1.0 🟡. Gap analysis of Edge Functions layer (v1.1) across 3 dimensions: data residency, inbound API, MCP strategy. 12 gaps identified (4 HIGH). New "Reviews & Gap Analyses" section in manifest. Document count 93→94. |
+| v1.50 | 2026-03-09 | Edge Functions layer v1.0→v1.1: **Auth pattern rewrite.** §6.2 replaced `auth.getUser(token)` (network round-trip causing 401s) with `jose` JWKS local JWT verification (Supabase March 2026 recommendation). Added §6.5 documenting root cause, affected functions, and fix plan. Function registry updated: `lifecycle-lookup` Deployed, `technology-catalog-search` Retired. `_shared/` inventory aligned to actual state. |
 | v1.49 | 2026-03-09 | Lifecycle Intelligence v1.7→v1.8: **Phase 28d COMPLETE — Phase 28 DONE.** DataQualityBadge (Verified/Unverified) on catalog grid + DP tags. BulkValidateTechnologyProducts modal. Manufacturer auto-link with "Create & Link" prompt. Lifecycle search multi-word splitting. **Architecture change:** Replaced Edge Function with direct browser client `endoflife-client.ts` (CORS-enabled API). |
 | v1.47 | 2026-03-08 | Lifecycle Intelligence v1.6→v1.7: Phase 28c COMPLETE — `LinkTechnologyProductModal` enhanced with inline catalog search + product creation + auto-link. Chained modal flow with z-index fix. IT Service/Software Product integration deferred (already have AI Lookup). |
 | v1.46 | 2026-03-08 | Lifecycle Intelligence v1.5→v1.6: Phase 28a+28b COMPLETE — `technology-catalog-search` Edge Function deployed, `TechnologyCatalogSearchModal` with search-first flow + version picker, `TechnologyProductModal` prePopulated prop with auto-match. Bug fix: namespace_id filter on category query. |

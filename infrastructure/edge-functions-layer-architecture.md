@@ -1,8 +1,8 @@
 # Edge Functions Infrastructure Layer
 
-**Version:** 1.0  
-**Date:** March 4, 2026  
-**Status:** 🟡 DESIGNED  
+**Version:** 1.2
+**Date:** March 9, 2026
+**Status:** 🟡 DESIGNED (lifecycle-lookup deployed, gap analysis placeholders added)  
 **Repo path:** `infrastructure/edge-functions-layer.md`  
 **Prerequisite:** None — foundational infrastructure document
 
@@ -188,27 +188,34 @@ supabase/functions/{function-name}/index.ts
 
 Function names use kebab-case. Each function is a single entry point that may handle multiple routes via Hono.
 
-### 5.2 Planned Functions
+### 5.2 Function Registry
 
 | Function Name | Consumer Feature | Routes | Auth Required | Status |
 |---|---|---|---|---|
-| `ai-chat` | AI Chat MVP → v3 | `POST /ai-chat/query` | Yes (JWT) | Planned — first to build |
-| `lifecycle-lookup` | Lifecycle Intelligence | `POST /lifecycle-lookup/check` | Yes (JWT) | Planned |
-| `email-digest` | Gamification | `POST /email-digest/weekly`, `POST /email-digest/re-engage` | Service role (cron trigger) | Planned |
-| `session-enforce` | Session Enforcement | `POST /session-enforce/revoke` | Yes (JWT) | Planned |
-| `integration-sync` | ServiceNow + HaloITSM | `POST /integration-sync/servicenow`, `POST /integration-sync/halo` | Yes (JWT) + customer credentials | Planned |
-| `cloud-discovery` | Cloud Discovery | `POST /cloud-discovery/scan` | Yes (JWT) + cloud credentials | Planned |
+| `lifecycle-lookup` | Lifecycle Intelligence | `POST /lifecycle-lookup` | Yes (JWT) | 🟢 **Deployed** (Phase 27c). Three-tier pipeline: DB cache → endoflife.date → Claude. |
+| `ai-chat` | AI Chat MVP → v3 | `POST /ai-chat` | Yes (JWT) | 🟡 Planned — first new function to build |
+| `email-digest` | Gamification | `POST /email-digest/weekly`, `POST /email-digest/re-engage` | Service role (cron trigger) | 🟡 Planned |
+| `session-enforce` | Session Enforcement | `POST /session-enforce/revoke` | Yes (JWT) | 🟡 Planned |
+| `integration-sync` | ServiceNow + HaloITSM | `POST /integration-sync/servicenow`, `POST /integration-sync/halo` | Yes (JWT) + customer credentials | 🟡 Planned |
+| `cloud-discovery` | Cloud Discovery | `POST /cloud-discovery/scan` | Yes (JWT) + cloud credentials | 🟡 Planned |
+
+**Retired functions:**
+
+| Function Name | Reason | Replacement |
+|---|---|---|
+| `technology-catalog-search` | 401 auth failures (see §6.5). endoflife.date API supports CORS, no proxy needed. | `src/lib/endoflife-client.ts` — direct browser client. Delete from Supabase deployment. |
 
 ### 5.3 Shared Utilities (`_shared/`)
 
 ```
 supabase/functions/_shared/
-├── supabase-client.ts      # Authenticated + service-role client factories
-├── cors.ts                 # Standard CORS headers
-├── auth.ts                 # JWT validation, user context extraction
-├── error-handler.ts        # Standardized error responses
-├── audit.ts                # Write to audit_logs via service role
-└── rate-limit.ts           # Per-user rate limiting (in-memory or Redis)
+├── cors.ts                 # Standard CORS headers (DEPLOYED)
+├── supabase-admin.ts       # Service-role client factory (DEPLOYED)
+├── lifecycle-utils.ts      # Lifecycle status computation (DEPLOYED)
+├── auth.ts                 # JWT validation via jose/JWKS — see §6.2 (TODO: implement)
+├── error-handler.ts        # Standardized error responses — see §12 (TODO: implement)
+├── audit.ts                # Write to audit_logs via service role (PLANNED)
+└── rate-limit.ts           # Per-user rate limiting (PLANNED)
 ```
 
 ---
@@ -231,34 +238,84 @@ The Supabase client automatically attaches the user's JWT to the `Authorization`
 
 ### 6.2 JWT Validation Inside Functions
 
+> **March 2026 update:** Supabase has deprecated implicit JWT verification in favor of explicit local verification using the `jose` library. The old pattern (`auth.getUser(token)`) made a network round-trip from the edge isolate back to the Auth service — this was slow and caused intermittent 401 failures (see §6.5). The new pattern verifies JWTs locally using the project's JWKS endpoint, with no network call.
+
+**Recommended pattern (local JWKS verification):**
+
 ```typescript
-import { createClient } from 'npm:@supabase/supabase-js@2';
+// supabase/functions/_shared/auth.ts
+import * as jose from 'jsr:@panva/jose@6';
+
+const SUPABASE_JWT_ISSUER =
+  Deno.env.get('SB_JWT_ISSUER') ??
+  Deno.env.get('SUPABASE_URL')! + '/auth/v1';
+
+const SUPABASE_JWT_KEYS = jose.createRemoteJWKSet(
+  new URL(Deno.env.get('SUPABASE_URL')! + '/auth/v1/.well-known/jwks.json'),
+);
+
+export async function authenticateRequest(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) throw new AuthError('Missing Authorization header');
+
+  const [bearer, token] = authHeader.split(' ');
+  if (bearer !== 'Bearer' || !token) throw new AuthError('Invalid Authorization header');
+
+  const { payload } = await jose.jwtVerify(token, SUPABASE_JWT_KEYS, {
+    issuer: SUPABASE_JWT_ISSUER,
+  });
+
+  return {
+    user: { id: payload.sub!, email: payload.email, role: payload.role },
+    token,
+  };
+}
+```
+
+**Usage in an Edge Function:**
+
+```typescript
+import { authenticateRequest, AuthError } from '../_shared/auth.ts';
+import { createAdminClient } from '../_shared/supabase-admin.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
-  // Extract JWT from Authorization header
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return new Response('Unauthorized', { status: 401 });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
 
-  // Create client with user's JWT — respects RLS
-  const supabaseUser = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
+  try {
+    const { user } = await authenticateRequest(req);
 
-  // Get authenticated user
-  const { data: { user }, error } = await supabaseUser.auth.getUser();
-  if (error || !user) return new Response('Unauthorized', { status: 401 });
+    // user.id available for RLS-scoped queries or audit logging
+    // Use createAdminClient() for service-role operations
+    const supabaseAdmin = createAdminClient();
 
-  // Now use supabaseUser for RLS-scoped queries
-  // Or create a service-role client for admin operations:
-  const supabaseAdmin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  );
-
-  // ... function logic
+    // ... function logic
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ error: 'internal_error' }), { status: 500 });
+  }
 });
+```
+
+**Key points:**
+- `createRemoteJWKSet()` fetches keys once and caches them — no per-request network call
+- Falls back to `SUPABASE_URL + '/auth/v1'` if `SB_JWT_ISSUER` is not set (works for all hosted Supabase projects)
+- Returns the raw `token` so callers can create user-scoped Supabase clients for RLS queries if needed
+- This is the pattern Supabase recommends as of March 2026 (see [Securing Edge Functions](https://supabase.com/docs/guides/functions/auth))
+
+**Deprecated pattern (do NOT use):**
+
+```typescript
+// ❌ OLD — makes network call back to Auth service, causes intermittent 401s
+const anonClient = createClient(supabaseUrl, supabaseAnonKey);
+const { data: { user }, error } = await anonClient.auth.getUser(token);
 ```
 
 ### 6.3 Two Client Pattern
@@ -281,6 +338,32 @@ Some functions receive external webhooks (e.g., ServiceNow callback, Stripe webh
 [functions.integration-sync]
 verify_jwt = false  # Validates via webhook signature instead
 ```
+
+### 6.5 Known Issue: `auth.getUser(token)` 401 Failures (March 2026)
+
+**Status:** Diagnosed. Fix pending (update `lifecycle-lookup` to use §6.2 pattern).
+
+**Affected functions:**
+- `technology-catalog-search` — **retired**, replaced by direct browser client (`src/lib/endoflife-client.ts`)
+- `lifecycle-lookup` — **still uses deprecated pattern**, needs update
+
+**Root cause:** Both Edge Functions used `auth.getUser(token)` which creates a standalone Supabase client inside the Edge Function and makes a **network round-trip** from the edge isolate back to the Supabase Auth service (hosted in `ca-central-1`) to validate the JWT. This pattern is:
+1. **Slow** — adds 100-500ms latency per request
+2. **Fragile** — network issues between global edge locations and `ca-central-1` Auth service cause intermittent 401s
+3. **Unnecessary** — the JWT can be verified locally using the project's JWKS public keys
+
+**Timeline:**
+- `technology-catalog-search` was the first consumer of `supabase.functions.invoke()` (Phase 28b, Mar 8)
+- 401 errors observed immediately after deployment
+- Workaround (Mar 9): Bypassed Edge Function entirely — endoflife.date API supports CORS, so the browser calls it directly via `src/lib/endoflife-client.ts`
+- `lifecycle-lookup` (Phase 27c, Mar 6) uses the same broken pattern but has not been heavily tested in production yet
+
+**Fix:** Update `lifecycle-lookup/index.ts` to use the `jose` JWKS verification pattern in §6.2. Create `_shared/auth.ts` as a shared utility. Apply the same pattern to all future Edge Functions (including `ai-chat`).
+
+**References:**
+- [Supabase: Securing Edge Functions](https://supabase.com/docs/guides/functions/auth) — official docs recommending `jose` JWKS
+- [GitHub Discussion #36548](https://github.com/orgs/supabase/discussions/36548) — community reports of same issue
+- Commit `1433c2e` — the browser-direct workaround for `technology-catalog-search`
 
 ---
 
@@ -650,7 +733,24 @@ Model Context Protocol (MCP) standardizes how LLMs call external tools. In the A
 
 **Decision:** Start with **inline tools** in the `ai-chat` function. Extract to separate functions only when a tool is needed by multiple consumers (e.g., lifecycle lookup is used by both AI Chat and a standalone UI).
 
-### 15.3 Example: AI Chat with Inline Tools
+> **Extraction criteria:** A tool graduates from inline to standalone Edge Function when (a) it has 2+ consumers (e.g., `lifecycle-lookup` serves both AI Chat and the Technology Health UI), AND (b) it requires its own deployment lifecycle (independent versioning, different rate limits, or separate secret access).
+
+### 15.3 MCP Tool Registry
+
+**Initial MCP Tool Set (ships with AI Chat MVP):**
+
+| Tool | Description | Data Source | Notes |
+|------|-------------|-------------|-------|
+| `search_portfolio` | Search across all entity types by keyword | `global_search` RPC (deployed, 12 entity types) | Primary discovery tool. Wraps the same RPC as Ctrl+K. |
+| `get_application_detail` | Full application record with deployment profiles and scores | `applications` + `deployment_profiles` + `portfolio_assignments` | Returns app identity + all DPs with TIME/PAID scores |
+| `get_lifecycle_risk` | Technology lifecycle/EOL status for a deployment profile | `vw_technology_tag_lifecycle_risk` view | Already in implementation example below |
+| `get_cost_summary` | Run rate and cost breakdown for a workspace or application | `vw_run_rate_by_vendor` view | Answers "how much are we spending on X?" |
+| `get_integration_map` | Upstream/downstream integrations for an application | `integration_instances` + junction tables | Answers "what does X connect to?" |
+| `get_assessment_status` | Assessment completion across a portfolio or workspace | `deployment_profiles` assessment columns + `portfolio_assignments` | Answers "what hasn't been assessed yet?" |
+
+> **Tool set is driven by user questions, not schema coverage.** Tools are added when AI Chat MVP user testing reveals questions that can't be answered with the current set. The 90-table schema has far more data than AI Chat needs in v1 — resist the urge to expose everything.
+
+**Implementation Example:**
 
 ```typescript
 // supabase/functions/ai-chat/index.ts (simplified)
@@ -683,9 +783,34 @@ async function handleToolCall(name: string, input: any, supabaseUser: any) {
 }
 ```
 
+### 15.4 Global Search → AI Chat Handoff
+
+The `POST /ai-chat` request body accepts an optional `searchContext` field that enables contextual handoff from the Global Search overlay:
+
+```typescript
+interface AiChatRequest {
+  query: string;
+  workspaceId: string;
+  conversationId?: string;       // for multi-turn
+  searchContext?: {
+    originalQuery: string;       // what the user typed in Ctrl+K
+    results: SearchResult[];     // top results from global_search
+    selectedEntityType?: string; // if user filtered by entity type
+  };
+}
+```
+
+**When `searchContext` is present:** The AI Chat system prompt includes the search results as grounding context, so Claude can reference specific applications, deployment profiles, or other entities the user was already looking at. This avoids Claude re-searching for data the user has already found.
+
+**When `searchContext` is absent:** AI Chat starts with a clean conversation and uses the `search_portfolio` tool (§15.3) to discover relevant entities on demand.
+
+**Cross-references:**
+- `features/global-search/architecture.md` §10.2–10.3 — frontend UX for the search-to-chat handoff (contextual AI prompts in search overlay)
+- `features/ai-chat/mvp.md` — full conversation flow, streaming, and usage tracking
+
 ---
 
-## 16. Canadian Data Residency
+## 16. Data Residency
 
 ### 16.1 Edge Function Execution Location
 
@@ -710,9 +835,49 @@ When an Edge Function calls Claude API or Resend, customer data transits through
 
 > Edge Functions process data in flight but do not store it. All persistent data remains in Canadian-region PostgreSQL. External API calls are documented in the privacy policy and subject to customer consent.
 
+### 16.4 Multi-Region Edge Function Deployment (Deferred)
+
+The `namespaces.region` column supports `ca`, `us`, and `eu` values, and Architecture Principle #6 mandates separate Supabase projects per region for complete data isolation. However, **all current namespaces are `ca`**, all Edge Functions target the single `ca-central-1` Supabase project, and the multi-region Edge Function deployment pattern is not yet needed.
+
+This section will be expanded into a full design before the first non-CA namespace is onboarded. The following design questions must be resolved:
+
+1. **Per-region Edge Function deployment:** One set of functions per Supabase project (each regional project gets its own Edge Function deployment), or shared functions with region routing logic?
+2. **Secret management:** Duplicate secrets per regional project (e.g., `ANTHROPIC_API_KEY` set on each), or centralized secret store with region-prefixed env vars (e.g., `SUPABASE_URL_CA`, `SUPABASE_URL_US`, `SUPABASE_URL_EU`)?
+3. **JWKS routing:** The `jose` auth pattern (§6.2) hardcodes a single JWKS URL derived from `SUPABASE_URL`. Each regional project has its own signing keys. Resolution options: derive JWKS URL from the token's `iss` claim, or use region-prefixed env vars.
+4. **GDPR implications for EU:** Data-in-transit through global edge nodes (Deno Deploy executes at nearest edge, which may be outside EU), right-to-erasure callbacks across Edge Function logs, data processing agreements with Supabase/Deno Deploy.
+5. **AI Chat embeddings isolation:** The `apm_embeddings` table is per-project, meaning no cross-region semantic search. Confirm this is acceptable (EU customers cannot search CA data and vice versa).
+
+**Trigger:** This section becomes active when the first US or EU customer onboards. Estimated effort: 3–5 days architecture, 1–2 days implementation per region.
+
 ---
 
-## 17. Implementation Sequence
+## 17. Inbound API Layer (Planned)
+
+The Edge Functions architecture (§1–§16) is entirely **outbound**: the browser calls Edge Functions, which call external APIs (Claude, endoflife.date, Resend, etc.). No current or planned functions expose GetInSync data to external consumers. This gap must be addressed for GetInSync's positioning as a "CSDM Agent" — external systems need to consume curated APM data.
+
+### 17.1 Consumer Drivers
+
+Two planned integrations will drive the inbound API design:
+
+1. **ServiceNow Subscribe (Phase 37c, Q3 2026):** ServiceNow pulls curated CSDM-aligned data from GetInSync — applications, deployment profiles, technology stacks, lifecycle status. This is the primary use case and the core of the CSDM Agent value proposition.
+2. **HaloITSM sync:** HaloITSM pushes and pulls ITSM data for the secondary (SMB/municipal) market. Includes both REST polling and webhook-based near-real-time sync.
+
+### 17.2 Design Questions (To Resolve Before Q3)
+
+1. **Curated API vs raw PostgREST:** Supabase auto-generates a REST API from the schema, but exposing raw tables (e.g., `portfolio_assignments`) to external consumers undermines the CSDM Agent value prop. A curated domain API with clean endpoints (e.g., `/v1/portfolios/{id}/applications`) is likely required. Decision needed.
+2. **OpenAPI (Swagger) specification:** If curated API, generate an OpenAPI spec for developer documentation and client SDK generation. This becomes part of the product's value proposition — the spec IS the CSDM contract.
+3. **External consumer authentication:** API keys (stored in `integration_connections`), OAuth 2.0 client credentials, or both. Must be independent of Supabase user JWTs (§6.2 pattern serves internal users only).
+4. **API key issuance and management:** Per-namespace scoping, rotation policy, revocation, usage tracking.
+5. **Rate limiting for external consumers:** Distinct from internal per-user limits in §14. Per-API-key throttling with configurable limits per integration connection.
+6. **API versioning strategy:** URL path (`/v1/`) preferred for simplicity. Breaking changes require version bump.
+7. **Webhook patterns:** Both outbound (GetInSync pushing change events to subscribers) and inbound (receiving callbacks from ServiceNow/HaloITSM). Inbound needs: HMAC signature verification, idempotency keys, retry/dedup logic, dead letter handling.
+8. **Developer documentation / portal:** Even for partner-only API, need interactive docs (Swagger UI or similar) for integration developers.
+
+**Trigger:** Design begins Q3 2026 alongside Phase 37c (ServiceNow Subscribe). Standalone document `infrastructure/api-gateway-architecture.md` will be created when design begins — this section serves as the requirements seed.
+
+---
+
+## 18. Implementation Sequence
 
 | Phase | What | When | Depends On |
 |---|---|---|---|
@@ -729,21 +894,24 @@ When an Edge Function calls Claude API or Resend, customer data transits through
 
 ---
 
-## 18. Relationship to Other Architecture Docs
+## 19. Relationship to Other Architecture Docs
 
 | Document | Relationship |
 |---|---|
 | `features/realtime-subscriptions/architecture.md` | Realtime is client-only (P1–P4). Session enforcement (P4 hard mode) depends on this doc's `session-enforce` function. |
 | `features/ai-chat/mvp.md` | AI Chat is the first consumer of this infrastructure layer. MVP spec defines query patterns; this doc defines how they execute server-side. |
+| `features/global-search/architecture.md` | Global Search RPC is wrapped as `search_portfolio` MCP tool (§15.3). Search-to-chat handoff contract in §15.4. |
 | `features/gamification/architecture.md` | Email digest and re-engagement use the `email-digest` function defined here. |
 | `features/technology-health/lifecycle-intelligence.md` | Automated lifecycle lookups use the `lifecycle-lookup` function defined here. |
 | `features/cloud-discovery/architecture.md` | Cloud Discovery uses the `cloud-discovery` function defined here. |
 | `identity-security/identity-security.md` | SSO/SAML callbacks will be Edge Functions. Pattern established here, specifics in identity-security doc. |
 | `operations/development-rules.md` | Needs update to add §3: Edge Function development rules (Deno, testing, deployment). |
+| `infrastructure/api-gateway-architecture.md` | **Planned.** Inbound API design document — created when §17 design begins (Q3 2026). |
+| `reviews/edge-functions-gap-analysis.md` | Gap analysis that prompted §16.4, §17, and §15.3–15.4 additions in v1.2. |
 
 ---
 
-## 19. What This Layer Does NOT Cover
+## 20. What This Layer Does NOT Cover
 
 | Concern | Why Not | Where It Lives |
 |---|---|---|
@@ -759,4 +927,6 @@ When an Edge Function calls Claude API or Resend, customer data transits through
 
 | Version | Date | Changes |
 |---|---|---|
+| v1.2 | 2026-03-09 | **Gap analysis response.** Added §16.4 multi-region placeholder (deferred until first non-CA customer). Added §17 inbound API layer placeholder (design triggers Q3 with Phase 37c). Expanded §15.3 with 6-tool MCP registry table and extraction criteria. Added §15.4 search-to-chat handoff contract. Per `reviews/edge-functions-gap-analysis.md`. |
+| v1.1 | 2026-03-09 | **Auth pattern update.** §6.2 rewritten: replaced `auth.getUser(token)` (network round-trip) with `jose` JWKS local verification (Supabase's March 2026 recommendation). Added §6.5 documenting 401 root cause, affected functions, and fix plan. §5.2 updated: `lifecycle-lookup` status → Deployed, `technology-catalog-search` → Retired (replaced by browser client). §5.3 updated to reflect actual deployed `_shared/` utilities vs planned. |
 | v1.0 | 2026-03-04 | Initial architecture. Eight consumer features mapped. Secret management (Edge Secrets + Vault). Function registry. Auth pattern. MCP inline tool strategy. Canadian data residency analysis. Implementation sequence E1–E8. |
