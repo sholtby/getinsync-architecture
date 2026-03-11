@@ -9,6 +9,7 @@ Last updated: 2026-03-11
 This document defines the budget management capabilities in GetInSync NextGen. As of v1.3, budget management extends to both Applications AND IT Services, enabling provider workspaces to track infrastructure budget health.
 
 **Version History:**
+- v1.8 (2026-03-11): Workspace view — replaced Applications/IT Services tabs with unified view + ITSpendFilterDrawer. KPIs, utilization bar, quadrant chart, and tables all respond to Category filter (All/Applications/IT Services). Collapsed-by-default Projected IT Spend with localStorage persistence. formatCurrency negative number fix.
 - v1.7 (2026-03-11): Added Projected IT Spend section — bridges Roadmap initiative run rate impacts into the IT Spend dashboard.
 - v1.6.1 (2026-03-11): Tab label renamed from "Budget" to "IT Spend" (Apptio/TBM industry standard).
 - v1.6 (2026-03-11): Budget promoted to top-level dashboard tab (5th tab). 761-line BudgetSettings decomposed into 10 components.
@@ -597,22 +598,30 @@ SELECT * FROM initialize_it_service_budgets('central-it-workspace-uuid', 2025);
 - Workspace breakdown table with pagination (clickable rows to drill into workspace, with Roadmap Δ column)
 
 **Workspace View (specific workspace selected):**
-- Sub-tabs: "Applications" | "IT Services" (conditional on data)
-- Toolbar: Edit Budget button (admin-gated), Initialize Budgets (contextual)
-- KPI cards (3): Budget, Run Rate, Remaining with status badge
-- Projected IT Spend card: Current Run Rate → Roadmap Impact → Projected Run Rate (with initiative list)
-- Budget Utilization progress bar
-- Run Rate by Quadrant visualization
-- Applications table: Name, Budget, Run Rate, Variance, Status (sortable, paginated)
-- IT Services table: Name, Budget, Committed, Consumers, Variance, Status (sortable, paginated)
-- Initialize buttons per tab: "Initialize from Current Spending" (admin-gated)
+
+> **Updated v1.8:** Replaced Applications/IT Services sub-tabs with a unified view + filter drawer. All components respond to the selected category filter.
+
+- Toolbar: Edit Budget button (admin-gated) + Filter button (with active filter badge)
+- **Filter drawer** (`ITSpendFilterDrawer`): Category filter — All / Applications / IT Services. Right-slide drawer following `AppHealthFilterDrawer` pattern. Extensible for future filters (vendor, status, budget range, sub-component drill-down).
+- KPI cards (3): Budget, Run Rate, Remaining — **filter-responsive:**
+  - All: workspace totals (original behavior)
+  - Applications: `app_budget_allocated` / `app_run_rate`
+  - IT Services: `service_budget_allocated` / `service_run_rate`
+- Allocation summary cards (4): Allocated to Apps, Allocated to Services, Unallocated Reserve, Total Budget — always visible
+- Projected IT Spend card: Current Run Rate → Roadmap Impact → Projected Run Rate (collapsed by default, persists expand/collapse state via localStorage)
+- Budget Utilization progress bar — shown for All or Applications filter (uses filter-specific values)
+- Run Rate by Quadrant visualization — shown for All or Applications filter only
+- Applications table: Name, Budget, Run Rate, Variance, Status (sortable, paginated) — shown for All or Applications
+- IT Services table: Name, Budget, Committed, Consumers, Variance, Status (sortable, paginated) — shown for All or IT Services
+- Initialize banners: "Initialize from Current Spending" (admin-gated) — contextual per filter (app banner for All/Applications, service banner for All/IT Services)
+- Section headings ("Applications", "IT Services") shown only when filter is "All"
 
 **Key components:**
 | File | Purpose |
 |------|---------|
 | `BudgetPage.tsx` | Top-level router (namespace vs workspace view) |
 | `useBudgetData.ts` | Custom hook — all Supabase queries, state, mutations |
-| `BudgetKpiCards.tsx` | KPI cards (Variant A styling) |
+| `BudgetKpiCards.tsx` | KPI cards (Variant A styling) — filter-responsive via `activeFilter` prop |
 | `BudgetWorkspaceDetail.tsx` | Workspace-specific budget detail |
 | `BudgetNamespaceOverview.tsx` | Namespace-level rollup |
 | `BudgetApplicationsTable.tsx` | Apps table with sorting + TablePagination |
@@ -620,7 +629,8 @@ SELECT * FROM initialize_it_service_budgets('central-it-workspace-uuid', 2025);
 | `BudgetWorkspaceTable.tsx` | Namespace workspace breakdown table |
 | `BudgetUtilizationBar.tsx` | Budget utilization progress bar |
 | `BudgetQuadrantChart.tsx` | Run Rate by Quadrant visualization |
-| `ProjectedSpendCard.tsx` | Projected IT Spend — roadmap impact bridge |
+| `ProjectedSpendCard.tsx` | Projected IT Spend — roadmap impact bridge (collapsed by default, localStorage persistence) |
+| `ITSpendFilterDrawer.tsx` | Category filter drawer (All / Applications / IT Services) — follows AppHealthFilterDrawer pattern |
 
 ### 8.1.1 Projected IT Spend (Roadmap Bridge)
 
@@ -844,6 +854,7 @@ ORDER BY budget_amount - committed DESC;
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.8 | 2026-03-11 | §8.1: Workspace view — replaced Applications/IT Services sub-tabs with unified view + ITSpendFilterDrawer (Category: All/Applications/IT Services). KPI cards now filter-responsive via `activeFilter` prop. Utilization bar and quadrant chart conditionally shown per filter. Allocation summary cards always visible. ProjectedSpendCard collapsed by default with localStorage persistence. Initialize banners contextual per filter. New component: ITSpendFilterDrawer.tsx. formatCurrency negative number fix. |
 | v1.6.1 | 2026-03-11 | §8.1: Tab label renamed from "Budget" to "IT Spend" — aligns with Apptio/TBM industry standard. Avoids confusion with org-wide operating budget. Internal tab ID remains `budget`. |
 | v1.6 | 2026-03-11 | §8: Budget promoted from Settings to top-level dashboard tab (5th tab, after Roadmap). 761-line `BudgetSettings.tsx` decomposed into 10 components in `src/components/budget/`. Namespace view (4 KPI cards + allocation summary + workspace table) and workspace view (sub-tabs, sortable paginated tables, quadrant chart). All tables now have TablePagination. Edit Budget and Initialize buttons admin-gated. |
 | v1.5 | 2026-03-04 | §3: Added reunification note — software costs now flow through IT Service allocations. No budget management changes required (two-track structure unchanged). See `adr-cost-model-reunification.md`. |
