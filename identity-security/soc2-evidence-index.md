@@ -336,6 +336,7 @@ Quick reference: which architecture doc evidences which control.
 | operations/database-change-validation.md | CC7.1 |
 | operations/new-table-checklist.md | CC6.1, CC6.6, CC7.1 |
 | identity-security/soc2-evidence-collection.md | CC6.6, CC7.1 |
+| operations/secure-coding-standards.md | CC6.1, CC6.3, CC6.7, CC7.1, CC7.2 |
 | operations/session-end-checklist.md | CC7.1 |
 | identity-security/user-registration.md | CC6.1, CC6.6, C1.1 |
 | identity-security/rls-policy-addendum.md | CC6.1, CC6.3, C1.1 |

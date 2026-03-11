@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-09 (v1.54)
+Last updated: 2026-03-10 (v1.55)
 
 ---
 
@@ -145,6 +145,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
 | identity-security/soc2-evidence-collection.md | v1.2 | 🟢 | SOC2 monthly evidence collection — 50 triggers, 92 tables (updated Mar 4) |
 | identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
+| operations/secure-coding-standards.md | v1.0 | 🟢 | **Secure coding standards — OWASP + SOC 2 adapted for React + Supabase. RLS-first model, red flag checklist, 8-item gap roadmap. CC6.1/CC6.3/CC6.7/CC7.1/CC7.2.** |
 | operations/session-end-checklist.md | **v1.11** | 🟢 | **Master session-end compliance checklist — v1.11: §2.1 unified bulk safety net (6 checks), Section 4 removed, Section 3 narrowed** |
 
 ### Testing
@@ -271,7 +272,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.54** | 🟢 | **Architecture manifest — v1.54: In-App Support section, unified chat integration** |
+| **THIS FILE: MANIFEST.md** | **v1.55** | 🟢 | **Architecture manifest — v1.55: Secure coding standards (OWASP + SOC 2)** |
 
 ---
 
@@ -669,12 +670,12 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 54 |
+| 🟢 AS-BUILT | 55 |
 | 🟡 AS-DESIGNED | 12 |
 | 🟠 NEEDS UPDATE | 0 |
 | ☪ REFERENCE | 16 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **98** |
+| **Total tracked** | **99** |
 
 ---
 
@@ -712,6 +713,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.55 | 2026-03-10 | NEW: operations/secure-coding-standards.md v1.0 🟢. OWASP + SOC 2 secure coding standards adapted for React + Supabase stack. RLS-first security model, auth/session rules, input validation, error handling, secrets management, red flag checklist with current violation counts, 8-item gap roadmap. Maps to CC6.1/CC6.3/CC6.7/CC7.1/CC7.2. Document count 98→99. |
 | v1.54 | 2026-03-09 | NEW: In-App Support section (3 documents). features/support/in-app-support-architecture.md v1.1 🟡, features/support/implementation-plan.md v1.0 🟡, features/support/unified-chat-integration.md v1.0 🟡. Unified chat integration: ChatRouter, NativeChatPanel, UnifiedChatContext, 5-step convergence plan. Prerequisite gaps acknowledged from AI Chat context window review (4 HIGH). in-app-support-architecture v1.0→v1.1 (§13.1 AI Chat convergence). Document count 95→98, AS-DESIGNED 9→12. |
 | v1.53 | 2026-03-09 | NEW: reviews/ai-chat-context-window-review.md v1.0 🟡. Cross-reference review of AI Chat MVP/v2/v3 against Edge Functions §15 and Global Search §10. 11 gaps identified (4 HIGH): no context window budget, no conversation persistence, no token counting, RAG vs MCP architectural mismatch. Document count 94→95. |
 | v1.52 | 2026-03-09 | Edge Functions layer v1.1→v1.2: **Gap analysis response.** §15.3 expanded with 6-tool MCP registry + extraction criteria. §15.4 search-to-chat handoff contract. §16.4 multi-region placeholder (deferred). §17 inbound API layer placeholder (Q3 trigger). §19 updated with api-gateway + gap analysis refs. Sections renumbered §17→§18, §18→§19, §19→§20. |
