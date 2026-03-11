@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-11 (v1.59)
+Last updated: 2026-03-11 (v1.60)
 
 ---
 
@@ -219,6 +219,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | features/technology-health/lifecycle-intelligence.md | v1.8 | 🟢 | **AI-powered EOL tracking — DEPLOYED. Three-tier lookup pipeline, AI Lookup on all 3 modals. Phase 28 COMPLETE: catalog search-first flow, data quality badges, bulk validation, manufacturer auto-link, direct browser API client** |
+| features/technology-health/standards-intelligence.md | v1.2 | 🟢 | **Standards Intelligence Phase 1 — DEPLOYED. Reverse-engineers implied standards from DP technology tags. Detection views, assertion RPC, Standards sub-tab with KPI cards + category table + assert modal.** |
 | features/reference-data/hybrid-reference-table-migration.md | v1.0 | PARKED | **Reference table unification: 18 tables → hybrid pattern (is_system + nullable namespace_id). Execute after City of Garland import.** |
 | features/ai-chat/mvp.md | MVP | 🟢 | Natural language APM queries — Supabase-native |
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
@@ -295,16 +296,16 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-03-05)
+## Schema Statistics (as of 2026-03-11)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 93 |
-| **Views** | 32 |
-| **Functions (RPCs)** | 55 |
-| **RLS Policies** | 361 |
-| **Audit Triggers** | 51 |
-| **Explicit GRANTs** | 93 tables × 2 roles (authenticated + service_role) |
+| **Tables** | 95 |
+| **Views** | 36 |
+| **Functions (RPCs)** | 57 |
+| **RLS Policies** | 369 |
+| **Audit Triggers** | 53 |
+| **Explicit GRANTs** | 95 tables × 2 roles (authenticated + service_role) |
 | **Schema backup** | schema/nextgen-schema-current.sql (PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
@@ -713,6 +714,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.60 | 2026-03-11 | **Standards Intelligence Phase 1 DEPLOYED.** New: `standards-intelligence.md` v1.2 (🟢). Schema: 93→95 tables, 361→369 RLS, 51→53 triggers, 32→36 views, 55→57 functions. New table: `technology_standards` (4 RLS, audit trigger). New views: `vw_implied_technology_standards`, `vw_technology_standards_summary`. New RPCs: `assert_technology_standard()`, `refresh_technology_standard_prevalence()`. Frontend: Standards sub-tab, KPI cards, category table, assert modal, StandardsBadge. pgTAP sentinels updated (93→95 tables, 30→36 views, 51→53 triggers). |
 | v1.59 | 2026-03-11 | Budget management v1.7→v1.8: Workspace view replaced Applications/IT Services sub-tabs with unified view + ITSpendFilterDrawer (Category: All/Applications/IT Services). KPI cards filter-responsive. ProjectedSpendCard collapsed by default with localStorage persistence. formatCurrency negative number fix. New component: ITSpendFilterDrawer.tsx. |
 | v1.58 | 2026-03-11 | Budget management v1.6.1→v1.7: Added Projected IT Spend section (§8.1.1) — bridges Roadmap initiative run rate impacts into IT Spend dashboard. Shows Current Run Rate → Roadmap Impact → Projected Run Rate with initiative detail list. New component: ProjectedSpendCard.tsx. Workspace table gains Roadmap Δ column in namespace view. No new views or tables — pure client-side query composition. |
 | v1.57 | 2026-03-11 | Budget management v1.5→v1.6: §8 rewritten — budget promoted from Settings to top-level dashboard tab (5th tab). 761-line BudgetSettings.tsx decomposed into 10 components in src/components/budget/. Namespace view (KPI rollup + workspace table) and workspace view (sub-tabs, sortable paginated tables, quadrant chart). All tables now have TablePagination. AS-DESIGNED 11→10, AS-BUILT +1. |
