@@ -9,6 +9,8 @@ Last updated: 2026-03-11
 This document defines the budget management capabilities in GetInSync NextGen. As of v1.3, budget management extends to both Applications AND IT Services, enabling provider workspaces to track infrastructure budget health.
 
 **Version History:**
+- v1.7 (2026-03-11): Added Projected IT Spend section — bridges Roadmap initiative run rate impacts into the IT Spend dashboard.
+- v1.6.1 (2026-03-11): Tab label renamed from "Budget" to "IT Spend" (Apptio/TBM industry standard).
 - v1.6 (2026-03-11): Budget promoted to top-level dashboard tab (5th tab). 761-line BudgetSettings decomposed into 10 components.
 - v1.4 (2026-03-04): Reconciliation — workspace_budgets table, threshold update, as-built views
 - v1.3 (2026-01-31): Add IT Service budget tracking
@@ -581,9 +583,9 @@ SELECT * FROM initialize_it_service_budgets('central-it-workspace-uuid', 2025);
 
 > **Updated v1.6 (2026-03-11):** Budget promoted from Settings to top-level dashboard tab. 761-line `BudgetSettings.tsx` decomposed into 10 components in `src/components/budget/`.
 
-### 8.1 Budget Dashboard (Top-Level Tab)
+### 8.1 IT Spend Dashboard (Top-Level Tab)
 
-**Location:** Main Tab Bar → Budget (5th tab, after Roadmap)
+**Location:** Main Tab Bar → IT Spend (5th tab, after Roadmap)
 **Components:** `src/components/budget/`
 
 **Two views based on scope:**
@@ -591,12 +593,14 @@ SELECT * FROM initialize_it_service_budgets('central-it-workspace-uuid', 2025);
 **Namespace View (All Workspaces selected):**
 - KPI cards (4): Total Budget, Run Rate, Remaining, Budget Alerts
 - Allocation summary cards: Apps, Services, Unallocated, Total
-- Workspace breakdown table with pagination (clickable rows to drill into workspace)
+- Projected IT Spend card: Current Run Rate → Roadmap Impact → Projected Run Rate (with initiative list)
+- Workspace breakdown table with pagination (clickable rows to drill into workspace, with Roadmap Δ column)
 
 **Workspace View (specific workspace selected):**
 - Sub-tabs: "Applications" | "IT Services" (conditional on data)
 - Toolbar: Edit Budget button (admin-gated), Initialize Budgets (contextual)
 - KPI cards (3): Budget, Run Rate, Remaining with status badge
+- Projected IT Spend card: Current Run Rate → Roadmap Impact → Projected Run Rate (with initiative list)
 - Budget Utilization progress bar
 - Run Rate by Quadrant visualization
 - Applications table: Name, Budget, Run Rate, Variance, Status (sortable, paginated)
@@ -616,6 +620,31 @@ SELECT * FROM initialize_it_service_budgets('central-it-workspace-uuid', 2025);
 | `BudgetWorkspaceTable.tsx` | Namespace workspace breakdown table |
 | `BudgetUtilizationBar.tsx` | Budget utilization progress bar |
 | `BudgetQuadrantChart.tsx` | Run Rate by Quadrant visualization |
+| `ProjectedSpendCard.tsx` | Projected IT Spend — roadmap impact bridge |
+
+### 8.1.1 Projected IT Spend (Roadmap Bridge)
+
+> **Added v1.7 (2026-03-11)**
+
+Bridges the Roadmap and IT Spend dashboards by showing the projected impact of active roadmap initiatives on current run rate.
+
+**Display (3-column flow):**
+- Current Run Rate — from `vw_workspace_budget_summary` (app_run_rate + service_run_rate)
+- Roadmap Impact — SUM of `run_rate_change` from active initiatives (red if positive/cost increase, green if negative/savings)
+- Projected Run Rate — Current + Delta (bold)
+
+**Below the flow:** Always-visible list of initiatives with run rate impact, sorted by absolute value. Each row shows status badge, title, and ±amount/yr.
+
+**Data source:** `vw_initiative_summary` filtered by:
+- `namespace_id` = current namespace
+- `workspace_id` = current workspace OR NULL (namespace-wide)
+- `status` NOT IN (cancelled, deferred)
+
+**Namespace view:** Aggregates all initiatives across workspaces. Workspace breakdown table gains a "Roadmap Δ" column showing per-workspace initiative impact.
+
+**No new views or tables required.** Pure client-side query composition joining existing `vw_workspace_budget_summary` and `vw_initiative_summary` data.
+
+---
 
 ### 8.2 BudgetHealthCard Widget
 
@@ -815,6 +844,7 @@ ORDER BY budget_amount - committed DESC;
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.6.1 | 2026-03-11 | §8.1: Tab label renamed from "Budget" to "IT Spend" — aligns with Apptio/TBM industry standard. Avoids confusion with org-wide operating budget. Internal tab ID remains `budget`. |
 | v1.6 | 2026-03-11 | §8: Budget promoted from Settings to top-level dashboard tab (5th tab, after Roadmap). 761-line `BudgetSettings.tsx` decomposed into 10 components in `src/components/budget/`. Namespace view (4 KPI cards + allocation summary + workspace table) and workspace view (sub-tabs, sortable paginated tables, quadrant chart). All tables now have TablePagination. Edit Budget and Initialize buttons admin-gated. |
 | v1.5 | 2026-03-04 | §3: Added reunification note — software costs now flow through IT Service allocations. No budget management changes required (two-track structure unchanged). See `adr-cost-model-reunification.md`. |
 | v1.4 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §4.1: application budget columns clarified (budget_locked, budget_notes exist; budget_fiscal_year not added). §4.3: corrected to workspace_budgets table (workspaces.budget_amount does not exist). §5.1: thresholds updated to as-built (80/100/110%, added tight and no_costs statuses). §6.1: vw_budget_status SQL updated to match as-built. §6.3: noted as-built reads from workspace_budgets. §6.4: new section documenting budget_transfers, vw_budget_alerts, vw_workspace_budget_history, vw_budget_transfer_history. §12.1: marked DEPLOYED. §12.2: marked DEPLOYED with cross-reference to budget-alerts.md. |

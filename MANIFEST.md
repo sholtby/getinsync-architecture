@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-11 (v1.57)
+Last updated: 2026-03-11 (v1.58)
 
 ---
 
@@ -115,7 +115,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | features/cost-budget/cost-model.md | v3.0 | 🟡 | Cost flow — two channels (IT Services + Cost Bundles), Software Products inventory-only, ProductContract merged into IT Service (updated Mar 4) |
 | features/cost-budget/cost-model-addendum.md | v2.5.1 | 🟢 | **Confirms zero cost model impact from Path 1 technology tagging — DEPLOYED** |
-| features/cost-budget/budget-management.md | v1.6 | 🟢 | Application and workspace budgets — promoted to top-level dashboard tab (updated Mar 11) |
+| features/cost-budget/budget-management.md | v1.7 | 🟢 | Application and workspace budgets — "IT Spend" top-level dashboard tab with Projected IT Spend roadmap bridge (updated Mar 11) |
 | features/cost-budget/budget-alerts.md | v1.0 | 🟢 | Budget health monitoring — Phase 1 DB layer DEPLOYED |
 | features/cost-budget/vendor-cost.md | v2.0 | 🟡 | Vendor attribution — two channels (IT Services + Cost Bundles), dpsp vendor DEPRECATED (updated Mar 4) |
 | features/cost-budget/software-contract.md | v2.0 | 🟡 | Software contracts — contracts live on IT Services, dpsp cost columns DEPRECATED (updated Mar 4) |
@@ -713,6 +713,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.58 | 2026-03-11 | Budget management v1.6.1→v1.7: Added Projected IT Spend section (§8.1.1) — bridges Roadmap initiative run rate impacts into IT Spend dashboard. Shows Current Run Rate → Roadmap Impact → Projected Run Rate with initiative detail list. New component: ProjectedSpendCard.tsx. Workspace table gains Roadmap Δ column in namespace view. No new views or tables — pure client-side query composition. |
 | v1.57 | 2026-03-11 | Budget management v1.5→v1.6: §8 rewritten — budget promoted from Settings to top-level dashboard tab (5th tab). 761-line BudgetSettings.tsx decomposed into 10 components in src/components/budget/. Namespace view (KPI rollup + workspace table) and workspace view (sub-tabs, sortable paginated tables, quadrant chart). All tables now have TablePagination. AS-DESIGNED 11→10, AS-BUILT +1. |
 | v1.56 | 2026-03-10 | In-App Support S.5: GitBook setup + 8 help articles drafted. in-app-support-architecture v1.1→v1.2 (§4.3 GitBook pricing corrected — free tier does support custom domains for 1 user, §9 phase statuses updated: S.1–S.5 + S.7 complete). 8 draft articles in features/support/help-articles/ for GitBook import. AS-DESIGNED 12→11. |
 | v1.55 | 2026-03-10 | NEW: operations/secure-coding-standards.md v1.0 🟢. OWASP + SOC 2 secure coding standards adapted for React + Supabase stack. RLS-first security model, auth/session rules, input validation, error handling, secrets management, red flag checklist with current violation counts, 8-item gap roadmap. Maps to CC6.1/CC6.3/CC6.7/CC7.1/CC7.2. Document count 98→99. |
