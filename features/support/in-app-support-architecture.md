@@ -1,7 +1,7 @@
 # In-App Support & Engagement Architecture
 
-**Version:** 1.1
-**Status:** 🟡 AS-DESIGNED
+**Version:** 1.2
+**Status:** 🟢 PARTIALLY IMPLEMENTED (S.1–S.4, S.7 complete; S.5–S.6 remaining)
 **Author:** Stuart Holtby
 **Date:** March 2026
 
@@ -436,18 +436,18 @@ That's it. One env var change, zero code changes.
 
 ## 9. Implementation Phases
 
-| Phase | Scope | Effort | Dependencies |
-|-------|-------|--------|--------------|
-| S.1 | Abstraction layer + `NullChatService` + `SupportProvider` | 0.5 day | None |
-| S.2 | Shepherd.js integration + Welcome tour | 1 day | S.1 |
-| S.3 | Crisp integration + chat context enrichment | 0.5 day | S.1 + Crisp account setup |
-| S.4 | HelpMenu component + contextual HelpLink | 0.5 day | S.1 |
-| S.5 | GitBook setup + initial 8 articles | 2 days | Delta authoring |
-| S.6 | First Assessment tour | 0.5 day | S.2 |
-| S.7 | ChatwootChatService implementation | 0.5 day | S.1 (ships with S.1, not deployed) |
-| **Total** | | **~5.5 days** | |
+| Phase | Scope | Effort | Dependencies | Status |
+|-------|-------|--------|--------------|--------|
+| S.1 | Abstraction layer + `NullChatService` + `SupportProvider` | 0.5 day | None | COMPLETE (Mar 10) |
+| S.2 | Shepherd.js integration + Welcome tour (7 steps) | 1 day | S.1 | COMPLETE (Mar 10) |
+| S.3 | Crisp integration + `ChatContextBridge` | 0.5 day | S.1 + Crisp account setup | COMPLETE (Mar 10) |
+| S.4 | HelpMenu component + contextual HelpLink + ChatBadge | 0.5 day | S.1 | COMPLETE (Mar 10) |
+| S.5 | GitBook setup + initial 8 articles | 2 days | Delta authoring | NOT STARTED |
+| S.6 | First Assessment tour | 0.5 day | S.2 | NOT STARTED |
+| S.7 | ChatwootChatService implementation | 0.5 day | S.1 (ships with S.1, not deployed) | COMPLETE (Mar 10) |
+| **Total** | | **~5.5 days** | | **4/7 complete** |
 
-**Pre-Knowledge Conference (May 2026) target:** S.1 through S.4 + S.6 = 3 days dev effort. S.5 (GitBook content) runs in parallel with Delta.
+**Pre-Knowledge Conference (May 2026) target:** S.1 through S.4 + S.6 = 3 days dev effort. S.5 (GitBook content) runs in parallel with Delta. S.1–S.4 + S.7 shipped Mar 10. S.2–S.3 shipped Mar 10. Remaining: S.5 (Delta), S.6 (first assessment tour).
 
 ---
 
