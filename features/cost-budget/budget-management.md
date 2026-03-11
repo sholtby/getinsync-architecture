@@ -1,6 +1,6 @@
 # features/cost-budget/budget-management.md
 Budget Management Architecture with IT Service Budgets
-Last updated: 2026-03-04
+Last updated: 2026-03-11
 
 ---
 
@@ -9,6 +9,7 @@ Last updated: 2026-03-04
 This document defines the budget management capabilities in GetInSync NextGen. As of v1.3, budget management extends to both Applications AND IT Services, enabling provider workspaces to track infrastructure budget health.
 
 **Version History:**
+- v1.6 (2026-03-11): Budget promoted to top-level dashboard tab (5th tab). 761-line BudgetSettings decomposed into 10 components.
 - v1.4 (2026-03-04): Reconciliation — workspace_budgets table, threshold update, as-built views
 - v1.3 (2026-01-31): Add IT Service budget tracking
 - v1.2 (2026-01-15): Application budgets and workspace budgets
@@ -578,27 +579,43 @@ SELECT * FROM initialize_it_service_budgets('central-it-workspace-uuid', 2025);
 
 ## 8. UI Components
 
-### 8.1 Budget Settings Page
+> **Updated v1.6 (2026-03-11):** Budget promoted from Settings to top-level dashboard tab. 761-line `BudgetSettings.tsx` decomposed into 10 components in `src/components/budget/`.
 
-**Location:** Settings → Budget
+### 8.1 Budget Dashboard (Top-Level Tab)
 
-**Features:**
-- Workspace budget input at top
-- Tab switcher: "Applications" | "IT Services"
-- Initialize button per tab
-- Table showing budget vs run rate/committed
-- Status indicators (colored badges)
+**Location:** Main Tab Bar → Budget (5th tab, after Roadmap)
+**Components:** `src/components/budget/`
 
-**Applications Tab:**
-- Shows all applications in workspace
-- Columns: Name, Budget, Run Rate, Remaining, Status
-- Initialize button: "Set Budgets to 110% of Run Rate"
+**Two views based on scope:**
 
-**IT Services Tab (NEW v1.3):**
-- Shows all IT Services owned by workspace
-- Columns: Name, Budget, Committed, Remaining, Status
-- Initialize button: "Set Budgets to 110% of Committed"
-- Only visible in provider workspaces (workspaces that own IT Services)
+**Namespace View (All Workspaces selected):**
+- KPI cards (4): Total Budget, Run Rate, Remaining, Budget Alerts
+- Allocation summary cards: Apps, Services, Unallocated, Total
+- Workspace breakdown table with pagination (clickable rows to drill into workspace)
+
+**Workspace View (specific workspace selected):**
+- Sub-tabs: "Applications" | "IT Services" (conditional on data)
+- Toolbar: Edit Budget button (admin-gated), Initialize Budgets (contextual)
+- KPI cards (3): Budget, Run Rate, Remaining with status badge
+- Budget Utilization progress bar
+- Run Rate by Quadrant visualization
+- Applications table: Name, Budget, Run Rate, Variance, Status (sortable, paginated)
+- IT Services table: Name, Budget, Committed, Consumers, Variance, Status (sortable, paginated)
+- Initialize buttons per tab: "Initialize from Current Spending" (admin-gated)
+
+**Key components:**
+| File | Purpose |
+|------|---------|
+| `BudgetPage.tsx` | Top-level router (namespace vs workspace view) |
+| `useBudgetData.ts` | Custom hook — all Supabase queries, state, mutations |
+| `BudgetKpiCards.tsx` | KPI cards (Variant A styling) |
+| `BudgetWorkspaceDetail.tsx` | Workspace-specific budget detail |
+| `BudgetNamespaceOverview.tsx` | Namespace-level rollup |
+| `BudgetApplicationsTable.tsx` | Apps table with sorting + TablePagination |
+| `BudgetServicesTable.tsx` | IT Services table with sorting + TablePagination |
+| `BudgetWorkspaceTable.tsx` | Namespace workspace breakdown table |
+| `BudgetUtilizationBar.tsx` | Budget utilization progress bar |
+| `BudgetQuadrantChart.tsx` | Run Rate by Quadrant visualization |
 
 ### 8.2 BudgetHealthCard Widget
 
@@ -798,6 +815,7 @@ ORDER BY budget_amount - committed DESC;
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.6 | 2026-03-11 | §8: Budget promoted from Settings to top-level dashboard tab (5th tab, after Roadmap). 761-line `BudgetSettings.tsx` decomposed into 10 components in `src/components/budget/`. Namespace view (4 KPI cards + allocation summary + workspace table) and workspace view (sub-tabs, sortable paginated tables, quadrant chart). All tables now have TablePagination. Edit Budget and Initialize buttons admin-gated. |
 | v1.5 | 2026-03-04 | §3: Added reunification note — software costs now flow through IT Service allocations. No budget management changes required (two-track structure unchanged). See `adr-cost-model-reunification.md`. |
 | v1.4 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §4.1: application budget columns clarified (budget_locked, budget_notes exist; budget_fiscal_year not added). §4.3: corrected to workspace_budgets table (workspaces.budget_amount does not exist). §5.1: thresholds updated to as-built (80/100/110%, added tight and no_costs statuses). §6.1: vw_budget_status SQL updated to match as-built. §6.3: noted as-built reads from workspace_budgets. §6.4: new section documenting budget_transfers, vw_budget_alerts, vw_workspace_budget_history, vw_budget_transfer_history. §12.1: marked DEPLOYED. §12.2: marked DEPLOYED with cross-reference to budget-alerts.md. |
 | v1.3 | 2026-01-31 | Add IT Service budget tracking, vw_it_service_budget_status, initialize_it_service_budgets(), update vw_workspace_budget_summary |
