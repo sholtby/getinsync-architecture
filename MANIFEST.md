@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-10 (v1.55)
+Last updated: 2026-03-10 (v1.56)
 
 ---
 
@@ -210,8 +210,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/support/in-app-support-architecture.md | v1.1 | 🟡 | In-app support — provider abstraction (Crisp/Chatwoot/Shepherd/GitBook), 7 phases (S.1–S.7). v1.1: §13.1 AI Chat convergence subsection. |
-| features/support/implementation-plan.md | v1.0 | 🟡 | Support implementation plan — codebase-validated file list, z-index allocation, S.1–S.7 execution order. |
+| features/support/in-app-support-architecture.md | v1.2 | 🟢 | In-app support — provider abstraction (Crisp/Chatwoot/Shepherd/GitBook), 7 phases (S.1–S.7). v1.2: S.1–S.5 + S.7 complete, S.6 remaining. §4.3 GitBook pricing corrected, §9 phase statuses updated. |
+| features/support/implementation-plan.md | v1.0 | 🟡 | Support implementation plan — codebase-validated file list, z-index allocation, S.1–S.7 execution order. S.5 updated with GitBook Free setup. |
 | features/support/unified-chat-integration.md | v1.0 | 🟡 | **Unified chat integration — ChatRouter, NativeChatPanel, UnifiedChatContext, 5-step sequencing (support + AI chat + impersonation convergence).** |
 
 ### AI & Technology Intelligence (Future)
@@ -713,6 +713,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.56 | 2026-03-10 | In-App Support S.5: GitBook setup + 8 help articles drafted. in-app-support-architecture v1.1→v1.2 (§4.3 GitBook pricing corrected — free tier does support custom domains for 1 user, §9 phase statuses updated: S.1–S.5 + S.7 complete). 8 draft articles in features/support/help-articles/ for GitBook import. AS-DESIGNED 12→11. |
 | v1.55 | 2026-03-10 | NEW: operations/secure-coding-standards.md v1.0 🟢. OWASP + SOC 2 secure coding standards adapted for React + Supabase stack. RLS-first security model, auth/session rules, input validation, error handling, secrets management, red flag checklist with current violation counts, 8-item gap roadmap. Maps to CC6.1/CC6.3/CC6.7/CC7.1/CC7.2. Document count 98→99. |
 | v1.54 | 2026-03-09 | NEW: In-App Support section (3 documents). features/support/in-app-support-architecture.md v1.1 🟡, features/support/implementation-plan.md v1.0 🟡, features/support/unified-chat-integration.md v1.0 🟡. Unified chat integration: ChatRouter, NativeChatPanel, UnifiedChatContext, 5-step convergence plan. Prerequisite gaps acknowledged from AI Chat context window review (4 HIGH). in-app-support-architecture v1.0→v1.1 (§13.1 AI Chat convergence). Document count 95→98, AS-DESIGNED 9→12. |
 | v1.53 | 2026-03-09 | NEW: reviews/ai-chat-context-window-review.md v1.0 🟡. Cross-reference review of AI Chat MVP/v2/v3 against Edge Functions §15 and Global Search §10. 11 gaps identified (4 HIGH): no context window budget, no conversation persistence, no token counting, RAG vs MCP architectural mismatch. Document count 94→95. |

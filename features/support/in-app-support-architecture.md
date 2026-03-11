@@ -1,7 +1,7 @@
 # In-App Support & Engagement Architecture
 
-**Version:** 1.2
-**Status:** 🟢 PARTIALLY IMPLEMENTED (S.1–S.4, S.7 complete; S.5–S.6 remaining)
+**Version:** 1.3
+**Status:** 🟢 PARTIALLY IMPLEMENTED (S.1–S.5, S.7 complete; S.6 remaining)
 **Author:** Stuart Holtby
 **Date:** March 2026
 
@@ -212,12 +212,14 @@ help.openArticle('time-framework');  // → https://docs.getinsync.ca/time-frame
 ### 4.3 Knowledge Base — GitBook
 
 **Why GitBook:**
-- Free Community plan: unlimited pages, search, versioning
-- Clean reading experience at `docs.getinsync.ca` (or `help.getinsync.ca`)
+- Free plan: 1 user, unlimited pages, search, versioning
+- Clean reading experience at `docs.getinsync.ca`
 - Notion-like editor — Delta can author without code
-- Custom domain support on free tier
+- Custom domain support on free plan (1 user limit; Premium $65/mo for additional users)
 - Government buyers expect a standalone help center (signals maturity)
 - Markdown-based — content is portable if we outgrow it
+
+**Current deployment (S.5):** GitBook Free at `https://docs.getinsync.ca`. Custom domain configured. 8 initial articles matching the slug registry in `src/support/help/articles.ts`.
 
 **Alternative considered:** Docusaurus (open source, self-hosted). Better if we want docs-as-code in the same repo. More ops overhead. GitBook wins on Delta-friendliness.
 
@@ -440,14 +442,14 @@ That's it. One env var change, zero code changes.
 |-------|-------|--------|--------------|--------|
 | S.1 | Abstraction layer + `NullChatService` + `SupportProvider` | 0.5 day | None | COMPLETE (Mar 10) |
 | S.2 | Shepherd.js integration + Welcome tour (7 steps) | 1 day | S.1 | COMPLETE (Mar 10) |
-| S.3 | Crisp integration + `ChatContextBridge` | 0.5 day | S.1 + Crisp account setup | COMPLETE (Mar 10) |
+| S.3 | Crisp integration + `ChatContextBridge` | 0.5 day | S.1 + Crisp account setup | COMPLETE (Mar 10). Crisp prod config (Netlify env vars) also done. |
 | S.4 | HelpMenu component + contextual HelpLink + ChatBadge | 0.5 day | S.1 | COMPLETE (Mar 10) |
-| S.5 | GitBook setup + initial 8 articles | 2 days | Delta authoring | NOT STARTED |
+| S.5 | GitBook setup + initial 8 articles | 2 days | Delta authoring | COMPLETE (Mar 10). GitBook Free at docs.getinsync.ca. 8 draft articles authored. |
 | S.6 | First Assessment tour | 0.5 day | S.2 | NOT STARTED |
 | S.7 | ChatwootChatService implementation | 0.5 day | S.1 (ships with S.1, not deployed) | COMPLETE (Mar 10) |
-| **Total** | | **~5.5 days** | | **4/7 complete** |
+| **Total** | | **~5.5 days** | | **6/7 complete** |
 
-**Pre-Knowledge Conference (May 2026) target:** S.1 through S.4 + S.6 = 3 days dev effort. S.5 (GitBook content) runs in parallel with Delta. S.1–S.4 + S.7 shipped Mar 10. S.2–S.3 shipped Mar 10. Remaining: S.5 (Delta), S.6 (first assessment tour).
+**Pre-Knowledge Conference (May 2026) target:** S.1–S.5 + S.7 complete as of Mar 10. Remaining: S.6 (first assessment tour).
 
 ---
 
@@ -577,6 +579,8 @@ The AI Chat integration is a separate implementation step with its own architect
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.3 | 2026-03-10 | S.5 COMPLETE. GitBook Free at docs.getinsync.ca with 8 initial articles. §4.3 corrected: free plan supports custom domains (1 user). §9 phase statuses updated: S.1–S.5 + S.7 complete, S.3 Crisp prod config noted. |
+| v1.2 | 2026-03-10 | S.2 + S.3 COMPLETE. Shepherd tours + ChatContextBridge deployed. S.1–S.4 + S.7 complete. |
 | v1.1 | 2026-03-09 | Expanded §13 with §13.1 AI Chat Convergence subsection. Named integration seams (ChatService.sendMessage, ChatContextBridge, SupportProvider). References unified-chat-integration.md. S.1–S.7 unchanged. |
 | v1.0 | 2026-03 | Initial version. Provider abstraction, S.1–S.7 implementation phases. |
 

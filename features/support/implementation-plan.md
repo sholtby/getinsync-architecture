@@ -281,39 +281,34 @@ function ChatContextBridge() {
 
 ---
 
-### Phase S.5 — GitBook Setup + Initial 8 Articles
+### Phase S.5 — GitBook Setup + Initial 8 Articles — COMPLETE
 
 **Effort:** 2 days (Delta's authoring — runs in parallel with dev work)
-**Dependencies:** None (can start immediately)
+**Dependencies:** None
+**Status:** COMPLETE (Mar 10, 2026)
 
-#### No Code Changes
+#### Setup
 
-External setup only:
-1. Create GitBook organization and space
-2. Configure custom domain (`docs.getinsync.ca`)
-3. Author 8 articles matching slug registry in `src/support/help/articles.ts`
+- GitBook Free plan (1 user, custom domain included)
+- Custom domain: `docs.getinsync.ca`
+- 8 articles authored as markdown drafts in `features/support/help-articles/` (architecture repo) and imported to GitBook
+
+#### No Code Changes Required
+
+The existing `config.ts` default (`https://docs.getinsync.ca`) already matches. `VITE_HELP_BASE_URL` env var on Netlify points to the same URL.
 
 #### Article Slugs
 
-| Slug | Topic |
-|------|-------|
-| `time-framework` | TIME quadrant explanation |
-| `paid-framework` | PAID quadrant explanation |
-| `assessment-guide` | How to assess an application |
-| `deployment-profiles` | What deployment profiles are |
-| `tech-health` | Reading tech health indicators |
-| `roadmap-initiatives` | Creating and managing initiatives |
-| `getting-started` | Onboarding guide |
-| `integrations` | Managing application integrations |
-
-#### Production Activation
-
-Once GitBook is live, update Netlify env vars:
-```
-VITE_HELP_BASE_URL=https://docs.getinsync.ca
-```
-
-HelpLinkService and HelpLink components already point to this URL. No code changes needed.
+| Slug | Topic | Draft File |
+|------|-------|------------|
+| `getting-started` | Onboarding guide | `features/support/help-articles/getting-started.md` |
+| `time-framework` | TIME quadrant explanation | `features/support/help-articles/time-framework.md` |
+| `paid-framework` | PAID quadrant explanation | `features/support/help-articles/paid-framework.md` |
+| `assessment-guide` | How to assess an application | `features/support/help-articles/assessment-guide.md` |
+| `deployment-profiles` | What deployment profiles are | `features/support/help-articles/deployment-profiles.md` |
+| `tech-health` | Reading tech health indicators | `features/support/help-articles/tech-health.md` |
+| `roadmap-initiatives` | Creating and managing initiatives | `features/support/help-articles/roadmap-initiatives.md` |
+| `integrations` | Managing application integrations | `features/support/help-articles/integrations.md` |
 
 ---
 
