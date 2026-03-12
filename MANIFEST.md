@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-11 (v1.61)
+Last updated: 2026-03-12 (v1.62)
 
 ---
 
@@ -146,7 +146,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/soc2-evidence-collection.md | v1.2 | 🟢 | SOC2 monthly evidence collection — 50 triggers, 92 tables (updated Mar 4) |
 | identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
 | operations/secure-coding-standards.md | v1.0 | 🟢 | **Secure coding standards — OWASP + SOC 2 adapted for React + Supabase. RLS-first model, red flag checklist, 8-item gap roadmap. CC6.1/CC6.3/CC6.7/CC7.1/CC7.2.** |
-| operations/session-end-checklist.md | **v1.11** | 🟢 | **Master session-end compliance checklist — v1.11: §2.1 unified bulk safety net (6 checks), Section 4 removed, Section 3 narrowed** |
+| operations/session-end-checklist.md | **v1.14** | 🟢 | **Master session-end compliance checklist — v1.14: §6h user documentation check, help articles moved to guides/user-help/** |
 
 ### Testing
 
@@ -714,6 +714,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
 | v1.61 | 2026-03-11 | Roadmap architecture v1.3→v1.4: §8.8.5 NEW global workspace selector sync — Roadmap auto-filters when workspace changes in nav. §8.8.2 scoping table corrected (initiatives/ideas workspace_id is Optional, not Required). Membership-based client-side filtering ensures users only see items from their workspaces + org-wide items. Org-wide null filter bug fixed. RLS gap documented (SELECT is namespace-level, future work for workspace-level). |
 | v1.60 | 2026-03-11 | **Standards Intelligence Phase 1 DEPLOYED.** New: `standards-intelligence.md` v1.2 (🟢). Schema: 93→95 tables, 361→369 RLS, 51→53 triggers, 32→36 views, 55→57 functions. New table: `technology_standards` (4 RLS, audit trigger). New views: `vw_implied_technology_standards`, `vw_technology_standards_summary`. New RPCs: `assert_technology_standard()`, `refresh_technology_standard_prevalence()`. Frontend: Standards sub-tab, KPI cards, category table, assert modal, StandardsBadge. pgTAP sentinels updated (93→95 tables, 30→36 views, 51→53 triggers). |
 | v1.59 | 2026-03-11 | Budget management v1.7→v1.8: Workspace view replaced Applications/IT Services sub-tabs with unified view + ITSpendFilterDrawer (Category: All/Applications/IT Services). KPI cards filter-responsive. ProjectedSpendCard collapsed by default with localStorage persistence. formatCurrency negative number fix. New component: ITSpendFilterDrawer.tsx. |
