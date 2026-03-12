@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-12 (v1.63)
+Last updated: 2026-03-12 (v1.64)
 
 ---
 
@@ -146,7 +146,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/soc2-evidence-collection.md | v1.2 | 🟢 | SOC2 monthly evidence collection — 50 triggers, 92 tables (updated Mar 4) |
 | identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
 | operations/secure-coding-standards.md | v1.0 | 🟢 | **Secure coding standards — OWASP + SOC 2 adapted for React + Supabase. RLS-first model, red flag checklist, 8-item gap roadmap. CC6.1/CC6.3/CC6.7/CC7.1/CC7.2.** |
-| operations/session-end-checklist.md | **v1.15** | 🟢 | **Master session-end compliance checklist — v1.15: §6h rewrite "Write It Now" replaces flag-and-defer** |
+| operations/session-end-checklist.md | **v1.16** | 🟢 | **Master session-end compliance checklist — v1.16: §6h expanded scope (walkthrough, whats-new, version bump)** |
 
 ### Testing
 
@@ -242,6 +242,22 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | marketing/positioning-statements.md | v1.0 | ☪ | Positioning statements |
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
 | gis-phase-work-plan-23-25.md | v1.0 | ☪ | Historical work plan |
+
+### User Guides & Documentation
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| guides/feature-walkthrough.md | v1.0 | 🟢 | Screen-by-screen feature walkthrough for enterprise architects, CSDM mapping |
+| guides/whats-new.md | **v1.0** | 🟢 | **User-facing release changelog — dated entries for every user-visible change** |
+| guides/user-help/getting-started.md | v1.0 | 🟢 | New user onboarding, key concepts, navigation, profile settings |
+| guides/user-help/assessment-guide.md | v1.0 | 🟢 | Assessment walkthrough (business + technical) |
+| guides/user-help/time-framework.md | v1.0 | 🟢 | TIME quadrant explanation |
+| guides/user-help/paid-framework.md | v1.0 | 🟢 | PAID quadrant explanation |
+| guides/user-help/tech-health.md | v1.0 | 🟢 | Technology health dashboard, lifecycle, KPI cards |
+| guides/user-help/deployment-profiles.md | v1.0 | 🟢 | Deployment profiles concept and creation |
+| guides/user-help/roadmap-initiatives.md | v1.0 | 🟢 | Creating and managing initiatives |
+| guides/user-help/integrations.md | v1.0 | 🟢 | Managing application integrations |
+| guides/user-documentation/technology-health-badges.md | v1.0 | 🟡 | Badge status reference (lifecycle + conformance colors) — draft for GitBook |
 
 ### Development Workflow
 
@@ -714,6 +730,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
 | v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
 | v1.61 | 2026-03-11 | Roadmap architecture v1.3→v1.4: §8.8.5 NEW global workspace selector sync — Roadmap auto-filters when workspace changes in nav. §8.8.2 scoping table corrected (initiatives/ideas workspace_id is Optional, not Required). Membership-based client-side filtering ensures users only see items from their workspaces + org-wide items. Org-wide null filter bug fixed. RLS gap documented (SELECT is namespace-level, future work for workspace-level). |

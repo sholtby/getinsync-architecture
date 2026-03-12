@@ -1,6 +1,6 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.15
+**Version:** 1.16
 **Date:** March 12, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
@@ -579,7 +579,9 @@ Classify each user-facing change into a tier:
 
 ### 6h.3 — Find the Right Guide
 
-Check which existing guide in `docs-architecture/guides/user-help/` covers the changed area:
+Check which existing guide covers the changed area:
+
+**User help guides** (`docs-architecture/guides/user-help/`):
 
 | Guide | Covers |
 |-------|--------|
@@ -591,6 +593,14 @@ Check which existing guide in `docs-architecture/guides/user-help/` covers the c
 | `deployment-profiles.md` | What deployment profiles are, how to create |
 | `roadmap-initiatives.md` | Creating and managing initiatives |
 | `integrations.md` | Managing application integrations |
+
+**Other guides** (`docs-architecture/guides/`):
+
+| Guide | Covers |
+|-------|--------|
+| `feature-walkthrough.md` | Screen-by-screen reference for enterprise architects, CSDM mapping |
+| `whats-new.md` | User-facing release changelog — append entry for every user-visible change |
+| `user-documentation/technology-health-badges.md` | Badge status reference (lifecycle + conformance colors) |
 
 If no existing guide covers the area → create a new guide (Major tier).
 
@@ -610,6 +620,14 @@ If no existing guide covers the area → create a new guide (Major tier).
 4. Update `MANIFEST.md` with the new guide
 5. Commit to the architecture repo
 
+**For Moderate/Major changes — also check the feature walkthrough:**
+- If the change affects a screen covered by `guides/feature-walkthrough.md`, update the relevant section of the walkthrough to match.
+
+**Always — What's New entry:**
+- Append a dated entry to `guides/whats-new.md` for every user-visible change, regardless of tier.
+- Format: `- **Feature Name** — One-line description.`
+- Group entries under the current date heading, or create a new date heading if none exists for today.
+
 **Writing guidelines:**
 - Write for end users, not developers — no code, no schema references
 - Use plain language — the audience may not be technical
@@ -623,6 +641,10 @@ If a feature depends on external setup that Stuart hasn't completed yet (e.g., a
 - ✅ Note "Requires [X] to be configured — contact your administrator" where applicable
 - ❌ Do NOT skip documentation entirely because of a dependency
 
+### 6h.6 — Version Bump Reminder
+
+If this session shipped user-visible features to production, remind Stuart to bump `version` in `package.json` before or after merging to `main`. The version is displayed at the bottom of the Profile Settings page.
+
 ### Summary
 
 | Check | Result |
@@ -630,6 +652,8 @@ If a feature depends on external setup that Stuart hasn't completed yet (e.g., a
 | User-facing behavior changed? | ☐ Yes / ☐ No |
 | Tier determined? | ☐ Minor / ☐ Moderate / ☐ Major / ☐ N/A |
 | Guide written/updated? | ☐ Yes / ☐ N/A |
+| What's New entry appended? | ☐ Yes / ☐ N/A |
+| Feature walkthrough updated (if applicable)? | ☐ Yes / ☐ N/A |
 | Architecture repo committed? | ☐ Yes / ☐ N/A |
 
 **Pass criteria:** All user-facing changes have corresponding documentation written and committed this session. No deferred flags — write it now.
@@ -825,6 +849,7 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.16 | 2026-03-12 | **§6h scope expansion.** Guide index now includes `feature-walkthrough.md`, `whats-new.md`, and `user-documentation/` badge reference. Added mandatory What's New entry step. Added feature-walkthrough check for Moderate/Major changes. Added §6h.6 version bump reminder. Summary checklist expanded with What's New and walkthrough rows. |
 | v1.15 | 2026-03-12 | **§6h rewrite: "Write It Now" replaces "Flag It".** Section renamed to "User Documentation — Write It Now". Three-tier scope system (Minor/Moderate/Major) determines action level. Claude now writes/updates the actual user guide during the session instead of deferring to a flag in the handover. Added §6h.4 (writing procedure for updates and new guides), §6h.5 (guard rail for unfinished dependencies). Updated summary/pass criteria: no deferred flags, docs must be written and committed this session. |
 | v1.14 | 2026-03-12 | **Added Section 6h: User Documentation Check.** New mandatory section for sessions that change user-facing behavior. Checks existing guides in `guides/user-help/`, flags updates needed or new guides needed. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized doc locations). Updated Section 1 triggers, Document Map. |
 | v1.13 | 2026-03-05 | **Added "Next Session Setup" section.** Handoff documents must include a suggested opening message formatted as "Phase [XX] — [Short Description]" to auto-title the next Claude Code session for scannable history. |

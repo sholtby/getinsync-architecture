@@ -26,6 +26,7 @@ Before you dive in, here are four terms you will see everywhere:
 |------|---------------|
 | **Namespace** | Your organization's account. Everything you do lives inside your namespace. |
 | **Workspace** | A logical grouping of applications (e.g., "Finance Department" or "Toronto Office"). You can have multiple workspaces. |
+| **Portfolio** | A logical grouping of applications within a workspace (e.g., "Finance Apps" or "Citizen Services"). Portfolios can be nested into hierarchies. |
 | **Application** | A business application in your portfolio (e.g., "SAP ERP", "Salesforce CRM"). |
 | **Deployment Profile** | How and where a specific application runs. The same app can have multiple profiles — for example, one running on-premises and another as SaaS. |
 
