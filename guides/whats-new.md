@@ -9,6 +9,8 @@ Recent updates to GetInSync NextGen.
 - **Profile Photo Upload** — Upload your own avatar from Settings → Profile. Supports JPEG, PNG, WebP, and GIF (max 2 MB).
 - **Avatar Display** — The user menu now shows your photo and first name instead of your email address.
 - **Technology Standards Badges** — Standards conformance badges now appear on Technology Products showing compliance status.
+- **Organization Settings Read-Only** — Non-admin users can now view Organization Settings (read-only) with a clear info banner. Previously this page was hidden from non-admins.
+- **My Profile in Settings** — Quick link to your profile added to the settings sidebar navigation.
 
 ## March 11, 2026
 
