@@ -181,7 +181,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/roadmap/architecture.md | **v1.3** | 🟢 | **Roadmap — DEPLOYED. 8 tables, 4 views, seed data. Self-organizing scoping, Gantt/Kanban/Grid UI spec. Supersedes v1.0–v1.2.** |
+| features/roadmap/architecture.md | **v1.4** | 🟢 | **Roadmap — DEPLOYED. 8 tables, 4 views, seed data. Self-organizing scoping, Gantt/Kanban/Grid UI spec. v1.4: global workspace selector sync, membership-based filtering, org-wide null fix.** |
 
 ### Gamification & Data Governance
 
@@ -714,6 +714,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.61 | 2026-03-11 | Roadmap architecture v1.3→v1.4: §8.8.5 NEW global workspace selector sync — Roadmap auto-filters when workspace changes in nav. §8.8.2 scoping table corrected (initiatives/ideas workspace_id is Optional, not Required). Membership-based client-side filtering ensures users only see items from their workspaces + org-wide items. Org-wide null filter bug fixed. RLS gap documented (SELECT is namespace-level, future work for workspace-level). |
 | v1.60 | 2026-03-11 | **Standards Intelligence Phase 1 DEPLOYED.** New: `standards-intelligence.md` v1.2 (🟢). Schema: 93→95 tables, 361→369 RLS, 51→53 triggers, 32→36 views, 55→57 functions. New table: `technology_standards` (4 RLS, audit trigger). New views: `vw_implied_technology_standards`, `vw_technology_standards_summary`. New RPCs: `assert_technology_standard()`, `refresh_technology_standard_prevalence()`. Frontend: Standards sub-tab, KPI cards, category table, assert modal, StandardsBadge. pgTAP sentinels updated (93→95 tables, 30→36 views, 51→53 triggers). |
 | v1.59 | 2026-03-11 | Budget management v1.7→v1.8: Workspace view replaced Applications/IT Services sub-tabs with unified view + ITSpendFilterDrawer (Category: All/Applications/IT Services). KPI cards filter-responsive. ProjectedSpendCard collapsed by default with localStorage persistence. formatCurrency negative number fix. New component: ITSpendFilterDrawer.tsx. |
 | v1.58 | 2026-03-11 | Budget management v1.6.1→v1.7: Added Projected IT Spend section (§8.1.1) — bridges Roadmap initiative run rate impacts into IT Spend dashboard. Shows Current Run Rate → Roadmap Impact → Projected Run Rate with initiative detail list. New component: ProjectedSpendCard.tsx. Workspace table gains Roadmap Δ column in namespace view. No new views or tables — pure client-side query composition. |

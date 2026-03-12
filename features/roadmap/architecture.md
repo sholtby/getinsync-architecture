@@ -1044,8 +1044,8 @@ Key decisions:
 | Entity | workspace_id | Namespace View (no filter) | Workspace View (filtered) |
 |--------|-------------|---------------------------|--------------------------|
 | **Findings** | Optional | All findings in namespace | `workspace_id = selected` OR `workspace_id IS NULL` |
-| **Initiatives** | Required | All initiatives in namespace | `workspace_id = selected` |
-| **Ideas** | Required | All ideas in namespace | `workspace_id = selected` |
+| **Initiatives** | Optional (NULL = namespace-wide) | All initiatives in namespace | `workspace_id = selected` OR `workspace_id IS NULL` |
+| **Ideas** | Optional (NULL = namespace-wide) | All ideas in namespace | `workspace_id = selected` OR `workspace_id IS NULL` |
 | **Programs** | Optional (NULL = namespace-wide) | All programs in namespace | `workspace_id = selected` OR any linked initiative has `workspace_id = selected` ¹ |
 | **Dependencies** | Via initiative | All dependencies | Visible if either source or target initiative is visible ² |
 
@@ -1132,7 +1132,18 @@ Filter availability varies by tab:
 | Program | ✅ | — | — | — |
 | Horizon | ✅ (Gantt/Grid only) | — | — | — |
 
-#### 8.8.5 RBAC Interaction
+#### 8.8.5 Global Workspace Selector Sync (v1.4)
+
+The Roadmap dashboard automatically syncs with the **global workspace selector** in the navigation header:
+
+- **Specific workspace selected** → `filters.workspaceId` is set to that workspace's ID. The filter drawer reflects this selection. Items shown: workspace-scoped items + organization-wide items (`workspace_id = NULL`).
+- **"My Workspaces" (all-workspaces) selected** → `filters.workspaceId` is cleared (no workspace filter). All items from the user's accessible workspaces are shown.
+- **User can override** via the filter drawer. Selecting a different workspace in the drawer overrides the global selector until the next global workspace switch.
+- **Membership-based filtering** → Regardless of workspace filter state, items are always filtered to workspaces the user is a member of (derived from `allWorkspaces` in AuthContext, which is RLS-filtered). Namespace admins see everything because their workspace list contains all workspaces.
+
+**Implementation note:** RLS SELECT policies on `initiatives`, `ideas`, and `programs` currently enforce namespace-level isolation only (not workspace-level). Workspace-scoped visibility is enforced client-side via the `userWorkspaceIds` membership set. A future RLS enhancement may add workspace-level SELECT restrictions for `restricted`/`viewer` roles.
+
+#### 8.8.6 RBAC Interaction
 
 Scoping rules layer on top of existing RLS policies:
 
