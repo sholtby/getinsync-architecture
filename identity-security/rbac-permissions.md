@@ -1,7 +1,7 @@
 # identity-security/rbac-permissions.md
 GetInSync NextGen — RBAC & Permission Architecture
 
-Last updated: 2026-02-14
+Last updated: 2026-03-11
 
 ---
 
@@ -370,27 +370,36 @@ Viewer can see everything, change nothing. This is the correct behavior — enfo
 | **Steward at workspace level** | identity-security v1.1, Excel matrix | `workspace_users` constraint has no `steward` value. Steward exists only at namespace level and contacts. | YES — workspace_users needs `steward` added OR steward enforcement remains purely UI-level via contact role lookup | Medium — Enterprise tier feature |
 | **Restricted at workspace level** | identity-security v1.1, Excel matrix | `workspace_users` constraint has no `restricted` value. Restricted exists at namespace level only. | YES — workspace_users needs `restricted` added with portfolio-scoped SELECT policies | Medium — Plus tier feature |
 | **contacts.workspace_role naming** | All other tables use `viewer` | contacts uses `read_only` | YES — rename `read_only` to `viewer` for consistency | Low — cosmetic |
-| **UI role gating** | Excel "Implementation Status" shows 13/16 gaps | Many create/edit actions lack frontend role checks | YES — see Section 8.4 | High — security |
+| **UI role gating** | Excel "Implementation Status" shows 13/16 gaps | Phase A complete (Mar 11, 2026): `usePermissions` hook + 13 UI gaps wired. See Section 8.4. | ✅ RESOLVED | High — security |
 | **Flag CREATE for viewers** | Gamification v1.2 | Not yet built | Expected — new feature | Phase 1 of gamification |
 | **Steward app-scoped edits** | identity-security v1.1 | No app-scoped RLS policies exist. Current INSERT/UPDATE policies check workspace role, not contact assignment. | YES — requires RLS policy changes or UI-only enforcement | Medium |
 
-### 8.4 UI Enforcement Gaps (from Excel "Implementation Status" sheet, Jan 6, 2026)
+### 8.4 UI Enforcement Gaps — Phase A Resolution (Mar 11, 2026)
 
-| Feature | Required Gating | Current State | Action |
-|---------|----------------|---------------|--------|
-| New Application button | Admin only | No gating | Add role check |
-| Add Existing App button | Admin only | No gating | Add role check |
-| Browse Shared Apps | Admin + Enterprise tier | Tier check only | Add admin role check |
-| Publish Apps | Admin + Enterprise tier | Tier check only | Add admin role check |
-| Remove from Portfolio | Admin only | Not built | Build feature |
-| Unsubscribe | Admin only | Not built | Build feature |
-| Delete Application | Admin only | No gating | Add role check + warning |
-| Technical Assessment | Admin only | No role check | Add admin role check |
-| Business Assessment | Admin + Editor + Steward | No role check | Add role check |
-| Edit DP fields | Admin only | Publisher check only | Add admin role check |
-| Edit Lifecycle Status | Admin + Editor + Steward | No role check | Add role check |
-| Edit Annual Cost | Admin + Editor + Steward | No role check | Add role check |
-| Manage Portfolios | Admin only | Unknown | Verify |
+**Implementation:** `src/hooks/usePermissions.ts` — centralized permission hook combining namespace role + workspace role + tier.
+
+**AuthContext changes:** `workspaceRole` and `namespaceRole` now exposed from `AuthContext` (previously only `isWorkspaceAdmin` boolean was available).
+
+| Feature | Required Gating | Resolution | File(s) |
+|---------|----------------|------------|---------|
+| New Application button | Admin only | ✅ `canCreateApp` | `DashboardPage.tsx` |
+| Add Existing App button | Admin only | ✅ `canAddExistingApp` | `DashboardPage.tsx` |
+| Browse Shared Apps | Admin + Enterprise tier | ✅ `canBrowseSharedApps` + tier | `DashboardPage.tsx` |
+| Publish Apps | Admin + Enterprise tier | Pre-existing `canPublish` tier check | `DashboardPage.tsx` |
+| Remove from Portfolio | Admin only | Not yet built (feature pending) | — |
+| Unsubscribe | Admin only | Not yet built (feature pending) | — |
+| Delete Application | Admin only | Pre-existing `isWorkspaceAdmin` check | `ApplicationPage.tsx` |
+| Technical Assessment | Admin only | ✅ `canEditBizAssessment` gates entry | `ApplicationDetailDrawer.tsx` |
+| Business Assessment | Admin + Editor + Steward | ✅ `canEditBizAssessment` gates entry | `ApplicationDetailDrawer.tsx` |
+| Edit DP fields | Admin only | ✅ `canEditDP` → `isReadOnly` | `ApplicationPage.tsx`, `DeploymentsTab.tsx` |
+| Edit Lifecycle/Cost | Admin + Editor + Steward | ✅ `canWrite` → `isReadOnly` | `ApplicationForm.tsx` |
+| Manage Portfolios | Admin only | ✅ `canCreatePortfolio` / `canDeletePortfolio` | `PortfoliosSettings.tsx` |
+| Roadmap (Initiatives) | Tier + Role | ✅ `canEditRoadmap` | `RoadmapPage.tsx` |
+| Roadmap (Ideas) | Tier + Role | ✅ `canEditRoadmap` | `IdeasTab.tsx`, `IdeaDetailDrawer.tsx` |
+| Roadmap (Programs) | Tier + Role | ✅ `canEditRoadmap` | `ProgramsTab.tsx`, `ProgramDetailDrawer.tsx` |
+| Settings: Software Products | Namespace Admin only | ✅ `canManageSettings` | `SoftwareProductsSettings.tsx` |
+| Settings: Technology Catalog | Namespace Admin only | ✅ `canManageSettings` | `TechnologyCatalogSettings.tsx` |
+| Settings: IT Services | Namespace Admin only | ✅ `canManageSettings` | `ITServiceCatalogSettings.tsx` |
 
 ---
 

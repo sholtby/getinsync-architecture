@@ -1,7 +1,7 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.12
-**Date:** March 4, 2026
+**Version:** 1.14
+**Date:** March 12, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
 **Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
@@ -35,7 +35,7 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 | ☐ | Audit triggers added | → Run Section 6d (Security Regression) |
 | ☐ | Role/enum changes, FK changes, namespace changes | → Run Section 3 (Deep Validation) |
 | ☐ | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
-| ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) |
+| ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) + Section 6h (User Documentation) |
 | ☐ | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
 | ☐ | Any database changes at all | → Run Section 2 (Security Posture) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
 | ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
@@ -549,6 +549,56 @@ Run just the `SUMMARY` section at the bottom of the script for a single-glance d
 
 ---
 
+## Section 6h: User Documentation Check
+
+**When:** Any session that added or changed user-facing behavior (new screens, changed workflows, renamed labels, new features, changed permissions).
+
+### 6h.1 — Did This Session Change User-Facing Behavior?
+
+If YES to any of these, user documentation may need updating:
+- New screen, tab, or page added
+- Existing workflow changed (button moved, steps reordered, new modal)
+- Labels, terminology, or tooltips changed
+- Permission gating changed (who sees what)
+- New feature visible to end users
+- Error messages or empty states changed
+
+### 6h.2 — Check Existing Guides
+
+Review whether any existing guide in `docs-architecture/guides/user-help/` covers the changed behavior:
+
+| Guide | Covers |
+|-------|--------|
+| `getting-started.md` | Onboarding, key concepts, first 5 minutes, navigation |
+| `assessment-guide.md` | Business + technical assessment, scoring, TIME/PAID |
+| `time-framework.md` | TIME quadrant explanation |
+| `paid-framework.md` | PAID quadrant explanation |
+| `tech-health.md` | Technology health dashboard, lifecycle, KPI cards |
+| `deployment-profiles.md` | What deployment profiles are, how to create |
+| `roadmap-initiatives.md` | Creating and managing initiatives |
+| `integrations.md` | Managing application integrations |
+
+### 6h.3 — Action Required
+
+| Scenario | Action |
+|----------|--------|
+| Existing guide covers the area → behavior changed | Update the guide to match what was built |
+| New feature → no guide exists | Flag in session handover: "New feature X needs a user guide in `guides/user-help/`" |
+| Minor label/tooltip change only | Note in session handover, no guide update needed |
+| Permission/visibility change only | Note in session handover if it affects what users see |
+
+### Summary
+
+| Check | Result |
+|-------|--------|
+| User-facing behavior changed? | ☐ Yes / ☐ No |
+| Existing guide updated? | ☐ Yes / ☐ N/A |
+| New guide flagged? | ☐ Yes / ☐ N/A |
+
+**Pass criteria:** All user-facing changes either update an existing guide or flag the need for a new one in the session handover.
+
+---
+
 ## Section 7: Session Handover Document
 
 **When:** Always — every session that did meaningful work.
@@ -720,6 +770,7 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4) |
 | `identity-security/security-posture-overview.md` | External security overview | Stats alignment (Section 9) |
 | `identity-security/user-registration.md` | Signup/invitation flows | SOC2 CC6.1 evidence |
+| `guides/user-help/*.md` | End-user help articles (8 articles for GitBook) | User doc check (Section 6h) |
 | `planning/open-items-priority-matrix.md` | Prioritized backlog (living doc, overwritten each session) | Open items (Section 10) |
 
 ---
@@ -737,6 +788,7 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.14 | 2026-03-12 | **Added Section 6h: User Documentation Check.** New mandatory section for sessions that change user-facing behavior. Checks existing guides in `guides/user-help/`, flags updates needed or new guides needed. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized doc locations). Updated Section 1 triggers, Document Map. |
 | v1.13 | 2026-03-05 | **Added "Next Session Setup" section.** Handoff documents must include a suggested opening message formatted as "Phase [XX] — [Short Description]" to auto-title the next Claude Code session for scannable history. |
 | v1.12 | 2026-03-04 | **§6d rewrite: Claude Code runs both test scripts directly.** Replaced Options A/B/C with single "Default" approach: Claude Code runs both `security-posture-validation.sql` and `pgtap-rls-coverage.sql` via `$DATABASE_READONLY_URL` every session with DB changes. pgTAP: strip line 25 (`CREATE EXTENSION`) via `sed`, write to temp file, run with `psql -f`. Added `export` note (source .env doesn't export). Sentinel check failures: Claude Code now updates test files directly instead of deferring to Stuart. Fallback: Supabase SQL Editor. |
 | v1.11 | 2026-03-03 | **Consolidation.** §2.1 expanded: added view security_invoker + DEFINER function search_path checks to bulk safety net (6 checks total). Section 4 removed (all checks now in §2.1). Section 3 narrowed to deep/niche validation only (CHECK constraints, roles, FKs, namespaces). Section 1 triggers simplified. §6d pgTAP count updated 391→408. Deprecated `security-validation-runbook.md` — fully superseded by §2.1 + §6d. |

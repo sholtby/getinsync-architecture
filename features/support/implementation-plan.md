@@ -291,7 +291,7 @@ function ChatContextBridge() {
 
 - GitBook Free plan (1 user, custom domain included)
 - Custom domain: `docs.getinsync.ca`
-- 8 articles authored as markdown drafts in `features/support/help-articles/` (architecture repo) and imported to GitBook
+- 8 articles authored as markdown drafts in `guides/user-help/` (architecture repo) and imported to GitBook
 
 #### No Code Changes Required
 
@@ -301,14 +301,14 @@ The existing `config.ts` default (`https://docs.getinsync.ca`) already matches. 
 
 | Slug | Topic | Draft File |
 |------|-------|------------|
-| `getting-started` | Onboarding guide | `features/support/help-articles/getting-started.md` |
-| `time-framework` | TIME quadrant explanation | `features/support/help-articles/time-framework.md` |
-| `paid-framework` | PAID quadrant explanation | `features/support/help-articles/paid-framework.md` |
-| `assessment-guide` | How to assess an application | `features/support/help-articles/assessment-guide.md` |
-| `deployment-profiles` | What deployment profiles are | `features/support/help-articles/deployment-profiles.md` |
-| `tech-health` | Reading tech health indicators | `features/support/help-articles/tech-health.md` |
-| `roadmap-initiatives` | Creating and managing initiatives | `features/support/help-articles/roadmap-initiatives.md` |
-| `integrations` | Managing application integrations | `features/support/help-articles/integrations.md` |
+| `getting-started` | Onboarding guide | `guides/user-help/getting-started.md` |
+| `time-framework` | TIME quadrant explanation | `guides/user-help/time-framework.md` |
+| `paid-framework` | PAID quadrant explanation | `guides/user-help/paid-framework.md` |
+| `assessment-guide` | How to assess an application | `guides/user-help/assessment-guide.md` |
+| `deployment-profiles` | What deployment profiles are | `guides/user-help/deployment-profiles.md` |
+| `tech-health` | Reading tech health indicators | `guides/user-help/tech-health.md` |
+| `roadmap-initiatives` | Creating and managing initiatives | `guides/user-help/roadmap-initiatives.md` |
+| `integrations` | Managing application integrations | `guides/user-help/integrations.md` |
 
 ---
 

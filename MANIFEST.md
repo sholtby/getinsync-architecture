@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-11 (v1.60)
+Last updated: 2026-03-11 (v1.61)
 
 ---
 
@@ -130,7 +130,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/identity-security.md | v1.2 | 🟢 | Identity, auth, RBAC, Steward role, SOC 2 controls, data residency — cleaned Feb 23 |
 | identity-security/rls-policy.md | v2.3 | 🟢 | RLS policies — 92 tables, 357 policies. Header stats updated Mar 4 (detail catalog covers Phase 25.9 tables) |
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
-| identity-security/rbac-permissions.md | v1.0 | 🟢 | RBAC permission matrix — role-action mapping for all entities |
+| identity-security/rbac-permissions.md | v1.1 | 🟢 | RBAC permission matrix — role-action mapping. Phase A UI gating complete (Mar 11) |
 | core/involved-party.md | v1.9 | 🟢 | Contacts, organizations — tier names + role names corrected (updated Feb 23) |
 | planning/super-admin-provisioning.md | v0.2 | 🟢 | Platform admin namespace provisioning |
 | identity-security/user-registration.md | v1.0 | 🟢 | Signup and invitation flows |
