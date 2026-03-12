@@ -1,6 +1,6 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.14
+**Version:** 1.15
 **Date:** March 12, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
@@ -549,13 +549,15 @@ Run just the `SUMMARY` section at the bottom of the script for a single-glance d
 
 ---
 
-## Section 6h: User Documentation Check
+## Section 6h: User Documentation — Write It Now
 
 **When:** Any session that added or changed user-facing behavior (new screens, changed workflows, renamed labels, new features, changed permissions).
 
+**Philosophy:** If you just shipped the feature, you have full context on how it works *right now*. Deferring doc updates to a future session means that session has to re-explore the feature from scratch — which rarely happens. Write the docs while the context is fresh.
+
 ### 6h.1 — Did This Session Change User-Facing Behavior?
 
-If YES to any of these, user documentation may need updating:
+If YES to any of these, user documentation **must** be updated this session:
 - New screen, tab, or page added
 - Existing workflow changed (button moved, steps reordered, new modal)
 - Labels, terminology, or tooltips changed
@@ -563,13 +565,25 @@ If YES to any of these, user documentation may need updating:
 - New feature visible to end users
 - Error messages or empty states changed
 
-### 6h.2 — Check Existing Guides
+If NO to all → skip to Section 7.
 
-Review whether any existing guide in `docs-architecture/guides/user-help/` covers the changed behavior:
+### 6h.2 — Determine Scope
+
+Classify each user-facing change into a tier:
+
+| Tier | Change Scope | Example | Action |
+|------|-------------|---------|--------|
+| **Minor** | Label rename, tooltip tweak, icon swap | Changed "Email" to "Work Email" | Add a one-liner to the relevant existing guide |
+| **Moderate** | New section on existing screen, new modal, workflow change | Added photo upload to Profile Settings | Add/update the relevant section in the existing guide (a few paragraphs) |
+| **Major** | Entirely new screen, entirely new workflow | New "Standards" tab | Create a new guide file in `guides/user-help/`, add to guide index below |
+
+### 6h.3 — Find the Right Guide
+
+Check which existing guide in `docs-architecture/guides/user-help/` covers the changed area:
 
 | Guide | Covers |
 |-------|--------|
-| `getting-started.md` | Onboarding, key concepts, first 5 minutes, navigation |
+| `getting-started.md` | Onboarding, key concepts, first 5 minutes, navigation, profile settings |
 | `assessment-guide.md` | Business + technical assessment, scoring, TIME/PAID |
 | `time-framework.md` | TIME quadrant explanation |
 | `paid-framework.md` | PAID quadrant explanation |
@@ -578,24 +592,47 @@ Review whether any existing guide in `docs-architecture/guides/user-help/` cover
 | `roadmap-initiatives.md` | Creating and managing initiatives |
 | `integrations.md` | Managing application integrations |
 
-### 6h.3 — Action Required
+If no existing guide covers the area → create a new guide (Major tier).
 
-| Scenario | Action |
-|----------|--------|
-| Existing guide covers the area → behavior changed | Update the guide to match what was built |
-| New feature → no guide exists | Flag in session handover: "New feature X needs a user guide in `guides/user-help/`" |
-| Minor label/tooltip change only | Note in session handover, no guide update needed |
-| Permission/visibility change only | Note in session handover if it affects what users see |
+### 6h.4 — Write the Update
+
+**For Minor/Moderate changes (update existing guide):**
+1. Read the relevant guide file
+2. Find the section closest to the changed behavior
+3. Update or add content to match what was built
+4. Keep the guide's existing tone and structure
+5. Commit the updated guide to the architecture repo
+
+**For Major changes (new guide):**
+1. Create a new file in `docs-architecture/guides/user-help/`
+2. Follow the structure of existing guides (title, overview, step-by-step, tips)
+3. Add the new guide to the table in §6h.3 above (edit this checklist)
+4. Update `MANIFEST.md` with the new guide
+5. Commit to the architecture repo
+
+**Writing guidelines:**
+- Write for end users, not developers — no code, no schema references
+- Use plain language — the audience may not be technical
+- Include what the feature does, how to use it, and any limitations
+- Only document what is confirmed working — do not document features that depend on unfinished setup (note those as "coming soon" if relevant)
+
+### 6h.5 — Guard Rail: Unfinished Dependencies
+
+If a feature depends on external setup that Stuart hasn't completed yet (e.g., a third-party integration, a storage bucket), document the feature but note the dependency clearly:
+- ✅ Document the UI and workflow as built
+- ✅ Note "Requires [X] to be configured — contact your administrator" where applicable
+- ❌ Do NOT skip documentation entirely because of a dependency
 
 ### Summary
 
 | Check | Result |
 |-------|--------|
 | User-facing behavior changed? | ☐ Yes / ☐ No |
-| Existing guide updated? | ☐ Yes / ☐ N/A |
-| New guide flagged? | ☐ Yes / ☐ N/A |
+| Tier determined? | ☐ Minor / ☐ Moderate / ☐ Major / ☐ N/A |
+| Guide written/updated? | ☐ Yes / ☐ N/A |
+| Architecture repo committed? | ☐ Yes / ☐ N/A |
 
-**Pass criteria:** All user-facing changes either update an existing guide or flag the need for a new one in the session handover.
+**Pass criteria:** All user-facing changes have corresponding documentation written and committed this session. No deferred flags — write it now.
 
 ---
 
@@ -788,6 +825,7 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.15 | 2026-03-12 | **§6h rewrite: "Write It Now" replaces "Flag It".** Section renamed to "User Documentation — Write It Now". Three-tier scope system (Minor/Moderate/Major) determines action level. Claude now writes/updates the actual user guide during the session instead of deferring to a flag in the handover. Added §6h.4 (writing procedure for updates and new guides), §6h.5 (guard rail for unfinished dependencies). Updated summary/pass criteria: no deferred flags, docs must be written and committed this session. |
 | v1.14 | 2026-03-12 | **Added Section 6h: User Documentation Check.** New mandatory section for sessions that change user-facing behavior. Checks existing guides in `guides/user-help/`, flags updates needed or new guides needed. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized doc locations). Updated Section 1 triggers, Document Map. |
 | v1.13 | 2026-03-05 | **Added "Next Session Setup" section.** Handoff documents must include a suggested opening message formatted as "Phase [XX] — [Short Description]" to auto-title the next Claude Code session for scannable history. |
 | v1.12 | 2026-03-04 | **§6d rewrite: Claude Code runs both test scripts directly.** Replaced Options A/B/C with single "Default" approach: Claude Code runs both `security-posture-validation.sql` and `pgtap-rls-coverage.sql` via `$DATABASE_READONLY_URL` every session with DB changes. pgTAP: strip line 25 (`CREATE EXTENSION`) via `sed`, write to temp file, run with `psql -f`. Added `export` note (source .env doesn't export). Sentinel check failures: Claude Code now updates test files directly instead of deferring to Stuart. Fallback: Supabase SQL Editor. |

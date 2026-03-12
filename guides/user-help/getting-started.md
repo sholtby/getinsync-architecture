@@ -81,6 +81,28 @@ Press **Ctrl+K** (or **Cmd+K** on Mac) to open Global Search. Search across appl
 
 ---
 
+## Your Profile and Avatar
+
+Your name and photo appear in the **user menu** at the top-right of the screen. GetInSync automatically displays your photo if you signed in with Google or Microsoft. If no photo is available, it shows your initials in a colored circle.
+
+### Uploading a Profile Photo
+
+You can upload your own photo to replace the default:
+
+1. Click your name in the top-right corner to open the user menu
+2. Select **Settings**
+3. In the **Profile Photo** section, click **Upload Photo**
+4. Choose an image file (JPEG, PNG, WebP, or GIF — max 2 MB)
+5. Your new photo appears immediately across the platform
+
+To remove a custom photo, click **Remove Photo** in the same section. Your avatar will fall back to your Google/Microsoft photo, Gravatar, or initials.
+
+### Updating Your Display Name
+
+Below the photo section, you can update your **Display Name**. Your first name is shown in the top navigation bar, and your full name appears in the user menu dropdown.
+
+---
+
 ## Getting Help
 
 You are never stuck. Use the **Help menu** (the question-mark icon in the header) to:
