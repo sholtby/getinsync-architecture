@@ -6,6 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## March 12, 2026
 
+- **Chat Widget Tour Fix** — The Crisp onboarding tour no longer reappears after you dismiss it. Previously it would show up on every page load.
 - **Profile Photo Upload** — Upload your own avatar from Settings → Profile. Supports JPEG, PNG, WebP, and GIF (max 2 MB).
 - **Avatar Display** — The user menu now shows your photo and first name instead of your email address.
 - **Technology Standards Badges** — Standards conformance badges now appear on Technology Products showing compliance status.
