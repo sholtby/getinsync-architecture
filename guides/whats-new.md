@@ -12,6 +12,7 @@ Recent updates to GetInSync NextGen.
 - **Organization Settings Read-Only** — Non-admin users can now view Organization Settings (read-only) with a clear info banner. Previously this page was hidden from non-admins.
 - **My Profile in Settings** — Quick link to your profile added to the settings sidebar navigation.
 - **Tech Health Filter Drawers** — By Application, By Technology, and By Server tabs now use slide-in filter drawers with multi-select checkboxes, replacing the inline dropdowns. Select multiple values per filter for more flexible analysis.
+- **Simplified Invite & Edit User** — The Organization Role dropdown has been replaced with an Admin toggle checkbox. Non-admin users are silently assigned as viewers, removing the confusing dual "Viewer" label that appeared at both organization and workspace levels.
 
 ## March 11, 2026
 
