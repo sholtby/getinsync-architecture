@@ -101,6 +101,10 @@ Technology products in GetInSync may show verification badges:
 
 Verified data gives you higher confidence when making decisions. If you see unverified or stale data, consider re-validating the lifecycle dates.
 
+### How to Verify Lifecycle Data
+
+When viewing a technology product with linked lifecycle data, you will see a **Verify** button next to the Unlink option. Clicking Verify confirms that you have reviewed the lifecycle dates and they are accurate. The badge in the grid updates from "Unverified" to "Verified" immediately. Only admins, editors, and stewards can verify lifecycle data.
+
 ---
 
 ## How Lifecycle Data Gets Into GetInSync

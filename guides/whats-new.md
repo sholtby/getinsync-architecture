@@ -4,6 +4,13 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## March 13, 2026
+
+- **Edge Functions Shared Scaffold** — Deployed shared authentication, CORS, and error handling infrastructure for Edge Functions. JWT verification now uses local JWKS instead of network round-trips.
+- **Lifecycle Lookup Fix** — The AI Lifecycle Lookup now works reliably with the updated Edge Function authentication.
+- **Verify Lifecycle Data** — New "Verify" button on linked lifecycle data. Admins, editors, and stewards can confirm lifecycle dates are accurate. The grid badge updates from "Unverified" to "Verified" immediately.
+- **Duplicate Key Fix** — Applying AI lifecycle results no longer fails when data already exists for that product.
+
 ## March 12, 2026
 
 - **Chat Widget Tour Fix** — The Crisp onboarding tour no longer reappears after you dismiss it. Previously it would show up on every page load.
