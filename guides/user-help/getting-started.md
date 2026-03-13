@@ -104,6 +104,27 @@ Below the photo section, you can update your **Display Name**. Your first name i
 
 ---
 
+## APM Assistant
+
+The **APM Assistant** is an AI-powered chat that answers questions about your portfolio using your actual data. Click the sparkle icon in the top navigation bar to open the chat drawer.
+
+### What You Can Ask
+
+The assistant understands your applications, technologies, costs, and assessments. Try questions like:
+
+- "Which applications are marked for migration?"
+- "Show me high-priority tech debt items"
+- "What technologies are approaching end-of-life?"
+- "Generate a SWOT for this workspace"
+
+### How It Works
+
+When you ask a question, the assistant searches across your portfolio data — applications, deployment profiles, contacts, technologies, and services — and responds with a grounded answer based on what it finds. It respects your workspace filter, so switching workspaces changes what the assistant sees.
+
+Use the trash icon in the chat header to clear the conversation and start fresh.
+
+---
+
 ## Getting Help
 
 You are never stuck. Use the **Help menu** (the question-mark icon in the header) to:
