@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-12 (v1.64)
+Last updated: 2026-03-12 (v1.65)
 
 ---
 
@@ -130,7 +130,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/identity-security.md | v1.2 | 🟢 | Identity, auth, RBAC, Steward role, SOC 2 controls, data residency — cleaned Feb 23 |
 | identity-security/rls-policy.md | v2.3 | 🟢 | RLS policies — 92 tables, 357 policies. Header stats updated Mar 4 (detail catalog covers Phase 25.9 tables) |
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
-| identity-security/rbac-permissions.md | v1.1 | 🟢 | RBAC permission matrix — role-action mapping. Phase A UI gating complete (Mar 11) |
+| identity-security/rbac-permissions.md | v1.2 | 🟢 | RBAC permission matrix — role-action mapping. Phase A UI gating complete (Mar 11). ADR #14: admin toggle replaces org role dropdown (Mar 12). |
 | core/involved-party.md | v1.9 | 🟢 | Contacts, organizations — tier names + role names corrected (updated Feb 23) |
 | planning/super-admin-provisioning.md | v0.2 | 🟢 | Platform admin namespace provisioning |
 | identity-security/user-registration.md | v1.0 | 🟢 | Signup and invitation flows |
@@ -730,6 +730,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.65 | 2026-03-12 | rbac-permissions.md v1.1→v1.2: ADR #14 — Namespace role UI simplified to admin toggle (eliminates "Viewer" confusion). Open Question #6 — permission ceiling not enforced, parked for future delegation. InviteUserModal + UserEditModal: org role dropdown replaced with admin toggle checkbox. UsersSettings: namespace role display now reads from reference table display_name. |
 | v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
 | v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
