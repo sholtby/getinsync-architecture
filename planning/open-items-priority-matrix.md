@@ -68,7 +68,7 @@ These features have complete architecture documents but no code implementation. 
 | Feature | Architecture Doc | Effort | Priority | Notes |
 |---------|-----------------|--------|----------|-------|
 | **Edge Functions Infrastructure** | infrastructure/edge-functions-layer-architecture.md v1.2 | 3-5 days | **TIER 1** | **Phase 1 COMPLETE (Mar 13).** Shared scaffold deployed (_shared/auth.ts, cors.ts, error-handler.ts). lifecycle-lookup redeployed with JWKS auth. Deploy with `--no-verify-jwt` (ES256 gateway issue). Remaining: 7 more functions planned, 4 HIGH gaps in multi-region routing. |
-| **AI Chat MVP** | features/ai-chat/mvp.md, v2.md, v3-multicloud.md | 3-5 days | **TIER 1** | **MVP COMPLETE (Mar 13).** Chat drawer deployed with hybrid search (vector + keyword RRF), Claude streaming responses. 443 entities embedded. V2 planned: tool-use with database access for aggregate queries. |
+| **AI Chat** | features/ai-chat/mvp.md, v2.md, v3-multicloud.md | 3-5 days | **TIER 1** | **V2 COMPLETE (Mar 13).** MVP + tool-use upgrade deployed. Two tools: `search_portfolio` (hybrid search) + `query_database` (SQL SELECT via `chat_query_portfolio()` RPC). Non-streaming tool loop (max 3 iterations) + SSE streaming of final text. V3 planned: multi-cloud cost lookup. |
 | **Gamification & Data Quality** | features/gamification/architecture.md v1.2 | 2-3 days | TIER 2 | Audit-log-driven achievements, streaks, data quality flags. Self-contained. |
 | **Tech Scoring Patterns** | features/assessment/tech-scoring-patterns.md | 1-2 days | TIER 2 | Pre-fill T-score defaults from hosting type + pattern. Reduces assessment fatigue. |
 | **Realtime Subscriptions** | features/realtime-subscriptions/architecture.md v1.0 | 2-3 days | TIER 2 | Backend deployed (WAL, publication config). Frontend hooks + components pending. |
@@ -80,6 +80,12 @@ These features have complete architecture documents but no code implementation. 
 | **ITSM Integration (Phase 37)** | features/integrations/itsm-api-research.md | 15-20 days | FUTURE | ServiceNow + HaloITSM publish/subscribe. Q3+. |
 
 ---
+
+## Completed Mar 13
+
+| Item | Resolution |
+|------|------------|
+| AI Chat V2 — Tool-Use Database Access | ✅ DEPLOYED. `chat_query_portfolio()` RPC + Edge Function rewrite with Anthropic tool-use API. Two tools: `search_portfolio` + `query_database`. Sentinel updates (tables 97, triggers 55). |
 
 ## Completed Mar 8–12
 
