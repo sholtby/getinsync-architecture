@@ -173,7 +173,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/technology-health/dashboard.md | v1.0 | 🟢 | **Technology Health dashboard — DEPLOYED Feb 21. Filter drawer, CSV export, SaaS indicators, Needs Profiling.** |
+| features/technology-health/dashboard.md | v1.1 | 🟢 | **Technology Health dashboard — DEPLOYED Feb 21. v1.1: Filter drawer harmonized Mar 12 — all data tabs use slide-in drawer with multi-select checkboxes.** |
 | features/technology-health/risk-boundary.md | v1.0 | ☪ | **ADR: Risk registers = GRC territory. GetInSync = computed risk indicators.** |
 | features/technology-health/infrastructure-boundary-rubric.md | v1.0 | ☪ | **What infrastructure data belongs in APM vs CMDB. Decision tree, staleness principle, server_name governance.** |
 

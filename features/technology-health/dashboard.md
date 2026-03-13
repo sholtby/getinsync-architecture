@@ -447,7 +447,7 @@ Dashboard | Applications | Portfolios | Integrations | Technology Health | ...
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Technology Health                                     [Export] [Filters]│
 │                                                                         │
-│ Workspace: [All ▼]  Lifecycle: [All ▼]  Category: [All ▼]              │
+│ (Filters open in a slide-in drawer from right — see §6.4)              │
 │                                                                         │
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
 │ │ Total    │ │ Crown    │ │ EOL      │ │ Extended │ │ Mainstream│      │
@@ -493,15 +493,19 @@ Dashboard | Applications | Portfolios | Integrations | Technology Health | ...
 
 ### 6.4 Filters (Replaces Their 15 Slicers)
 
-| Our Filter | Replaces Their Slicers | Behavior |
-|---|---|---|
-| Workspace | Ministry, Branch | Cascading: pick workspace, branch auto-scopes |
-| Lifecycle Stage | OS/DB/Web Lifecycle Stage | Filter all views by technology lifecycle |
-| Technology Category | OS Class, Database Product, Web Class | Filter to specific technology layer |
-| Operational Status | Operational Status | Hide retired by default |
-| Crown Jewel | Crown Jewel | Quick filter to critical apps only |
+Filters use the **slide-in drawer pattern** (300px panel from right, backdrop overlay) consistent with App Health, Roadmap, and IT Spend. Each tab has its own drawer with tab-specific multi-select checkbox groups. The toolbar shows `[Export CSV] [Filters (N)]` where N is the active filter group count.
 
-**Key simplification:** Their 15 independent dropdowns become 5 cascading filters because our data is relationally linked. Selecting a workspace automatically scopes all technology, contacts, and applications.
+| Tab | Filter Groups in Drawer |
+|---|---|
+| **Analysis** | Workspace, Technology Category, Lifecycle Status (via `TechnologyHealthFilterSidebar`) |
+| **By Application** | Workspace, Data Center, Lifecycle Status, Crown Jewels |
+| **By Technology** | Category, Lifecycle Status |
+| **By Server** | Workspace, Lifecycle Status |
+| **Standards** | No filters (toolbar hidden) |
+
+**Filter behavior:** Multi-select checkboxes (Set-based). AND between groups, OR within a group. Empty set = show all. Cross-tab navigation from Analysis KPI cards pre-selects filters (single value → Set conversion).
+
+**Key simplification:** Their 15 independent dropdowns become tab-specific filter drawers because our data is relationally linked. Selecting a workspace automatically scopes all technology, contacts, and applications.
 
 ---
 
