@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Ym9MuhxMPfNYCR9q226BF9TnurhAQwh70yChmUgjuwnAoRIWgjUtyNdFT9OOIuC
+\restrict eb3qoF9BSXsxH0vY6zSU0ody0bhwUVIutuGAhR6Xyu43wIFoCaJglThjIH3mNIE
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -45,6 +45,20 @@ CREATE SCHEMA graphql;
 --
 
 CREATE SCHEMA graphql_public;
+
+
+--
+-- Name: pg_net; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION pg_net; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_net IS 'Async HTTP';
 
 
 --
@@ -125,6 +139,20 @@ COMMENT ON EXTENSION pg_stat_statements IS 'track planning and execution statist
 
 
 --
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+--
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -178,6 +206,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 --
 
 COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+
+--
+-- Name: vector; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
 
 
 --
@@ -1378,6 +1420,37 @@ BEGIN
     AND wu.user_id = auth.uid()
     AND wu.role = 'admin'
   );
+END;
+$$;
+
+
+--
+-- Name: chat_query_portfolio(uuid, text, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.chat_query_portfolio(p_namespace_id uuid, p_query text, p_max_rows integer DEFAULT 50) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  -- Block non-SELECT queries
+  IF p_query ~* '^\s*(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|execute|call)' THEN
+    RAISE EXCEPTION 'Only SELECT queries are allowed';
+  END IF;
+  -- Block dangerous patterns
+  IF p_query ~* '(;|\binto\b.*\bfrom\b|\bcopy\b|\bpg_read_file\b|\bpg_write_file\b)' THEN
+    RAISE EXCEPTION 'Query contains disallowed patterns';
+  END IF;
+  -- Execute with row limit
+  EXECUTE format(
+    'SELECT COALESCE(jsonb_agg(row_to_json(t)), ''[]''::jsonb) FROM (SELECT * FROM (%s) sub LIMIT %s) t',
+    p_query, p_max_rows
+  ) INTO v_result;
+  RETURN v_result;
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('error', SQLERRM);
 END;
 $$;
 
@@ -3305,6 +3378,83 @@ $$;
 
 
 --
+-- Name: search_apm(text, public.vector, uuid, uuid, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.search_apm(p_query text, p_query_embedding public.vector, p_namespace_id uuid, p_workspace_id uuid DEFAULT NULL::uuid, p_limit integer DEFAULT 10) RETURNS TABLE(entity_type text, entity_id uuid, workspace_id uuid, content text, metadata jsonb, similarity double precision)
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+begin
+  return query
+  with
+  -- Vector similarity search
+  vector_matches as (
+    select
+      e.entity_type,
+      e.entity_id,
+      e.workspace_id,
+      e.content,
+      e.metadata,
+      1 - (e.embedding <=> p_query_embedding) as vec_score,
+      row_number() over (order by e.embedding <=> p_query_embedding) as vec_rank
+    from apm_embeddings e
+    where e.namespace_id = p_namespace_id
+      and (p_workspace_id is null or e.workspace_id = p_workspace_id)
+    order by e.embedding <=> p_query_embedding
+    limit p_limit * 3
+  ),
+
+  -- Full-text search
+  text_matches as (
+    select
+      e.entity_type,
+      e.entity_id,
+      e.workspace_id,
+      e.content,
+      e.metadata,
+      ts_rank_cd(e.content_tsv, websearch_to_tsquery('english', p_query)) as text_score,
+      row_number() over (
+        order by ts_rank_cd(e.content_tsv, websearch_to_tsquery('english', p_query)) desc
+      ) as text_rank
+    from apm_embeddings e
+    where e.namespace_id = p_namespace_id
+      and (p_workspace_id is null or e.workspace_id = p_workspace_id)
+      and e.content_tsv @@ websearch_to_tsquery('english', p_query)
+    limit p_limit * 3
+  ),
+
+  -- Combine with Reciprocal Rank Fusion
+  combined as (
+    select
+      coalesce(v.entity_type, t.entity_type) as entity_type,
+      coalesce(v.entity_id, t.entity_id) as entity_id,
+      coalesce(v.workspace_id, t.workspace_id) as workspace_id,
+      coalesce(v.content, t.content) as content,
+      coalesce(v.metadata, t.metadata) as metadata,
+      coalesce(1.0 / (60 + v.vec_rank), 0) +
+      coalesce(1.0 / (60 + t.text_rank), 0) as rrf_score,
+      v.vec_score
+    from vector_matches v
+    full outer join text_matches t
+      on v.entity_id = t.entity_id and v.entity_type = t.entity_type
+  )
+
+  select
+    c.entity_type,
+    c.entity_id,
+    c.workspace_id,
+    c.content,
+    c.metadata,
+    coalesce(c.vec_score, c.rrf_score)::float as similarity
+  from combined c
+  order by c.rrf_score desc
+  limit p_limit;
+end;
+$$;
+
+
+--
 -- Name: search_audit_logs(uuid, uuid, text, uuid, text, timestamp with time zone, timestamp with time zone, integer, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3598,6 +3748,55 @@ BEGIN
     END IF;
 
     RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: trigger_embedding_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.trigger_embedding_update() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_namespace_id uuid;
+  v_action text := 'upsert';
+BEGIN
+  -- Get namespace_id
+  IF TG_TABLE_NAME = 'applications' THEN
+    SELECT namespace_id INTO v_namespace_id 
+    FROM workspaces 
+    WHERE id = COALESCE(NEW.workspace_id, OLD.workspace_id);
+  ELSIF TG_TABLE_NAME = 'deployment_profiles' THEN
+    SELECT namespace_id INTO v_namespace_id 
+    FROM workspaces 
+    WHERE id = COALESCE(NEW.workspace_id, OLD.workspace_id);
+  ELSIF TG_TABLE_NAME IN ('software_products', 'it_services') THEN
+    v_namespace_id := COALESCE(NEW.namespace_id, OLD.namespace_id);
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    v_action := 'delete';
+  END IF;
+
+  -- Call edge function via pg_net
+  PERFORM net.http_post(
+    url := 'https://zwwuogquncqvwuzbppiq.supabase.co/functions/v1/embed-entity',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3d3VvZ3F1bmNxdnd1emJwcGlxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjQyNjQ5MywiZXhwIjoyMDgyMDAyNDkzfQ.tvXRsv9pZ7HwuFYPkvijYA8RuO9g_qPIWKovHlFbO-s'
+    ),
+    body := jsonb_build_object(
+      'entity_type', TG_ARGV[0],
+      'entity_id', COALESCE(NEW.id, OLD.id),
+      'namespace_id', v_namespace_id,
+      'action', v_action
+    )
+  );
+
+  RETURN COALESCE(NEW, OLD);
 END;
 $$;
 
@@ -6117,6 +6316,39 @@ COMMENT ON TABLE public.alert_preferences IS 'Configurable alert preferences for
 
 
 --
+-- Name: apm_chat_usage; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.apm_chat_usage (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    namespace_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    query text NOT NULL,
+    tokens_used integer,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: apm_embeddings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.apm_embeddings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    namespace_id uuid NOT NULL,
+    workspace_id uuid,
+    entity_type text NOT NULL,
+    entity_id uuid NOT NULL,
+    content text NOT NULL,
+    embedding public.vector(1536),
+    content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, content)) STORED,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
 -- Name: app_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -8084,7 +8316,7 @@ CREATE TABLE public.technology_lifecycle_reference (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     current_status text DEFAULT 'unknown'::text,
-    CONSTRAINT technology_lifecycle_reference_confidence_level_check CHECK ((confidence_level = ANY (ARRAY['high'::text, 'medium'::text, 'low'::text, 'unverified'::text]))),
+    CONSTRAINT technology_lifecycle_reference_confidence_level_check CHECK ((confidence_level = ANY (ARRAY['high'::text, 'medium'::text, 'low'::text, 'unverified'::text, 'verified'::text]))),
     CONSTRAINT technology_lifecycle_reference_current_status_check CHECK ((current_status = ANY (ARRAY['mainstream'::text, 'extended'::text, 'end_of_support'::text, 'preview'::text, 'business_vendor_managed'::text, 'incomplete_data'::text]))),
     CONSTRAINT technology_lifecycle_reference_maintenance_type_check CHECK (((maintenance_type IS NULL) OR (maintenance_type = ANY (ARRAY['mandatory'::text, 'regular_high'::text, 'regular_low'::text, 'none'::text]))))
 );
@@ -10877,6 +11109,30 @@ ALTER TABLE ONLY public.alert_preferences
 
 
 --
+-- Name: apm_chat_usage apm_chat_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_chat_usage
+    ADD CONSTRAINT apm_chat_usage_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: apm_embeddings apm_embeddings_namespace_id_entity_type_entity_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_embeddings
+    ADD CONSTRAINT apm_embeddings_namespace_id_entity_type_entity_id_key UNIQUE (namespace_id, entity_type, entity_id);
+
+
+--
+-- Name: apm_embeddings apm_embeddings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_embeddings
+    ADD CONSTRAINT apm_embeddings_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: application_categories application_categories_namespace_id_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12639,6 +12895,41 @@ CREATE INDEX idx_alert_preferences_workspace ON public.alert_preferences USING b
 
 
 --
+-- Name: idx_apm_embeddings_fts; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_apm_embeddings_fts ON public.apm_embeddings USING gin (content_tsv);
+
+
+--
+-- Name: idx_apm_embeddings_namespace; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_apm_embeddings_namespace ON public.apm_embeddings USING btree (namespace_id);
+
+
+--
+-- Name: idx_apm_embeddings_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_apm_embeddings_type ON public.apm_embeddings USING btree (entity_type);
+
+
+--
+-- Name: idx_apm_embeddings_vector; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_apm_embeddings_vector ON public.apm_embeddings USING ivfflat (embedding public.vector_cosine_ops) WITH (lists='100');
+
+
+--
+-- Name: idx_apm_embeddings_workspace; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_apm_embeddings_workspace ON public.apm_embeddings USING btree (workspace_id);
+
+
+--
 -- Name: idx_app_contacts_app; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -12853,6 +13144,13 @@ CREATE INDEX idx_budget_transfers_to_service ON public.budget_transfers USING bt
 --
 
 CREATE INDEX idx_budget_transfers_workspace ON public.budget_transfers USING btree (workspace_id, fiscal_year);
+
+
+--
+-- Name: idx_chat_usage_namespace; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_chat_usage_namespace ON public.apm_chat_usage USING btree (namespace_id, created_at);
 
 
 --
@@ -13906,6 +14204,20 @@ CREATE TRIGGER add_workspace_creator_trigger AFTER INSERT ON public.workspaces F
 
 
 --
+-- Name: apm_chat_usage audit_apm_chat_usage; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_apm_chat_usage AFTER INSERT OR DELETE OR UPDATE ON public.apm_chat_usage FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: apm_embeddings audit_apm_embeddings; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_apm_embeddings AFTER INSERT OR DELETE OR UPDATE ON public.apm_embeddings FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
 -- Name: application_categories audit_application_categories; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -14337,6 +14649,41 @@ CREATE TRIGGER create_default_portfolio_trigger AFTER INSERT ON public.workspace
 --
 
 CREATE TRIGGER create_deployment_profile_on_app_create AFTER INSERT ON public.applications FOR EACH ROW EXECUTE FUNCTION public.create_default_deployment_profile();
+
+
+--
+-- Name: applications embed_applications; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER embed_applications AFTER INSERT OR DELETE OR UPDATE ON public.applications FOR EACH ROW EXECUTE FUNCTION public.trigger_embedding_update('application');
+
+
+--
+-- Name: deployment_profiles embed_deployment_profiles; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER embed_deployment_profiles AFTER INSERT OR DELETE OR UPDATE ON public.deployment_profiles FOR EACH ROW EXECUTE FUNCTION public.trigger_embedding_update('deployment_profile');
+
+
+--
+-- Name: it_services embed_it_services; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER embed_it_services AFTER INSERT OR DELETE OR UPDATE ON public.it_services FOR EACH ROW EXECUTE FUNCTION public.trigger_embedding_update('it_service');
+
+
+--
+-- Name: portfolio_assignments embed_portfolio_assignments; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER embed_portfolio_assignments AFTER INSERT OR UPDATE ON public.portfolio_assignments FOR EACH ROW EXECUTE FUNCTION public.trigger_embedding_update('application');
+
+
+--
+-- Name: software_products embed_software_products; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER embed_software_products AFTER INSERT OR DELETE OR UPDATE ON public.software_products FOR EACH ROW EXECUTE FUNCTION public.trigger_embedding_update('software_product');
 
 
 --
@@ -14903,6 +15250,38 @@ ALTER TABLE ONLY public.alert_preferences
 
 ALTER TABLE ONLY public.alert_preferences
     ADD CONSTRAINT alert_preferences_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: apm_chat_usage apm_chat_usage_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_chat_usage
+    ADD CONSTRAINT apm_chat_usage_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: apm_chat_usage apm_chat_usage_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_chat_usage
+    ADD CONSTRAINT apm_chat_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: apm_embeddings apm_embeddings_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_embeddings
+    ADD CONSTRAINT apm_embeddings_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: apm_embeddings apm_embeddings_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.apm_embeddings
+    ADD CONSTRAINT apm_embeddings_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
 
 
 --
@@ -18820,6 +19199,17 @@ CREATE POLICY "Editors can update workflow_instances in current namespace" ON pu
 
 
 --
+-- Name: technology_lifecycle_reference Namespace admins and stewards can update technology_lifecycle_r; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Namespace admins and stewards can update technology_lifecycle_r" ON public.technology_lifecycle_reference FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM public.namespace_users nu
+  WHERE ((nu.user_id = auth.uid()) AND (nu.role = ANY (ARRAY['admin'::text, 'editor'::text, 'steward'::text])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.namespace_users nu
+  WHERE ((nu.user_id = auth.uid()) AND (nu.role = ANY (ARRAY['admin'::text, 'editor'::text, 'steward'::text]))))));
+
+
+--
 -- Name: workspace_users Namespace admins can add workspace members in their namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -18884,6 +19274,20 @@ CREATE POLICY "Namespace admins can update workspaces in current namespace" ON p
 CREATE POLICY "Namespace admins can view all workspace members in their namesp" ON public.workspace_users FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
    FROM public.workspaces w
   WHERE ((w.id = workspace_users.workspace_id) AND public.check_is_namespace_admin_of_namespace(w.namespace_id)))));
+
+
+--
+-- Name: apm_chat_usage Namespace isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Namespace isolation" ON public.apm_chat_usage USING ((namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid));
+
+
+--
+-- Name: apm_embeddings Namespace isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Namespace isolation" ON public.apm_embeddings USING ((namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid));
 
 
 --
@@ -19897,6 +20301,18 @@ CREATE POLICY "Users can view workspaces in current namespace" ON public.workspa
 ALTER TABLE public.alert_preferences ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: apm_chat_usage; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.apm_chat_usage ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: apm_embeddings; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.apm_embeddings ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: application_categories; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -20691,5 +21107,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Ym9MuhxMPfNYCR9q226BF9TnurhAQwh70yChmUgjuwnAoRIWgjUtyNdFT9OOIuC
+\unrestrict eb3qoF9BSXsxH0vY6zSU0ody0bhwUVIutuGAhR6Xyu43wIFoCaJglThjIH3mNIE
 
