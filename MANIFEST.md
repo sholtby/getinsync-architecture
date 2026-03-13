@@ -153,7 +153,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.5 | 🟢 | pgTAP security regression — 425 assertions: RLS, GRANTs (93 tables + 30 views), audit triggers (51), view security, sentinel checks |
+| testing/pgtap-rls-coverage.sql | v1.6 | 🟢 | pgTAP security regression — 423 assertions: RLS, GRANTs (97 tables + 36 views), audit triggers (55), view security, sentinel checks |
 | testing/security-posture-validation.sql | v1.3 | 🟢 | Standalone security validation — PASS/FAIL output for all 92 tables + 29 views (incl. view GRANTs) |
 
 ### Integration & Alignment
@@ -314,16 +314,16 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-03-11)
+## Schema Statistics (as of 2026-03-13)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 95 |
+| **Tables** | 97 |
 | **Views** | 36 |
-| **Functions (RPCs)** | 57 |
-| **RLS Policies** | 369 |
-| **Audit Triggers** | 53 |
-| **Explicit GRANTs** | 95 tables × 2 roles (authenticated + service_role) |
+| **Functions (RPCs)** | 60 |
+| **RLS Policies** | 372 |
+| **Audit Triggers** | 55 |
+| **Explicit GRANTs** | 97 tables × 2 roles (authenticated + service_role) |
 | **Schema backup** | schema/nextgen-schema-current.sql (PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |

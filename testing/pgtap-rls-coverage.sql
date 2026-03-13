@@ -3326,11 +3326,11 @@ SELECT isnt(
 -- updating the test suite. If these fail, a new table or view
 -- was added and needs security coverage.
 
--- Expected: 95 public tables
+-- Expected: 97 public tables
 SELECT is(
   (SELECT count(*)::int FROM pg_tables WHERE schemaname = 'public'),
-  95,
-  'SENTINEL: Expected 95 public tables (update test suite if this changes)'
+  97,
+  'SENTINEL: Expected 97 public tables (update test suite if this changes)'
 );
 
 -- Expected: 36 public views (excluding pgTAP internal views)
@@ -3341,12 +3341,12 @@ SELECT is(
   'SENTINEL: Expected 36 public views (update test suite if this changes)'
 );
 
--- Expected: 53 audit triggers (count distinct tables with audit triggers)
+-- Expected: 55 audit triggers (count distinct tables with audit triggers)
 SELECT is(
   (SELECT count(DISTINCT event_object_table)::int FROM information_schema.triggers
    WHERE event_object_schema = 'public' AND trigger_name LIKE '%audit%'),
-  53,
-  'SENTINEL: Expected 53 tables with audit triggers (update test suite if this changes)'
+  55,
+  'SENTINEL: Expected 55 tables with audit triggers (update test suite if this changes)'
 );
 
 
