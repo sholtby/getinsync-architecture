@@ -145,8 +145,20 @@ When new tables are created this session, also verify these per-table checks tha
 When new tables with a `namespace_id` column are created, verify they have a seeding trigger (if they are reference/config tables). This catches the case where a new namespace-scoped reference table is added but forgotten in the provisioning flow.
 
 ```sql
--- Namespace-scoped reference tables (has is_active) missing a seeding trigger on namespaces
-SELECT c.table_name as missing_seed_trigger
+-- Step 1: List all seeding trigger functions on the namespaces table
+-- (review this list to confirm all namespace-scoped reference tables are covered)
+SELECT p.proname as seed_function
+FROM pg_trigger t
+JOIN pg_proc p ON t.tgfoid = p.oid
+JOIN pg_class cl ON t.tgrelid = cl.oid
+WHERE cl.relname = 'namespaces'
+AND p.proname NOT LIKE 'RI_FKey_%'
+AND p.proname NOT IN ('audit_log_trigger', 'update_updated_at_column')
+ORDER BY p.proname;
+
+-- Step 2: List all namespace-scoped reference-like tables (has namespace_id + is_active)
+-- Cross-reference against the trigger list above to spot gaps
+SELECT c.table_name as namespace_ref_table
 FROM information_schema.columns c
 WHERE c.column_name = 'namespace_id' AND c.table_schema = 'public'
 AND c.table_name NOT LIKE 'vw_%'
@@ -154,19 +166,24 @@ AND EXISTS (
   SELECT 1 FROM information_schema.columns c2
   WHERE c2.table_name = c.table_name AND c2.column_name = 'is_active' AND c2.table_schema = 'public'
 )
-AND NOT EXISTS (
-  SELECT 1 FROM pg_trigger t
-  JOIN pg_proc p ON t.tgfoid = p.oid
-  JOIN pg_class cl ON t.tgrelid = cl.oid
-  WHERE cl.relname = 'namespaces'
-  AND (p.proname LIKE '%' || c.table_name || '%' OR p.proname LIKE '%' || replace(c.table_name, '_', '%') || '%')
-)
 ORDER BY c.table_name;
 ```
 
-**Pass criteria:** Query returns zero rows. Any row = a namespace-scoped reference table exists without a corresponding seeding trigger on `namespaces`. Investigate whether the table needs seed data for new namespaces.
+**How to evaluate:** Compare Step 1 (seeding functions) against Step 2 (namespace-scoped reference tables). Every table in Step 2 should either:
+- Have a corresponding seeding function in Step 1, OR
+- Be listed as a known exception below
 
-**Known exceptions:** `notification_rules` and `workflow_definitions` have `is_active` but are intentionally unseeded (future features with zero rows across all namespaces as of March 2026). If these appear in results, they can be ignored until their features are built.
+**Known exceptions (no seeding needed):**
+
+| Table | Reason |
+|-------|--------|
+| `contacts` | User-created data, not reference data |
+| `data_centers` | User-created data, not reference data |
+| `organizations` | User-created data, not reference data |
+| `notification_rules` | Future feature — zero rows across all namespaces (as of March 2026) |
+| `workflow_definitions` | Future feature — zero rows across all namespaces (as of March 2026) |
+
+If a new table appears in Step 2 that is NOT in Step 1 and NOT in the exceptions table, it needs a seeding trigger and template data in the template namespace (`00000000-0000-0000-0000-000000000001`).
 
 ---
 
