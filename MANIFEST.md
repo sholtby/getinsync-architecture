@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-13 (v1.70)
+Last updated: 2026-03-13 (v1.71)
 
 ---
 
@@ -754,6 +754,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
 | v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
+| v1.71 | 2026-03-13 | **AI Chat v2 — Tool-Use DEPLOYED.** Edge Function rewritten with Anthropic tool-use API. Two tools: `search_portfolio` (existing embedding search) and `query_database` (SQL SELECT via `chat_query_portfolio()` RPC). Non-streaming tool loop (max 3 iterations) then streams final answer as SSE. New DB function: `chat_query_portfolio()` (SECURITY DEFINER, service_role only, SELECT-only validation). Schema: 57→58 functions. Frontend: updated suggestion prompts for analytical queries. |
 | v1.69 | 2026-03-13 | Updated guides/user-help/tech-health.md: added Verify button documentation. Updated guides/whats-new.md: March 13 entries (Edge Functions scaffold, lifecycle verify, duplicate key fix). |
 | v1.68 | 2026-03-13 | NEW: identity-security/secrets-inventory.md v1.0 🟢. Inventories 6 Supabase Edge Function secrets (metadata only, no values). Rotation procedures, classification levels, monitoring checks. SOC2 CC6.1/CC6.3/CC6.6. Closes CC6.3 "No API key rotation procedure" gap. |
 | v1.62 | 2026-03-13 | Edge Functions layer v1.2→v1.3: **Shared scaffold deployed.** `_shared/auth.ts` (jose/JWKS local JWT verification), `_shared/error-handler.ts` (standardized error responses with error codes), `_shared/cors.ts` updated with `handleCors()` helper. `lifecycle-lookup` auth pattern fixed — §6.5 401 bug resolved. Phase E1 scaffold complete. |

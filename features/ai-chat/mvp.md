@@ -1176,10 +1176,17 @@ supabase functions deploy apm-chat
 ✅ **Conversation history** (context-aware follow-ups)  
 ✅ **Usage tracking** (for billing/limits later)
 
+## v2 Upgrade — Tool-Use (March 2026)
+
+The MVP was upgraded with Anthropic tool-use API. Claude now has two tools:
+- **search_portfolio** — existing embedding/keyword hybrid search (entity lookups)
+- **query_database** — SQL SELECT via `chat_query_portfolio()` RPC (aggregates, rankings, counts)
+
+The Edge Function runs a non-streaming tool loop (max 3 iterations), then streams the final text as SSE. See `v2-tool-use-plan.md` for implementation details.
+
 ## What's NOT Included (Add Later)
 
 - ❌ Reranking (Cohere) — adds ~10-30% accuracy, ~$10/mo
-- ❌ SWOT structured analysis — needs dedicated function
 - ❌ Multi-cloud providers — see v3 architecture
 - ❌ Usage limits/billing — add when you monetize
 - ❌ Evaluation framework — add when you need to iterate

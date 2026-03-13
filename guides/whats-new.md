@@ -6,6 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## March 13, 2026
 
+- **APM Assistant v2 — Analytical Queries** — The AI chat can now answer aggregate questions like "Who is our largest vendor by spend?" or "How many apps per TIME quadrant?" Claude automatically picks the right tool: semantic search for entity lookups, SQL queries for counts/rankings/comparisons.
 - **APM Assistant** — New AI-powered chat drawer for asking questions about your portfolio. Click the sparkle icon in the top nav to open. Ask about applications, tech debt, lifecycle status, or request a SWOT analysis — the assistant searches your actual data and responds in context.
 - **Edge Functions Shared Scaffold** — Deployed shared authentication, CORS, and error handling infrastructure for Edge Functions. JWT verification now uses local JWKS instead of network round-trips.
 - **Lifecycle Lookup Fix** — The AI Lifecycle Lookup now works reliably with the updated Edge Function authentication.
