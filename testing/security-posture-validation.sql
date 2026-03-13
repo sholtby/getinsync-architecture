@@ -1,14 +1,15 @@
 -- =============================================================================
 -- GetInSync NextGen — Security Posture Validation (No pgTAP Required)
 -- =============================================================================
--- Version: 1.2 | Date: 2026-02-28
+-- Version: 1.3 | Date: 2026-03-13
 -- Run in Supabase SQL Editor — produces a single results table
 -- No extensions needed. Read-only (no data changes).
 -- =============================================================================
 
 WITH expected_tables AS (
   SELECT unnest(ARRAY[
-    'alert_preferences','application_compliance','application_contacts',
+    'alert_preferences','apm_chat_usage','apm_embeddings',
+    'application_compliance','application_contacts',
     'application_categories','application_category_assignments',
     'application_data_assets','application_documents','application_integrations',
     'application_roadmap','application_services','applications',
@@ -27,7 +28,7 @@ WITH expected_tables AS (
     'integration_direction_types','integration_frequency_types',
     'integration_method_types','integration_status_types',
     'invitation_workspaces','invitations','it_service_providers',
-    'it_service_software_products',
+    'it_service_software_products','it_service_technology_products',
     'it_services','lifecycle_statuses','namespace_role_options',
     'namespace_users','namespaces','notification_rules',
     'notifications','operational_statuses','organization_settings',
@@ -37,7 +38,7 @@ WITH expected_tables AS (
     'service_type_categories','service_types','software_product_categories',
     'software_products','standard_regions','technical_assessments',
     'technology_lifecycle_reference','technology_product_categories',
-    'technology_products','user_sessions','users',
+    'technology_products','technology_standards','user_sessions','users',
     'vendor_lifecycle_sources','workflow_definitions','workflow_instances',
     'workspace_budgets','workspace_group_members','workspace_group_publications',
     'workspace_groups','workspace_role_options','workspace_settings',
@@ -47,6 +48,7 @@ WITH expected_tables AS (
 
 expected_audit_tables AS (
   SELECT unnest(ARRAY[
+    'apm_chat_usage','apm_embeddings',
     'application_categories','application_category_assignments',
     'application_integrations','applications','contacts',
     'criticality_types','data_classification_types','data_format_types',
@@ -70,17 +72,22 @@ expected_views AS (
     'vw_application_infrastructure_report','vw_application_integration_summary',
     'vw_application_run_rate','vw_budget_alerts','vw_budget_status',
     'vw_budget_transfer_history','vw_dashboard_summary',
-    'vw_dashboard_workspace_breakdown','vw_deployment_profile_costs',
+    'vw_dashboard_summary_scoped','vw_dashboard_workspace_breakdown',
+    'vw_deployment_profile_costs','vw_dp_lifecycle_risk_combined',
     'vw_finding_summary','vw_idea_summary','vw_initiative_summary',
     'vw_integration_contacts','vw_integration_detail',
+    'vw_implied_technology_standards',
     'vw_it_service_budget_status','vw_it_service_contract_expiry',
+    'vw_it_service_lifecycle_risk',
     'vw_namespace_summary',
     'vw_namespace_user_detail','vw_namespace_workspace_detail',
     'vw_portfolio_costs','vw_portfolio_costs_rollup',
     'vw_program_summary','vw_run_rate_by_vendor',
     'vw_server_technology_report','vw_service_type_picker',
     'vw_software_contract_expiry','vw_technology_health_summary',
-    'vw_technology_tag_lifecycle_risk','vw_workspace_budget_history',
+    'vw_tag_standards_status',
+    'vw_technology_standards_summary','vw_technology_tag_lifecycle_risk',
+    'vw_workspace_budget_history',
     'vw_workspace_budget_summary'
   ]) AS view_name
 ),

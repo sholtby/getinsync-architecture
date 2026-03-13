@@ -29,7 +29,7 @@
 | 15 | SOC2 | auth.audit_log_entries empty (0 rows) | CC6.6 gap — Supabase auth audit log not populating. Investigate. | -- | Stuart |
 | 16 | Enablement | Delta training on Namespace UI | Delta must be independent for Garland import. ~2 hrs walkthrough. | -- | Stuart + Delta |
 | 17 | Marketing | Website update | Professional credibility. Claude Code task. ~1 day. | -- | Stuart + Claude Code |
-| 18 | Analytics | Power BI Foundation — deploy 14 views | 14 vw_pbi_* views exist but not deployed. First dashboard build. | -- | Stuart |
+| 18 | Analytics | Power BI Export Layer — deploy 6 vw_pbi_* views | Architecture doc written (power-bi-export.md v1.0). 6 views designed. Phase 1: deploy views + service account. Phase 2: Edge Function API. | -- | Stuart |
 | 37 | Demo | Riverside demo data refresh | Demo namespace needs updated data for sales demos. Tech tagging done (#19 closed). Remaining: hosting_type fill, assessment scores. | -- | Stuart |
 | 43 | RBAC | Assessment permission split — who can assess vs edit app | Currently same permission. Should be separable. Architecture decision needed. ~1-2 days. | -- | Stuart |
 | 44 | RBAC | Flag CREATE viewer exception — flags INSERT policy allows any workspace member | ADR: Flags are governance, not data edits. Viewer can create but not update/delete. Part of gamification Phase 1. | Gamification Phase 1 | Stuart |

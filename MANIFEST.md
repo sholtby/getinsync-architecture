@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-13 (v1.69)
+Last updated: 2026-03-13 (v1.70)
 
 ---
 
@@ -177,6 +177,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/technology-health/dashboard.md | v1.1 | 🟢 | **Technology Health dashboard — DEPLOYED Feb 21. v1.1: Filter drawer harmonized Mar 12 — all data tabs use slide-in drawer with multi-select checkboxes.** |
 | features/technology-health/risk-boundary.md | v1.0 | ☪ | **ADR: Risk registers = GRC territory. GetInSync = computed risk indicators.** |
 | features/technology-health/infrastructure-boundary-rubric.md | v1.0 | ☪ | **What infrastructure data belongs in APM vs CMDB. Decision tree, staleness principle, server_name governance.** |
+| features/technology-health/power-bi-export.md | v1.0 | 🟡 | **Power BI Export Layer — 6 vw_pbi_* views for external BI access. Two auth approaches (Edge Function API + Service Account). SharePoint integration pattern. Enterprise tier.** |
 
 ### Roadmap
 
