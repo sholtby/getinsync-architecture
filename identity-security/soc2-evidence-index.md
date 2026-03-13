@@ -108,7 +108,7 @@ This document maps SOC2 Trust Service Criteria to specific GetInSync architectur
 
 **Gaps:**
 - ⚠️ **No rate limiting documentation** — Supabase has defaults but not documented
-- ⚠️ **No API key rotation procedure** — document process for JWT secret rotation
+- ✅ **API key rotation procedure documented** — identity-security/secrets-inventory.md v1.0 (Mar 13, 2026)
 
 ---
 
@@ -340,6 +340,7 @@ Quick reference: which architecture doc evidences which control.
 | operations/session-end-checklist.md | CC7.1 |
 | identity-security/user-registration.md | CC6.1, CC6.6, C1.1 |
 | identity-security/rls-policy-addendum.md | CC6.1, CC6.3, C1.1 |
+| identity-security/secrets-inventory.md | CC6.1, CC6.3, CC6.6 |
 
 ---
 

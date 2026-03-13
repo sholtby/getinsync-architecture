@@ -1,7 +1,7 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.17
-**Date:** March 12, 2026
+**Version:** 1.18
+**Date:** March 13, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
 **Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
@@ -38,6 +38,7 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 | ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) + Section 6h (User Documentation) |
 | ☐ | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
 | ☐ | Any database changes at all | → Run Section 2 (Security Posture) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
+| ☐ | Secrets added/rotated, auth changes, Edge Function deploys | → Run Section 6i (SOC2 Evidence Checkpoint) |
 | ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
 | ☐ | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
 
@@ -705,6 +706,39 @@ If this session shipped user-visible features to production, remind Stuart to bu
 
 ---
 
+## Section 6i: SOC2 Evidence Checkpoint
+
+**When:** Every session — quick scan for SOC2-relevant changes that need documentation.
+**Reference:** `identity-security/soc2-evidence-index.md`, `identity-security/secrets-inventory.md`
+
+### What Triggers This
+
+Any session work that touches SOC2 trust criteria should be captured as evidence. Scan this session for:
+
+| Change This Session | SOC2 Control | Action Required |
+|---------------------|-------------|-----------------|
+| New or rotated API keys / secrets | CC6.1, CC6.3, CC6.6 | Update `secrets-inventory.md` — add/update entry in inventory table + rotation log |
+| New or modified RLS policies | CC6.1 | Already captured by Section 2 + Section 6d — verify evidence-index stats are current |
+| New audit triggers | CC6.6 | Already captured by Section 9 stats alignment — no extra action |
+| New Edge Functions deployed | CC6.3 | Update `secrets-inventory.md` Consumer(s) column if function uses secrets |
+| Auth flow changes (login, signup, OAuth, MFA) | CC6.1 | Update `identity-security/identity-security.md` |
+| New tables with sensitive data | CC6.2, C1.1 | Verify data classification is documented |
+| Infrastructure changes (regions, hosting, backups) | A1.1, A1.2 | Update relevant evidence-index section |
+| New third-party integrations | CC6.7 | Document in vendor management (when policy exists) |
+
+### Quick Checklist
+
+| Check | Result |
+|-------|--------|
+| Did this session create/rotate/add secrets? | ☐ Yes → Update `secrets-inventory.md` / ☐ No |
+| Did this session change auth or access control? | ☐ Yes → Update `identity-security.md` / ☐ No |
+| Did this session deploy new Edge Functions? | ☐ Yes → Update `secrets-inventory.md` consumers / ☐ No |
+| Did this session close any SOC2 gaps? | ☐ Yes → Update `soc2-evidence-index.md` gap status / ☐ No |
+
+**Pass criteria:** All SOC2-relevant changes from this session are captured in the appropriate evidence documents. No compliance-relevant work left undocumented.
+
+---
+
 ## Section 7: Session Handover Document
 
 **When:** Always — every session that did meaningful work.
@@ -717,7 +751,7 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 | **Database changes** | Tables created/modified, RLS policies, triggers, functions, views |
 | **Frontend changes** | Claude Code commits, components modified |
 | **Files created** | Architecture docs, skills, runbooks |
-| **Validation results** | Pass/fail for each check run from Sections 2–6g |
+| **Validation results** | Pass/fail for each check run from Sections 2–6i |
 | **Repo status** | Both repos committed and pushed? |
 | **Still open** | Bugs, next steps, pending work |
 | **Context for next session** | What the next Claude instance needs to know |
@@ -873,7 +907,8 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | `testing/security-posture-validation.sql` | Standalone security validation (no extension) | Any DB change (Section 6d) |
 | `testing/data-quality-validation.sql` | Enum casing, naming conventions, placeholder detection (14 checks) | Data seeding/migration (Section 6g) |
 | `identity-security/soc2-evidence-collection.md` | Monthly evidence procedure | Monthly (Section 8) |
-| `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4) |
+| `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4), SOC2 checkpoint (Section 6i) |
+| `identity-security/secrets-inventory.md` | API key/secret inventory + rotation procedures | SOC2 checkpoint (Section 6i) |
 | `identity-security/security-posture-overview.md` | External security overview | Stats alignment (Section 9) |
 | `identity-security/user-registration.md` | Signup/invitation flows | SOC2 CC6.1 evidence |
 | `guides/user-help/*.md` | End-user help articles (8 articles for GitBook) | User doc check (Section 6h) |
@@ -894,6 +929,7 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.18 | 2026-03-13 | **Added §6i: SOC2 Evidence Checkpoint.** Per-session scan for SOC2-relevant changes (secrets, auth, Edge Functions, infrastructure). Maps change types to trust criteria and required doc updates. Quick 4-item checklist. References new `secrets-inventory.md`. Updated Section 1 triggers, Section 7 validation range (2–6i), Document Map. |
 | v1.17 | 2026-03-12 | **Added §2.3: Namespace Seeding Validation.** SQL query checks for namespace-scoped reference tables (has `is_active` + `namespace_id`) missing a seeding trigger on `namespaces`. Runs when new tables are created. Known exceptions documented: `notification_rules`, `workflow_definitions` (future features). Updated Section 1 trigger for new tables to include §2.3. |
 | v1.16 | 2026-03-12 | **§6h scope expansion.** Guide index now includes `feature-walkthrough.md`, `whats-new.md`, and `user-documentation/` badge reference. Added mandatory What's New entry step. Added feature-walkthrough check for Moderate/Major changes. Added §6h.6 version bump reminder. Summary checklist expanded with What's New and walkthrough rows. |
 | v1.15 | 2026-03-12 | **§6h rewrite: "Write It Now" replaces "Flag It".** Section renamed to "User Documentation — Write It Now". Three-tier scope system (Minor/Moderate/Major) determines action level. Claude now writes/updates the actual user guide during the session instead of deferring to a flag in the handover. Added §6h.4 (writing procedure for updates and new guides), §6h.5 (guard rail for unfinished dependencies). Updated summary/pass criteria: no deferred flags, docs must be written and committed this session. |
