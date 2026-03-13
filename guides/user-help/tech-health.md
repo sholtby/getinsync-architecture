@@ -37,6 +37,20 @@ A chart showing how your technologies are distributed across lifecycle stages:
 
 ---
 
+## Filtering Data
+
+Each data tab (By Application, By Technology, By Server) has a **Filters** button in the toolbar. Clicking it opens a slide-in panel from the right with multi-select checkboxes grouped by category.
+
+- **By Application** — Filter by Workspace, Data Center, Lifecycle Status, or Crown Jewels
+- **By Technology** — Filter by Category (Operating System, Database, Web Server) or Lifecycle Status
+- **By Server** — Filter by Workspace or Lifecycle Status
+
+You can select multiple values within each group. The filter badge in the toolbar shows how many filter groups are active. Click "Clear all" in the drawer to reset all filters.
+
+Clicking a KPI card on the Analysis tab (e.g., "Extended Support") automatically switches to the By Technology tab with that filter pre-selected.
+
+---
+
 ## By Technology View
 
 Switch to the "By Technology" view to see risks grouped by technology product. For example:
