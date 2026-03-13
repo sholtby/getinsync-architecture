@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict yIjvezCuWFH4JHwC5XzYhqCHLCmI1IOugzEnaZugLTPnf28Xe0kfCe13q5Fzayt
+\restrict Ym9MuhxMPfNYCR9q226BF9TnurhAQwh70yChmUgjuwnAoRIWgjUtyNdFT9OOIuC
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -136,6 +136,20 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: pgtap; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pgtap; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pgtap IS 'Unit testing for PostgreSQL';
 
 
 --
@@ -961,6 +975,54 @@ $$;
 
 
 --
+-- Name: assert_technology_standard(uuid, uuid, text, text, uuid, text, date); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.assert_technology_standard(p_namespace_id uuid, p_category_id uuid, p_product_family text, p_status text, p_preferred_product_id uuid DEFAULT NULL::uuid, p_notes text DEFAULT NULL::text, p_sunset_date date DEFAULT NULL::date) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+    v_user_id uuid := auth.uid();
+    v_standard_id uuid;
+BEGIN
+    -- Verify caller is admin
+    IF NOT (check_is_platform_admin() OR check_is_namespace_admin_of_namespace(p_namespace_id)) THEN
+        RAISE EXCEPTION 'Only namespace admins can assert technology standards';
+    END IF;
+
+    -- Validate status
+    IF p_status NOT IN ('standard', 'non_standard', 'under_review', 'retiring') THEN
+        RAISE EXCEPTION 'Invalid status: %. Must be standard, non_standard, under_review, or retiring.', p_status;
+    END IF;
+
+    -- Upsert
+    INSERT INTO technology_standards (
+        namespace_id, category_id, product_family, status,
+        preferred_product_id, asserted_by, asserted_at,
+        notes, sunset_date
+    ) VALUES (
+        p_namespace_id, p_category_id, p_product_family, p_status,
+        p_preferred_product_id, v_user_id, now(),
+        p_notes, p_sunset_date
+    )
+    ON CONFLICT (namespace_id, category_id, product_family)
+    DO UPDATE SET
+        status = EXCLUDED.status,
+        preferred_product_id = EXCLUDED.preferred_product_id,
+        asserted_by = EXCLUDED.asserted_by,
+        asserted_at = EXCLUDED.asserted_at,
+        notes = EXCLUDED.notes,
+        sunset_date = EXCLUDED.sunset_date,
+        updated_at = now()
+    RETURNING id INTO v_standard_id;
+
+    RETURN v_standard_id;
+END;
+$$;
+
+
+--
 -- Name: audit_log_cleanup(integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1494,6 +1556,41 @@ BEGIN
     WHEN NEW.ga_date IS NOT NULL AND NEW.ga_date > CURRENT_DATE THEN 'preview'
     ELSE 'incomplete_data'
   END;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: copy_application_categories_to_new_namespace(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.copy_application_categories_to_new_namespace() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_template_namespace_id uuid := '00000000-0000-0000-0000-000000000001';
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM application_categories WHERE namespace_id = v_template_namespace_id
+  ) THEN
+    RAISE NOTICE 'Template namespace has no application categories, skipping copy';
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO application_categories (
+    namespace_id, code, name, description, display_order, is_active
+  )
+  SELECT
+    NEW.id, code, name, description, display_order, is_active
+  FROM application_categories
+  WHERE namespace_id = v_template_namespace_id
+  ORDER BY display_order;
+
+  RAISE NOTICE 'Copied % application categories to new namespace %',
+    (SELECT COUNT(*) FROM application_categories WHERE namespace_id = NEW.id),
+    NEW.id;
+
   RETURN NEW;
 END;
 $$;
@@ -2120,6 +2217,633 @@ $$;
 
 
 --
+-- Name: global_search(text, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.global_search(p_query text, p_limit integer DEFAULT 5) RETURNS jsonb
+    LANGUAGE plpgsql STABLE
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_namespace_id uuid;
+  v_ilike_pattern text;
+  v_result jsonb := '[]'::jsonb;
+  v_category jsonb;
+BEGIN
+  -- Get current namespace (RLS context)
+  v_namespace_id := get_current_namespace_id();
+  
+  -- Minimum 2 characters
+  IF length(trim(p_query)) < 2 THEN
+    RETURN '[]'::jsonb;
+  END IF;
+  
+  -- Build ILIKE pattern
+  v_ilike_pattern := '%' || trim(p_query) || '%';
+  
+  -- ============================================================
+  -- 1. APPLICATIONS
+  -- ============================================================
+  WITH app_results AS (
+    SELECT 
+      a.id,
+      a.name AS primary_text,
+      w.name || COALESCE(' · ' || pa.time_quadrant, '') || 
+        COALESCE(' · ' || dp.hosting_type, '') AS secondary_text,
+      CASE WHEN lower(a.name) = lower(trim(p_query)) THEN 0
+           WHEN lower(a.name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order,
+      a.operational_status
+    FROM applications a
+    JOIN workspaces w ON w.id = a.workspace_id
+    LEFT JOIN deployment_profiles dp ON dp.application_id = a.id AND dp.is_primary = true
+    LEFT JOIN LATERAL (
+      SELECT pa2.time_quadrant
+      FROM portfolio_assignments pa2
+      WHERE pa2.application_id = a.id
+      LIMIT 1
+    ) pa ON true
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        a.name ILIKE v_ilike_pattern
+        OR a.short_description ILIKE v_ilike_pattern
+        OR a.description ILIKE v_ilike_pattern
+        OR a.owner ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, a.name
+    LIMIT p_limit
+  ),
+  app_total AS (
+    SELECT count(*) AS cnt
+    FROM applications a
+    JOIN workspaces w ON w.id = a.workspace_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        a.name ILIKE v_ilike_pattern
+        OR a.short_description ILIKE v_ilike_pattern
+        OR a.description ILIKE v_ilike_pattern
+        OR a.owner ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Applications',
+    'icon', 'file-text',
+    'total', (SELECT cnt FROM app_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text,
+      'operational_status', r.operational_status
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM app_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 2. DEPLOYMENT PROFILES
+  -- ============================================================
+  WITH dp_results AS (
+    SELECT
+      dp.id,
+      dp.application_id,
+      dp.name AS primary_text,
+      a.name || ' · ' || w.name || COALESCE(' · ' || dp.hosting_type, '') AS secondary_text,
+      CASE WHEN lower(dp.name) = lower(trim(p_query)) THEN 0
+           WHEN lower(dp.name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM deployment_profiles dp
+    JOIN applications a ON a.id = dp.application_id
+    JOIN workspaces w ON w.id = dp.workspace_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        dp.name ILIKE v_ilike_pattern
+        OR dp.server_name ILIKE v_ilike_pattern
+        OR dp.version ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, dp.name
+    LIMIT p_limit
+  ),
+  dp_total AS (
+    SELECT count(*) AS cnt
+    FROM deployment_profiles dp
+    JOIN workspaces w ON w.id = dp.workspace_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        dp.name ILIKE v_ilike_pattern
+        OR dp.server_name ILIKE v_ilike_pattern
+        OR dp.version ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Deployment Profiles',
+    'icon', 'settings',
+    'total', (SELECT cnt FROM dp_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'application_id', r.application_id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM dp_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 3. CONTACTS
+  -- ============================================================
+  WITH contact_results AS (
+    SELECT
+      c.id,
+      c.display_name AS primary_text,
+      COALESCE(c.job_title, '') || 
+        COALESCE(' · ' || w.name, '') AS secondary_text,
+      CASE WHEN lower(c.display_name) = lower(trim(p_query)) THEN 0
+           WHEN lower(c.display_name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM contacts c
+    LEFT JOIN workspaces w ON w.id = c.primary_workspace_id
+    WHERE c.namespace_id = v_namespace_id
+      AND (
+        c.display_name ILIKE v_ilike_pattern
+        OR c.email ILIKE v_ilike_pattern
+        OR c.job_title ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, c.display_name
+    LIMIT p_limit
+  ),
+  contact_total AS (
+    SELECT count(*) AS cnt
+    FROM contacts c
+    WHERE c.namespace_id = v_namespace_id
+      AND (
+        c.display_name ILIKE v_ilike_pattern
+        OR c.email ILIKE v_ilike_pattern
+        OR c.job_title ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Contacts',
+    'icon', 'user',
+    'total', (SELECT cnt FROM contact_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM contact_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 4. IT SERVICES
+  -- ============================================================
+  WITH its_results AS (
+    SELECT
+      s.id,
+      s.name AS primary_text,
+      COALESCE(st.name, '') || ' · ' || w.name AS secondary_text,
+      CASE WHEN lower(s.name) = lower(trim(p_query)) THEN 0
+           WHEN lower(s.name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM it_services s
+    JOIN workspaces w ON w.id = s.owner_workspace_id
+    LEFT JOIN service_types st ON st.id = s.service_type_id
+    WHERE s.namespace_id = v_namespace_id
+      AND (
+        s.name ILIKE v_ilike_pattern
+        OR s.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, s.name
+    LIMIT p_limit
+  ),
+  its_total AS (
+    SELECT count(*) AS cnt
+    FROM it_services s
+    WHERE s.namespace_id = v_namespace_id
+      AND (
+        s.name ILIKE v_ilike_pattern
+        OR s.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'IT Services',
+    'icon', 'server',
+    'total', (SELECT cnt FROM its_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM its_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 5. SOFTWARE PRODUCTS
+  -- ============================================================
+  WITH sp_results AS (
+    SELECT
+      sp.id,
+      sp.name AS primary_text,
+      COALESCE(org.name, '') || 
+        COALESCE(' · ' || spc.name, '') AS secondary_text,
+      CASE WHEN lower(sp.name) = lower(trim(p_query)) THEN 0
+           WHEN lower(sp.name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM software_products sp
+    LEFT JOIN software_product_categories spc ON spc.id = sp.category_id
+    LEFT JOIN organizations org ON org.id = sp.manufacturer_org_id
+    WHERE sp.namespace_id = v_namespace_id
+      AND (
+        sp.name ILIKE v_ilike_pattern
+        OR sp.product_family_name ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, sp.name
+    LIMIT p_limit
+  ),
+  sp_total AS (
+    SELECT count(*) AS cnt
+    FROM software_products sp
+    WHERE sp.namespace_id = v_namespace_id
+      AND (
+        sp.name ILIKE v_ilike_pattern
+        OR sp.product_family_name ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Software Products',
+    'icon', 'package',
+    'total', (SELECT cnt FROM sp_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM sp_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 6. TECHNOLOGY PRODUCTS
+  -- ============================================================
+  WITH tp_results AS (
+    SELECT
+      tp.id,
+      tp.name AS primary_text,
+      COALESCE(tpc.name, '') AS secondary_text,
+      CASE WHEN lower(tp.name) = lower(trim(p_query)) THEN 0
+           WHEN lower(tp.name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM technology_products tp
+    LEFT JOIN technology_product_categories tpc ON tpc.id = tp.category_id
+    WHERE tp.namespace_id = v_namespace_id
+      AND (
+        tp.name ILIKE v_ilike_pattern
+        OR tp.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, tp.name
+    LIMIT p_limit
+  ),
+  tp_total AS (
+    SELECT count(*) AS cnt
+    FROM technology_products tp
+    WHERE tp.namespace_id = v_namespace_id
+      AND (
+        tp.name ILIKE v_ilike_pattern
+        OR tp.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Technology Products',
+    'icon', 'cpu',
+    'total', (SELECT cnt FROM tp_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM tp_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 7. INTEGRATIONS
+  -- ============================================================
+  WITH int_results AS (
+    SELECT
+      ai.id,
+      COALESCE(ai.name, sa.name || ' → ' || 
+        COALESCE(ta.name, ai.external_system_name, 'External')) AS primary_text,
+      sa.name || ' → ' || 
+        COALESCE(ta.name, ai.external_system_name, 'External') AS secondary_text,
+      CASE WHEN lower(COALESCE(ai.name, '')) = lower(trim(p_query)) THEN 0
+           WHEN lower(COALESCE(ai.name, '')) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM application_integrations ai
+    JOIN applications sa ON sa.id = ai.source_application_id
+    JOIN workspaces w ON w.id = sa.workspace_id
+    LEFT JOIN applications ta ON ta.id = ai.target_application_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        ai.name ILIKE v_ilike_pattern
+        OR ai.external_system_name ILIKE v_ilike_pattern
+        OR ai.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, COALESCE(ai.name, sa.name)
+    LIMIT p_limit
+  ),
+  int_total AS (
+    SELECT count(*) AS cnt
+    FROM application_integrations ai
+    JOIN applications sa ON sa.id = ai.source_application_id
+    JOIN workspaces w ON w.id = sa.workspace_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        ai.name ILIKE v_ilike_pattern
+        OR ai.external_system_name ILIKE v_ilike_pattern
+        OR ai.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Integrations',
+    'icon', 'link',
+    'total', (SELECT cnt FROM int_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM int_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 8. INITIATIVES
+  -- ============================================================
+  WITH init_results AS (
+    SELECT
+      i.id,
+      i.title AS primary_text,
+      i.status || ' · ' || i.priority || 
+        COALESCE(' · ' || w.name, '') AS secondary_text,
+      CASE WHEN lower(i.title) = lower(trim(p_query)) THEN 0
+           WHEN lower(i.title) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM initiatives i
+    LEFT JOIN workspaces w ON w.id = i.workspace_id
+    WHERE i.namespace_id = v_namespace_id
+      AND (
+        i.title ILIKE v_ilike_pattern
+        OR i.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, i.title
+    LIMIT p_limit
+  ),
+  init_total AS (
+    SELECT count(*) AS cnt
+    FROM initiatives i
+    WHERE i.namespace_id = v_namespace_id
+      AND (
+        i.title ILIKE v_ilike_pattern
+        OR i.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Initiatives',
+    'icon', 'target',
+    'total', (SELECT cnt FROM init_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM init_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 9. FINDINGS
+  -- ============================================================
+  WITH find_results AS (
+    SELECT
+      f.id,
+      f.title AS primary_text,
+      f.impact || ' · ' || f.assessment_domain AS secondary_text,
+      CASE WHEN lower(f.title) = lower(trim(p_query)) THEN 0
+           WHEN lower(f.title) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM findings f
+    WHERE f.namespace_id = v_namespace_id
+      AND (
+        f.title ILIKE v_ilike_pattern
+        OR f.rationale ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, f.title
+    LIMIT p_limit
+  ),
+  find_total AS (
+    SELECT count(*) AS cnt
+    FROM findings f
+    WHERE f.namespace_id = v_namespace_id
+      AND (
+        f.title ILIKE v_ilike_pattern
+        OR f.rationale ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Findings',
+    'icon', 'search',
+    'total', (SELECT cnt FROM find_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM find_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 10. IDEAS
+  -- ============================================================
+  WITH idea_results AS (
+    SELECT
+      d.id,
+      d.title AS primary_text,
+      d.status || COALESCE(' · ' || w.name, '') AS secondary_text,
+      CASE WHEN lower(d.title) = lower(trim(p_query)) THEN 0
+           WHEN lower(d.title) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM ideas d
+    LEFT JOIN workspaces w ON w.id = d.workspace_id
+    WHERE d.namespace_id = v_namespace_id
+      AND (
+        d.title ILIKE v_ilike_pattern
+        OR d.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, d.title
+    LIMIT p_limit
+  ),
+  idea_total AS (
+    SELECT count(*) AS cnt
+    FROM ideas d
+    WHERE d.namespace_id = v_namespace_id
+      AND (
+        d.title ILIKE v_ilike_pattern
+        OR d.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Ideas',
+    'icon', 'lightbulb',
+    'total', (SELECT cnt FROM idea_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM idea_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 11. PROGRAMS
+  -- ============================================================
+  WITH prog_results AS (
+    SELECT
+      p.id,
+      p.title AS primary_text,
+      p.status || COALESCE(' · ' || p.strategic_theme, '') AS secondary_text,
+      CASE WHEN lower(p.title) = lower(trim(p_query)) THEN 0
+           WHEN lower(p.title) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM programs p
+    WHERE p.namespace_id = v_namespace_id
+      AND (
+        p.title ILIKE v_ilike_pattern
+        OR p.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, p.title
+    LIMIT p_limit
+  ),
+  prog_total AS (
+    SELECT count(*) AS cnt
+    FROM programs p
+    WHERE p.namespace_id = v_namespace_id
+      AND (
+        p.title ILIKE v_ilike_pattern
+        OR p.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Programs',
+    'icon', 'bar-chart-2',
+    'total', (SELECT cnt FROM prog_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM prog_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  -- ============================================================
+  -- 12. PORTFOLIOS
+  -- ============================================================
+  WITH port_results AS (
+    SELECT
+      po.id,
+      po.name AS primary_text,
+      w.name AS secondary_text,
+      CASE WHEN lower(po.name) = lower(trim(p_query)) THEN 0
+           WHEN lower(po.name) LIKE lower(trim(p_query)) || '%' THEN 1
+           ELSE 2 END AS rank_order
+    FROM portfolios po
+    JOIN workspaces w ON w.id = po.workspace_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        po.name ILIKE v_ilike_pattern
+        OR po.description ILIKE v_ilike_pattern
+      )
+    ORDER BY rank_order, po.name
+    LIMIT p_limit
+  ),
+  port_total AS (
+    SELECT count(*) AS cnt
+    FROM portfolios po
+    JOIN workspaces w ON w.id = po.workspace_id
+    WHERE w.namespace_id = v_namespace_id
+      AND (
+        po.name ILIKE v_ilike_pattern
+        OR po.description ILIKE v_ilike_pattern
+      )
+  )
+  SELECT jsonb_build_object(
+    'category', 'Portfolios',
+    'icon', 'folder',
+    'total', (SELECT cnt FROM port_total),
+    'results', COALESCE(jsonb_agg(jsonb_build_object(
+      'id', r.id,
+      'primary_text', r.primary_text,
+      'secondary_text', r.secondary_text
+    )), '[]'::jsonb)
+  ) INTO v_category
+  FROM port_results r;
+  
+  IF (v_category->>'total')::int > 0 THEN
+    v_result := v_result || jsonb_build_array(v_category);
+  END IF;
+
+  RETURN v_result;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION global_search(p_query text, p_limit integer); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.global_search(p_query text, p_limit integer) IS 'Global search across 12 entity types. Returns JSONB array of categories with results.
+Namespace-scoped via get_current_namespace_id(). SECURITY INVOKER = RLS enforced.
+ILIKE-based with relevance ranking (exact > prefix > contains). Limit applies per category.
+Categories with zero hits are excluded from results.';
+
+
+--
 -- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2513,6 +3237,30 @@ BEGIN
   );
   
   RETURN v_result;
+END;
+$$;
+
+
+--
+-- Name: refresh_technology_standard_prevalence(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.refresh_technology_standard_prevalence(p_namespace_id uuid) RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+    UPDATE technology_standards ts
+    SET
+        prevalence_pct = its.prevalence_pct,
+        dp_count = its.dp_count,
+        total_category_dp_count = its.total_dps_in_category,
+        updated_at = now()
+    FROM vw_implied_technology_standards its
+    WHERE ts.namespace_id = p_namespace_id
+        AND its.namespace_id = ts.namespace_id
+        AND its.category_id = ts.category_id
+        AND its.product_family = ts.product_family;
 END;
 $$;
 
@@ -3370,13 +4118,16 @@ CREATE FUNCTION realtime.build_prepared_statement_sql(prepared_statement_name te
 CREATE FUNCTION realtime."cast"(val text, type_ regtype) RETURNS jsonb
     LANGUAGE plpgsql IMMUTABLE
     AS $$
-    declare
-      res jsonb;
-    begin
-      execute format('select to_jsonb(%L::'|| type_::text || ')', val)  into res;
-      return res;
-    end
-    $$;
+declare
+  res jsonb;
+begin
+  if type_::text = 'bytea' then
+    return to_jsonb(val);
+  end if;
+  execute format('select to_jsonb(%L::'|| type_::text || ')', val) into res;
+  return res;
+end
+$$;
 
 
 --
@@ -4746,6 +5497,56 @@ COMMENT ON TABLE auth.audit_log_entries IS 'Auth: Audit trail for user actions.'
 
 
 --
+-- Name: custom_oauth_providers; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.custom_oauth_providers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    provider_type text NOT NULL,
+    identifier text NOT NULL,
+    name text NOT NULL,
+    client_id text NOT NULL,
+    client_secret text NOT NULL,
+    acceptable_client_ids text[] DEFAULT '{}'::text[] NOT NULL,
+    scopes text[] DEFAULT '{}'::text[] NOT NULL,
+    pkce_enabled boolean DEFAULT true NOT NULL,
+    attribute_mapping jsonb DEFAULT '{}'::jsonb NOT NULL,
+    authorization_params jsonb DEFAULT '{}'::jsonb NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    email_optional boolean DEFAULT false NOT NULL,
+    issuer text,
+    discovery_url text,
+    skip_nonce_check boolean DEFAULT false NOT NULL,
+    cached_discovery jsonb,
+    discovery_cached_at timestamp with time zone,
+    authorization_url text,
+    token_url text,
+    userinfo_url text,
+    jwks_uri text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT custom_oauth_providers_authorization_url_https CHECK (((authorization_url IS NULL) OR (authorization_url ~~ 'https://%'::text))),
+    CONSTRAINT custom_oauth_providers_authorization_url_length CHECK (((authorization_url IS NULL) OR (char_length(authorization_url) <= 2048))),
+    CONSTRAINT custom_oauth_providers_client_id_length CHECK (((char_length(client_id) >= 1) AND (char_length(client_id) <= 512))),
+    CONSTRAINT custom_oauth_providers_discovery_url_length CHECK (((discovery_url IS NULL) OR (char_length(discovery_url) <= 2048))),
+    CONSTRAINT custom_oauth_providers_identifier_format CHECK ((identifier ~ '^[a-z0-9][a-z0-9:-]{0,48}[a-z0-9]$'::text)),
+    CONSTRAINT custom_oauth_providers_issuer_length CHECK (((issuer IS NULL) OR ((char_length(issuer) >= 1) AND (char_length(issuer) <= 2048)))),
+    CONSTRAINT custom_oauth_providers_jwks_uri_https CHECK (((jwks_uri IS NULL) OR (jwks_uri ~~ 'https://%'::text))),
+    CONSTRAINT custom_oauth_providers_jwks_uri_length CHECK (((jwks_uri IS NULL) OR (char_length(jwks_uri) <= 2048))),
+    CONSTRAINT custom_oauth_providers_name_length CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100))),
+    CONSTRAINT custom_oauth_providers_oauth2_requires_endpoints CHECK (((provider_type <> 'oauth2'::text) OR ((authorization_url IS NOT NULL) AND (token_url IS NOT NULL) AND (userinfo_url IS NOT NULL)))),
+    CONSTRAINT custom_oauth_providers_oidc_discovery_url_https CHECK (((provider_type <> 'oidc'::text) OR (discovery_url IS NULL) OR (discovery_url ~~ 'https://%'::text))),
+    CONSTRAINT custom_oauth_providers_oidc_issuer_https CHECK (((provider_type <> 'oidc'::text) OR (issuer IS NULL) OR (issuer ~~ 'https://%'::text))),
+    CONSTRAINT custom_oauth_providers_oidc_requires_issuer CHECK (((provider_type <> 'oidc'::text) OR (issuer IS NOT NULL))),
+    CONSTRAINT custom_oauth_providers_provider_type_check CHECK ((provider_type = ANY (ARRAY['oauth2'::text, 'oidc'::text]))),
+    CONSTRAINT custom_oauth_providers_token_url_https CHECK (((token_url IS NULL) OR (token_url ~~ 'https://%'::text))),
+    CONSTRAINT custom_oauth_providers_token_url_length CHECK (((token_url IS NULL) OR (char_length(token_url) <= 2048))),
+    CONSTRAINT custom_oauth_providers_userinfo_url_https CHECK (((userinfo_url IS NULL) OR (userinfo_url ~~ 'https://%'::text))),
+    CONSTRAINT custom_oauth_providers_userinfo_url_length CHECK (((userinfo_url IS NULL) OR (char_length(userinfo_url) <= 2048)))
+);
+
+
+--
 -- Name: flow_state; Type: TABLE; Schema: auth; Owner: -
 --
 
@@ -5325,6 +6126,48 @@ CREATE SEQUENCE public.app_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
+
+
+--
+-- Name: application_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.application_categories (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    namespace_id uuid NOT NULL,
+    code text NOT NULL,
+    name text NOT NULL,
+    description text,
+    display_order integer DEFAULT 0,
+    is_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: TABLE application_categories; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.application_categories IS 'Namespace-scoped application classification taxonomy. ARM v2.0. Each app gets exactly one category.';
+
+
+--
+-- Name: application_category_assignments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.application_category_assignments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    application_id uuid NOT NULL,
+    category_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: TABLE application_category_assignments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.application_category_assignments IS 'Many-to-many: applications ↔ application_categories. ARM v2.0.';
 
 
 --
@@ -6039,6 +6882,7 @@ CREATE TABLE public.deployment_profile_it_services (
     allocation_value numeric(12,2),
     notes text,
     created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
     CONSTRAINT dpis_relationship_check CHECK ((relationship_type = ANY (ARRAY['depends_on'::text, 'built_on'::text])))
 );
 
@@ -6064,6 +6908,8 @@ CREATE TABLE public.deployment_profile_software_products (
     contract_end_date date,
     renewal_notice_days integer DEFAULT 90,
     cost_confidence text DEFAULT 'estimated'::text,
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT chk_dpsp_allocation_percent CHECK (((allocation_percent IS NULL) OR ((allocation_percent >= (0)::numeric) AND (allocation_percent <= (100)::numeric)))),
     CONSTRAINT chk_dpsp_cost_confidence CHECK ((cost_confidence = ANY (ARRAY['estimated'::text, 'verified'::text])))
 );
 
@@ -6595,6 +7441,32 @@ CREATE TABLE public.it_service_providers (
 
 
 --
+-- Name: it_service_software_products; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.it_service_software_products (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    it_service_id uuid NOT NULL,
+    software_product_id uuid NOT NULL,
+    notes text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: it_service_technology_products; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.it_service_technology_products (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    it_service_id uuid NOT NULL,
+    technology_product_id uuid NOT NULL,
+    notes text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
 -- Name: it_services; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6616,6 +7488,11 @@ CREATE TABLE public.it_services (
     budget_locked boolean DEFAULT false,
     budget_notes text,
     budget_fiscal_year integer DEFAULT 2025,
+    contract_reference text,
+    contract_start_date date,
+    contract_end_date date,
+    renewal_notice_days integer DEFAULT 90,
+    lifecycle_reference_id uuid,
     CONSTRAINT it_services_cost_model_check CHECK ((cost_model = ANY (ARRAY['fixed'::text, 'per_user'::text, 'per_instance'::text, 'consumption'::text, 'tiered'::text])))
 );
 
@@ -6653,6 +7530,34 @@ COMMENT ON COLUMN public.it_services.budget_notes IS 'Notes about this IT Servic
 --
 
 COMMENT ON COLUMN public.it_services.budget_fiscal_year IS 'Fiscal year for the budget';
+
+
+--
+-- Name: COLUMN it_services.contract_reference; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.it_services.contract_reference IS 'PO number, agreement ID, or contract reference';
+
+
+--
+-- Name: COLUMN it_services.contract_start_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.it_services.contract_start_date IS 'When the contract term begins';
+
+
+--
+-- Name: COLUMN it_services.contract_end_date; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.it_services.contract_end_date IS 'When the contract term expires';
+
+
+--
+-- Name: COLUMN it_services.renewal_notice_days; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.it_services.renewal_notice_days IS 'Days before expiry to trigger renewal alert (default 90)';
 
 
 --
@@ -7070,6 +7975,7 @@ CREATE TABLE public.software_products (
     is_deprecated boolean DEFAULT false NOT NULL,
     annual_cost numeric(12,2) DEFAULT 0,
     category_id uuid,
+    lifecycle_reference_id uuid,
     CONSTRAINT software_products_category_check CHECK (((category IS NULL) OR (category = ANY (ARRAY['suite'::text, 'saas'::text, 'platform'::text, 'plugin'::text, 'managed_service'::text, 'other'::text])))),
     CONSTRAINT software_products_license_type_check CHECK ((license_type = ANY (ARRAY['perpetual'::text, 'subscription'::text, 'open_source'::text, 'freemium'::text, 'enterprise'::text, 'other'::text])))
 );
@@ -7217,7 +8123,8 @@ CREATE TABLE public.technology_products (
     updated_at timestamp with time zone DEFAULT now(),
     license_type text,
     product_family text,
-    lifecycle_reference_id uuid
+    lifecycle_reference_id uuid,
+    eol_product_id text
 );
 
 
@@ -7229,14 +8136,90 @@ COMMENT ON COLUMN public.technology_products.lifecycle_reference_id IS 'FK to te
 
 
 --
+-- Name: COLUMN technology_products.eol_product_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.technology_products.eol_product_id IS 'endoflife.date product ID (e.g., "mssqlserver"). Enables re-validation and bulk refresh.';
+
+
+--
+-- Name: technology_standards; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.technology_standards (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    namespace_id uuid NOT NULL,
+    category_id uuid NOT NULL,
+    product_family text NOT NULL,
+    preferred_product_id uuid,
+    status text DEFAULT 'implied'::text NOT NULL,
+    prevalence_pct numeric(5,2),
+    dp_count integer,
+    total_category_dp_count integer,
+    detection_threshold numeric(5,2) DEFAULT 40.00,
+    asserted_by uuid,
+    asserted_at timestamp with time zone,
+    sunset_date date,
+    notes text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT technology_standards_prevalence_check CHECK (((prevalence_pct IS NULL) OR ((prevalence_pct >= (0)::numeric) AND (prevalence_pct <= (100)::numeric)))),
+    CONSTRAINT technology_standards_status_check CHECK ((status = ANY (ARRAY['implied'::text, 'standard'::text, 'non_standard'::text, 'under_review'::text, 'retiring'::text])))
+);
+
+
+--
+-- Name: TABLE technology_standards; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.technology_standards IS 'Namespace-level technology standards, reverse-engineered from deployment profile technology tags. Each row represents one product family within one technology category. Status lifecycle: implied → standard | non_standard | under_review | retiring.';
+
+
+--
+-- Name: COLUMN technology_standards.product_family; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.technology_standards.product_family IS 'Matches technology_products.product_family. The family-level standard (e.g., "Windows Server").';
+
+
+--
+-- Name: COLUMN technology_standards.preferred_product_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.technology_standards.preferred_product_id IS 'Optional: specific version recommended for new deployments (e.g., Windows Server 2022).';
+
+
+--
+-- Name: COLUMN technology_standards.prevalence_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.technology_standards.prevalence_pct IS 'Percentage of DPs in this category that use this family. Recomputed by detection view/RPC.';
+
+
+--
+-- Name: COLUMN technology_standards.detection_threshold; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.technology_standards.detection_threshold IS 'Prevalence percentage above which the system flags a family as an implied standard. Default 40%.';
+
+
+--
 -- Name: user_sessions; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.user_sessions (
     user_id uuid NOT NULL,
     current_namespace_id uuid NOT NULL,
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    portfolio_by_workspace jsonb DEFAULT '{}'::jsonb NOT NULL
 );
+
+
+--
+-- Name: COLUMN user_sessions.portfolio_by_workspace; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_sessions.portfolio_by_workspace IS 'Map of {workspace_id: last_portfolio_id}. Used to restore portfolio on workspace switch.';
 
 
 --
@@ -7478,24 +8461,19 @@ CREATE VIEW public.vw_deployment_profile_costs WITH (security_invoker='true') AS
     a.name AS application_name,
     dp.workspace_id,
     a.operational_status,
-    COALESCE(sw.software_cost, (0)::numeric) AS software_cost,
+    (0)::numeric AS software_cost,
     COALESCE(its.service_cost, (0)::numeric) AS service_cost,
         CASE
             WHEN (dp.is_primary = true) THEN COALESCE(cb.bundle_cost, (0)::numeric)
             ELSE (0)::numeric
         END AS bundle_cost,
-    ((COALESCE(sw.software_cost, (0)::numeric) + COALESCE(its.service_cost, (0)::numeric)) +
+    (COALESCE(its.service_cost, (0)::numeric) +
         CASE
             WHEN (dp.is_primary = true) THEN COALESCE(cb.bundle_cost, (0)::numeric)
             ELSE (0)::numeric
         END) AS total_cost
-   FROM ((((public.deployment_profiles dp
+   FROM (((public.deployment_profiles dp
      JOIN public.applications a ON ((a.id = dp.application_id)))
-     LEFT JOIN ( SELECT dpsp.deployment_profile_id,
-            sum(COALESCE(dpsp.annual_cost, sp.annual_cost, (0)::numeric)) AS software_cost
-           FROM (public.deployment_profile_software_products dpsp
-             JOIN public.software_products sp ON ((sp.id = dpsp.software_product_id)))
-          GROUP BY dpsp.deployment_profile_id) sw ON ((sw.deployment_profile_id = dp.id)))
      LEFT JOIN ( SELECT dpis.deployment_profile_id,
             sum(
                 CASE
@@ -7525,7 +8503,7 @@ CREATE VIEW public.vw_application_run_rate WITH (security_invoker='true') AS
     a.workspace_id,
     w.namespace_id,
     a.operational_status,
-    sum(COALESCE(dpc.software_cost, (0)::numeric)) AS software_cost,
+    (0)::numeric AS software_cost,
     sum(COALESCE(dpc.service_cost, (0)::numeric)) AS service_cost,
     sum(COALESCE(dpc.bundle_cost, (0)::numeric)) AS bundle_cost,
     sum(COALESCE(dpc.total_cost, (0)::numeric)) AS total_run_rate
@@ -7648,6 +8626,377 @@ CREATE VIEW public.vw_budget_transfer_history WITH (security_invoker='true') AS
 
 
 --
+-- Name: vw_dashboard_summary; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_dashboard_summary WITH (security_invoker='true') AS
+ WITH dp_base AS (
+         SELECT w.namespace_id,
+            w.id AS workspace_id,
+            a.id AS application_id,
+            dp.id AS dp_id,
+            dp.tech_assessment_status,
+            dp.tech_health,
+            dp.tech_risk,
+            dp.paid_action,
+            dp.annual_licensing_cost,
+            dp.annual_cost,
+            dp.estimated_tech_debt
+           FROM ((public.deployment_profiles dp
+             JOIN public.applications a ON ((a.id = dp.application_id)))
+             JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+          WHERE (a.operational_status = 'operational'::text)
+        ), dp_agg AS (
+         SELECT dp_base.namespace_id,
+            count(DISTINCT dp_base.application_id) AS total_applications,
+            count(DISTINCT dp_base.dp_id) AS total_dps,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'complete'::text)) AS assessed_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'in_progress'::text)) AS needs_profiling_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'not_started'::text)) AS not_started_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'plan'::text)) AS plan_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'address'::text)) AS address_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['ignore'::text, 'improve'::text]))) AS improve_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['delay'::text, 'divest'::text]))) AS divest_count,
+            round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
+            COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
+            COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
+            COALESCE(sum(dp_base.estimated_tech_debt), (0)::numeric) AS total_estimated_tech_debt
+           FROM dp_base
+          GROUP BY dp_base.namespace_id
+        ), pa_base AS (
+         SELECT w.namespace_id,
+            pa.id AS pa_id,
+            pa.application_id,
+            pa.deployment_profile_id,
+            pa.time_quadrant,
+            pa.business_fit,
+            pa.criticality,
+            pa.business_assessment_status
+           FROM ((public.portfolio_assignments pa
+             JOIN public.applications a ON ((a.id = pa.application_id)))
+             JOIN public.workspaces w ON ((w.id = a.workspace_id)))
+          WHERE (a.operational_status = 'operational'::text)
+        ), pa_agg AS (
+         SELECT pa_base.namespace_id,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'invest'::text)) AS invest_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'tolerate'::text)) AS tolerate_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'modernize'::text)) AS modernize_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'eliminate'::text)) AS eliminate_count,
+            count(DISTINCT pa_base.application_id) FILTER (WHERE (pa_base.criticality >= (50)::numeric)) AS crown_jewel_count,
+            round(avg(pa_base.business_fit) FILTER (WHERE (pa_base.business_fit IS NOT NULL)), 1) AS avg_business_fit,
+            count(*) FILTER (WHERE (lower(pa_base.business_assessment_status) = 'complete'::text)) AS business_assessed_count,
+            count(*) FILTER (WHERE (lower(pa_base.business_assessment_status) = 'in_progress'::text)) AS business_in_progress_count
+           FROM pa_base
+          GROUP BY pa_base.namespace_id
+        )
+ SELECT d.namespace_id,
+    COALESCE(d.total_applications, (0)::bigint) AS total_applications,
+    COALESCE(d.total_dps, (0)::bigint) AS total_dps,
+    COALESCE(d.assessed_count, (0)::bigint) AS assessed_count,
+    COALESCE(d.needs_profiling_count, (0)::bigint) AS needs_profiling_count,
+    COALESCE(d.not_started_count, (0)::bigint) AS not_started_count,
+    COALESCE(p.crown_jewel_count, (0)::bigint) AS crown_jewel_count,
+    COALESCE(p.invest_count, (0)::bigint) AS invest_count,
+    COALESCE(p.tolerate_count, (0)::bigint) AS tolerate_count,
+    COALESCE(p.modernize_count, (0)::bigint) AS modernize_count,
+    COALESCE(p.eliminate_count, (0)::bigint) AS eliminate_count,
+    (COALESCE(p.modernize_count, (0)::bigint) + COALESCE(p.eliminate_count, (0)::bigint)) AS at_risk_count,
+    COALESCE(d.plan_count, (0)::bigint) AS plan_count,
+    COALESCE(d.address_count, (0)::bigint) AS address_count,
+    COALESCE(d.improve_count, (0)::bigint) AS improve_count,
+    COALESCE(d.divest_count, (0)::bigint) AS divest_count,
+    COALESCE(p.avg_business_fit, (0)::numeric) AS avg_business_fit,
+    COALESCE(d.avg_tech_health, (0)::numeric) AS avg_tech_health,
+    COALESCE(d.total_annual_licensing_cost, (0)::numeric) AS total_annual_licensing_cost,
+    COALESCE(d.total_annual_cost, (0)::numeric) AS total_annual_cost,
+    COALESCE(d.total_estimated_tech_debt, (0)::numeric) AS total_estimated_tech_debt,
+    COALESCE(p.business_assessed_count, (0)::bigint) AS business_assessed_count,
+    COALESCE(p.business_in_progress_count, (0)::bigint) AS business_in_progress_count
+   FROM (dp_agg d
+     FULL JOIN pa_agg p ON ((p.namespace_id = d.namespace_id)));
+
+
+--
+-- Name: VIEW vw_dashboard_summary; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.vw_dashboard_summary IS 'Namespace-level KPI aggregation for main dashboard. Replaces client-side calculateSummary(). TIME counts are PA-level. PAID counts are DP-level. Business scores from portfolio_assignments, tech scores from deployment_profiles.';
+
+
+--
+-- Name: vw_dashboard_summary_scoped; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_dashboard_summary_scoped WITH (security_invoker='true') AS
+ WITH dp_base AS (
+         SELECT w.namespace_id,
+            w.id AS workspace_id,
+            a.id AS application_id,
+            dp.id AS dp_id,
+            dp.tech_assessment_status,
+            dp.tech_health,
+            dp.tech_risk,
+            dp.paid_action,
+            dp.annual_licensing_cost,
+            dp.annual_cost,
+            dp.estimated_tech_debt
+           FROM ((public.workspaces w
+             JOIN public.applications a ON ((a.workspace_id = w.id)))
+             JOIN public.deployment_profiles dp ON (((dp.application_id = a.id) AND (dp.workspace_id = w.id))))
+          WHERE (a.operational_status = 'operational'::text)
+        ), dp_agg AS (
+         SELECT dp_base.namespace_id,
+            count(DISTINCT dp_base.application_id) AS total_applications,
+            count(DISTINCT dp_base.dp_id) AS total_dps,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'complete'::text)) AS assessed_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'in_progress'::text)) AS needs_profiling_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'not_started'::text)) AS not_started_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'plan'::text)) AS plan_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'address'::text)) AS address_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['ignore'::text, 'improve'::text]))) AS improve_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['delay'::text, 'divest'::text]))) AS divest_count,
+            round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
+            COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
+            COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
+            COALESCE(sum(dp_base.estimated_tech_debt), (0)::numeric) AS total_estimated_tech_debt
+           FROM dp_base
+          GROUP BY dp_base.namespace_id
+        ), pa_base AS (
+         SELECT w.namespace_id,
+            pa.id AS pa_id,
+            pa.application_id,
+            pa.deployment_profile_id,
+            pa.time_quadrant,
+            pa.business_fit,
+            pa.criticality,
+            pa.business_assessment_status
+           FROM ((public.workspaces w
+             JOIN public.applications a ON ((a.workspace_id = w.id)))
+             JOIN public.portfolio_assignments pa ON ((pa.application_id = a.id)))
+          WHERE (a.operational_status = 'operational'::text)
+        ), pa_agg AS (
+         SELECT pa_base.namespace_id,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'invest'::text)) AS invest_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'tolerate'::text)) AS tolerate_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'modernize'::text)) AS modernize_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'eliminate'::text)) AS eliminate_count,
+            count(DISTINCT pa_base.application_id) FILTER (WHERE (pa_base.criticality >= (50)::numeric)) AS crown_jewel_count,
+            round(avg(pa_base.business_fit) FILTER (WHERE (pa_base.business_fit IS NOT NULL)), 1) AS avg_business_fit,
+            count(*) FILTER (WHERE (lower(pa_base.business_assessment_status) = 'complete'::text)) AS business_assessed_count,
+            count(*) FILTER (WHERE (lower(pa_base.business_assessment_status) = 'in_progress'::text)) AS business_in_progress_count
+           FROM pa_base
+          GROUP BY pa_base.namespace_id
+        )
+ SELECT d.namespace_id,
+    COALESCE(d.total_applications, (0)::bigint) AS total_applications,
+    COALESCE(d.total_dps, (0)::bigint) AS total_dps,
+    COALESCE(d.assessed_count, (0)::bigint) AS assessed_count,
+    COALESCE(d.needs_profiling_count, (0)::bigint) AS needs_profiling_count,
+    COALESCE(d.not_started_count, (0)::bigint) AS not_started_count,
+    COALESCE(p.crown_jewel_count, (0)::bigint) AS crown_jewel_count,
+    COALESCE(p.invest_count, (0)::bigint) AS invest_count,
+    COALESCE(p.tolerate_count, (0)::bigint) AS tolerate_count,
+    COALESCE(p.modernize_count, (0)::bigint) AS modernize_count,
+    COALESCE(p.eliminate_count, (0)::bigint) AS eliminate_count,
+    (COALESCE(p.modernize_count, (0)::bigint) + COALESCE(p.eliminate_count, (0)::bigint)) AS at_risk_count,
+    COALESCE(d.plan_count, (0)::bigint) AS plan_count,
+    COALESCE(d.address_count, (0)::bigint) AS address_count,
+    COALESCE(d.improve_count, (0)::bigint) AS improve_count,
+    COALESCE(d.divest_count, (0)::bigint) AS divest_count,
+    COALESCE(p.avg_business_fit, (0)::numeric) AS avg_business_fit,
+    COALESCE(d.avg_tech_health, (0)::numeric) AS avg_tech_health,
+    COALESCE(d.total_annual_licensing_cost, (0)::numeric) AS total_annual_licensing_cost,
+    COALESCE(d.total_annual_cost, (0)::numeric) AS total_annual_cost,
+    COALESCE(d.total_estimated_tech_debt, (0)::numeric) AS total_estimated_tech_debt,
+    COALESCE(p.business_assessed_count, (0)::bigint) AS business_assessed_count,
+    COALESCE(p.business_in_progress_count, (0)::bigint) AS business_in_progress_count
+   FROM (dp_agg d
+     FULL JOIN pa_agg p ON ((p.namespace_id = d.namespace_id)));
+
+
+--
+-- Name: vw_dashboard_workspace_breakdown; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_dashboard_workspace_breakdown WITH (security_invoker='true') AS
+ WITH dp_base AS (
+         SELECT w.namespace_id,
+            w.id AS workspace_id,
+            w.name AS workspace_name,
+            a.id AS application_id,
+            dp.id AS dp_id,
+            dp.tech_assessment_status,
+            dp.tech_health,
+            dp.tech_risk,
+            dp.paid_action,
+            dp.annual_licensing_cost,
+            dp.annual_cost,
+            dp.estimated_tech_debt
+           FROM ((public.deployment_profiles dp
+             JOIN public.applications a ON ((a.id = dp.application_id)))
+             JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+          WHERE (a.operational_status = 'operational'::text)
+        ), dp_agg AS (
+         SELECT dp_base.namespace_id,
+            dp_base.workspace_id,
+            dp_base.workspace_name,
+            count(DISTINCT dp_base.application_id) AS total_applications,
+            count(DISTINCT dp_base.dp_id) AS total_dps,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'complete'::text)) AS assessed_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'in_progress'::text)) AS needs_profiling_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'not_started'::text)) AS not_started_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'plan'::text)) AS plan_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'address'::text)) AS address_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['ignore'::text, 'improve'::text]))) AS improve_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['delay'::text, 'divest'::text]))) AS divest_count,
+            round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
+            COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
+            COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
+            COALESCE(sum(dp_base.estimated_tech_debt), (0)::numeric) AS total_estimated_tech_debt
+           FROM dp_base
+          GROUP BY dp_base.namespace_id, dp_base.workspace_id, dp_base.workspace_name
+        ), pa_base AS (
+         SELECT w.namespace_id,
+            w.id AS workspace_id,
+            pa.id AS pa_id,
+            pa.application_id,
+            pa.deployment_profile_id,
+            pa.time_quadrant,
+            pa.business_fit,
+            pa.criticality,
+            pa.business_assessment_status
+           FROM ((public.portfolio_assignments pa
+             JOIN public.applications a ON ((a.id = pa.application_id)))
+             JOIN public.workspaces w ON ((w.id = a.workspace_id)))
+          WHERE (a.operational_status = 'operational'::text)
+        ), pa_agg AS (
+         SELECT pa_base.namespace_id,
+            pa_base.workspace_id,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'invest'::text)) AS invest_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'tolerate'::text)) AS tolerate_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'modernize'::text)) AS modernize_count,
+            count(*) FILTER (WHERE (lower(pa_base.time_quadrant) = 'eliminate'::text)) AS eliminate_count,
+            count(DISTINCT pa_base.application_id) FILTER (WHERE (pa_base.criticality >= (50)::numeric)) AS crown_jewel_count,
+            round(avg(pa_base.business_fit) FILTER (WHERE (pa_base.business_fit IS NOT NULL)), 1) AS avg_business_fit,
+            count(*) FILTER (WHERE (lower(pa_base.business_assessment_status) = 'complete'::text)) AS business_assessed_count,
+            count(*) FILTER (WHERE (lower(pa_base.business_assessment_status) = 'in_progress'::text)) AS business_in_progress_count
+           FROM pa_base
+          GROUP BY pa_base.namespace_id, pa_base.workspace_id
+        )
+ SELECT d.namespace_id,
+    d.workspace_id,
+    d.workspace_name,
+    COALESCE(d.total_applications, (0)::bigint) AS total_applications,
+    COALESCE(d.total_dps, (0)::bigint) AS total_dps,
+    COALESCE(d.assessed_count, (0)::bigint) AS assessed_count,
+    COALESCE(d.needs_profiling_count, (0)::bigint) AS needs_profiling_count,
+    COALESCE(d.not_started_count, (0)::bigint) AS not_started_count,
+    COALESCE(p.crown_jewel_count, (0)::bigint) AS crown_jewel_count,
+    COALESCE(p.invest_count, (0)::bigint) AS invest_count,
+    COALESCE(p.tolerate_count, (0)::bigint) AS tolerate_count,
+    COALESCE(p.modernize_count, (0)::bigint) AS modernize_count,
+    COALESCE(p.eliminate_count, (0)::bigint) AS eliminate_count,
+    (COALESCE(p.modernize_count, (0)::bigint) + COALESCE(p.eliminate_count, (0)::bigint)) AS at_risk_count,
+    COALESCE(d.plan_count, (0)::bigint) AS plan_count,
+    COALESCE(d.address_count, (0)::bigint) AS address_count,
+    COALESCE(d.improve_count, (0)::bigint) AS improve_count,
+    COALESCE(d.divest_count, (0)::bigint) AS divest_count,
+    COALESCE(p.avg_business_fit, (0)::numeric) AS avg_business_fit,
+    COALESCE(d.avg_tech_health, (0)::numeric) AS avg_tech_health,
+    COALESCE(d.total_annual_licensing_cost, (0)::numeric) AS total_annual_licensing_cost,
+    COALESCE(d.total_annual_cost, (0)::numeric) AS total_annual_cost,
+    COALESCE(d.total_estimated_tech_debt, (0)::numeric) AS total_estimated_tech_debt,
+    COALESCE(p.business_assessed_count, (0)::bigint) AS business_assessed_count,
+    COALESCE(p.business_in_progress_count, (0)::bigint) AS business_in_progress_count
+   FROM (dp_agg d
+     FULL JOIN pa_agg p ON (((p.namespace_id = d.namespace_id) AND (p.workspace_id = d.workspace_id))));
+
+
+--
+-- Name: VIEW vw_dashboard_workspace_breakdown; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.vw_dashboard_workspace_breakdown IS 'Workspace-level KPI breakdown for main dashboard. Same metrics as vw_dashboard_summary but one row per workspace. Powers donut chart sub-tables, workspace filter, and workspace dashboard.';
+
+
+--
+-- Name: vw_dp_lifecycle_risk_combined; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_dp_lifecycle_risk_combined WITH (security_invoker='true') AS
+ WITH path1_risk AS (
+         SELECT dptp.deployment_profile_id,
+            'direct_tag'::text AS source_type,
+            tp.name AS technology_name,
+            tlr.current_status,
+            tlr.extended_support_end,
+            tlr.end_of_life_date
+           FROM ((public.deployment_profile_technology_products dptp
+             JOIN public.technology_products tp ON ((tp.id = dptp.technology_product_id)))
+             LEFT JOIN public.technology_lifecycle_reference tlr ON ((tlr.id = tp.lifecycle_reference_id)))
+          WHERE (tp.lifecycle_reference_id IS NOT NULL)
+        ), path2_risk AS (
+         SELECT dpis.deployment_profile_id,
+            'it_service'::text AS source_type,
+            tp.name AS technology_name,
+            tlr.current_status,
+            tlr.extended_support_end,
+            tlr.end_of_life_date
+           FROM (((public.deployment_profile_it_services dpis
+             JOIN public.it_service_technology_products istp ON ((istp.it_service_id = dpis.it_service_id)))
+             JOIN public.technology_products tp ON ((tp.id = istp.technology_product_id)))
+             LEFT JOIN public.technology_lifecycle_reference tlr ON ((tlr.id = tp.lifecycle_reference_id)))
+          WHERE (tp.lifecycle_reference_id IS NOT NULL)
+        ), all_risk AS (
+         SELECT path1_risk.deployment_profile_id,
+            path1_risk.source_type,
+            path1_risk.technology_name,
+            path1_risk.current_status,
+            path1_risk.extended_support_end,
+            path1_risk.end_of_life_date
+           FROM path1_risk
+        UNION ALL
+         SELECT path2_risk.deployment_profile_id,
+            path2_risk.source_type,
+            path2_risk.technology_name,
+            path2_risk.current_status,
+            path2_risk.extended_support_end,
+            path2_risk.end_of_life_date
+           FROM path2_risk
+        )
+ SELECT dp.id AS deployment_profile_id,
+    dp.name AS deployment_name,
+    a.name AS application_name,
+    dp.workspace_id,
+    w.namespace_id,
+    min(
+        CASE ar.current_status
+            WHEN 'end_of_life'::text THEN 1
+            WHEN 'end_of_support'::text THEN 2
+            WHEN 'extended'::text THEN 3
+            WHEN 'mainstream'::text THEN 4
+            WHEN 'preview'::text THEN 5
+            ELSE 6
+        END) AS worst_status_rank,
+    count(DISTINCT
+        CASE
+            WHEN (ar.source_type = 'direct_tag'::text) THEN ar.technology_name
+            ELSE NULL::text
+        END) AS direct_tag_count,
+    count(DISTINCT
+        CASE
+            WHEN (ar.source_type = 'it_service'::text) THEN ar.technology_name
+            ELSE NULL::text
+        END) AS it_service_count,
+    min(ar.extended_support_end) AS earliest_eol
+   FROM (((public.deployment_profiles dp
+     JOIN public.applications a ON ((a.id = dp.application_id)))
+     JOIN public.workspaces w ON ((w.id = a.workspace_id)))
+     LEFT JOIN all_risk ar ON ((ar.deployment_profile_id = dp.id)))
+  GROUP BY dp.id, dp.name, a.name, dp.workspace_id, w.namespace_id;
+
+
+--
 -- Name: vw_finding_summary; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -7711,6 +9060,84 @@ CREATE VIEW public.vw_idea_summary WITH (security_invoker='true') AS
      LEFT JOIN public.workspaces w ON ((w.id = i.workspace_id)))
      LEFT JOIN public.contacts c ON ((c.id = i.submitted_by_contact_id)))
      LEFT JOIN public.initiatives init ON ((init.id = i.promoted_to_initiative_id)));
+
+
+--
+-- Name: vw_implied_technology_standards; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_implied_technology_standards WITH (security_invoker='true') AS
+ WITH category_dp_counts AS (
+         SELECT w.namespace_id,
+            tp.category_id,
+            tpc.name AS category_name,
+            count(DISTINCT dptp.deployment_profile_id) AS total_dps_in_category
+           FROM (((((public.deployment_profile_technology_products dptp
+             JOIN public.technology_products tp ON ((tp.id = dptp.technology_product_id)))
+             JOIN public.deployment_profiles dp ON ((dp.id = dptp.deployment_profile_id)))
+             JOIN public.applications a ON ((a.id = dp.application_id)))
+             JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+             JOIN public.technology_product_categories tpc ON ((tpc.id = tp.category_id)))
+          WHERE (a.operational_status = 'operational'::text)
+          GROUP BY w.namespace_id, tp.category_id, tpc.name
+        ), family_counts AS (
+         SELECT w.namespace_id,
+            tp.category_id,
+            COALESCE(NULLIF(tp.product_family, ''::text), tp.name) AS product_family,
+            count(DISTINCT dptp.deployment_profile_id) AS dp_count,
+            count(DISTINCT dp.application_id) AS app_count,
+            min(
+                CASE
+                    WHEN ((tlr.end_of_life_date IS NOT NULL) AND (tlr.end_of_life_date < CURRENT_DATE)) THEN 4
+                    WHEN ((tlr.extended_support_end IS NOT NULL) AND (tlr.extended_support_end < CURRENT_DATE)) THEN 3
+                    WHEN ((tlr.mainstream_support_end IS NOT NULL) AND (tlr.mainstream_support_end < CURRENT_DATE)) THEN 2
+                    WHEN ((tlr.ga_date IS NOT NULL) AND (tlr.ga_date <= CURRENT_DATE)) THEN 1
+                    ELSE 5
+                END) AS best_lifecycle_rank,
+            mode() WITHIN GROUP (ORDER BY tp.name) AS most_common_product,
+            count(DISTINCT tp.id) AS version_count
+           FROM (((((public.deployment_profile_technology_products dptp
+             JOIN public.technology_products tp ON ((tp.id = dptp.technology_product_id)))
+             JOIN public.deployment_profiles dp ON ((dp.id = dptp.deployment_profile_id)))
+             JOIN public.applications a ON ((a.id = dp.application_id)))
+             JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+             LEFT JOIN public.technology_lifecycle_reference tlr ON ((tlr.id = tp.lifecycle_reference_id)))
+          WHERE (a.operational_status = 'operational'::text)
+          GROUP BY w.namespace_id, tp.category_id, COALESCE(NULLIF(tp.product_family, ''::text), tp.name)
+        )
+ SELECT fc.namespace_id,
+    fc.category_id,
+    cdc.category_name,
+    fc.product_family,
+    fc.dp_count,
+    fc.app_count,
+    cdc.total_dps_in_category,
+    round((((fc.dp_count)::numeric / (NULLIF(cdc.total_dps_in_category, 0))::numeric) * (100)::numeric), 2) AS prevalence_pct,
+    fc.most_common_product,
+    fc.version_count,
+        CASE fc.best_lifecycle_rank
+            WHEN 1 THEN 'mainstream'::text
+            WHEN 2 THEN 'extended'::text
+            WHEN 3 THEN 'end_of_support'::text
+            WHEN 4 THEN 'end_of_life'::text
+            ELSE 'unknown'::text
+        END AS best_lifecycle_status,
+    ts.id AS standard_id,
+    ts.status AS asserted_status,
+    ts.preferred_product_id,
+    pp.name AS preferred_product_name
+   FROM (((family_counts fc
+     JOIN category_dp_counts cdc ON (((cdc.namespace_id = fc.namespace_id) AND (cdc.category_id = fc.category_id))))
+     LEFT JOIN public.technology_standards ts ON (((ts.namespace_id = fc.namespace_id) AND (ts.category_id = fc.category_id) AND (ts.product_family = fc.product_family))))
+     LEFT JOIN public.technology_products pp ON ((pp.id = ts.preferred_product_id)))
+  ORDER BY fc.namespace_id, cdc.category_name, fc.dp_count DESC;
+
+
+--
+-- Name: VIEW vw_implied_technology_standards; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.vw_implied_technology_standards IS 'Reverse-engineers technology standards from deployment profile tags. Groups by category + product_family, computes prevalence, and joins to asserted standards for review status.';
 
 
 --
@@ -7912,6 +9339,73 @@ CREATE VIEW public.vw_it_service_budget_status WITH (security_invoker='true') AS
 --
 
 COMMENT ON VIEW public.vw_it_service_budget_status IS 'Budget health status for IT Services';
+
+
+--
+-- Name: vw_it_service_contract_expiry; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_it_service_contract_expiry WITH (security_invoker='true') AS
+ SELECT its.id AS it_service_id,
+    its.namespace_id,
+    its.owner_workspace_id,
+    its.name,
+    its.annual_cost,
+    its.vendor_org_id,
+    o.name AS vendor_name,
+    its.contract_reference,
+    its.contract_start_date,
+    its.contract_end_date,
+    its.renewal_notice_days,
+        CASE
+            WHEN (its.contract_end_date IS NULL) THEN NULL::integer
+            ELSE (its.contract_end_date - CURRENT_DATE)
+        END AS days_until_expiry,
+        CASE
+            WHEN (its.contract_end_date IS NULL) THEN 'no_contract'::text
+            WHEN (its.contract_end_date < CURRENT_DATE) THEN 'expired'::text
+            WHEN (its.contract_end_date <= (CURRENT_DATE + ((COALESCE(its.renewal_notice_days, 90) || ' days'::text))::interval)) THEN 'renewal_due'::text
+            WHEN (its.contract_end_date <= (CURRENT_DATE + '90 days'::interval)) THEN 'expiring_soon'::text
+            ELSE 'active'::text
+        END AS status
+   FROM (public.it_services its
+     LEFT JOIN public.organizations o ON ((o.id = its.vendor_org_id)));
+
+
+--
+-- Name: vw_it_service_lifecycle_risk; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_it_service_lifecycle_risk WITH (security_invoker='true') AS
+ SELECT its.id,
+    its.name AS service_name,
+    its.owner_workspace_id,
+    w.name AS workspace_name,
+    its.namespace_id,
+    tlr.vendor_name,
+    tlr.product_name,
+    tlr.version,
+    tlr.current_status,
+    tlr.mainstream_support_end,
+    tlr.extended_support_end,
+    tlr.end_of_life_date,
+        CASE
+            WHEN (tlr.extended_support_end IS NOT NULL) THEN (tlr.extended_support_end - CURRENT_DATE)
+            ELSE NULL::integer
+        END AS days_until_eol,
+        CASE
+            WHEN (tlr.current_status = ANY (ARRAY['end_of_support'::text, 'end_of_life'::text])) THEN 'critical'::text
+            WHEN ((tlr.extended_support_end IS NOT NULL) AND (tlr.extended_support_end < (CURRENT_DATE + '6 mons'::interval))) THEN 'high'::text
+            WHEN ((tlr.extended_support_end IS NOT NULL) AND (tlr.extended_support_end < (CURRENT_DATE + '1 year'::interval))) THEN 'medium'::text
+            ELSE 'low'::text
+        END AS lifecycle_risk,
+    ( SELECT count(*) AS count
+           FROM public.deployment_profile_it_services dpis
+          WHERE (dpis.it_service_id = its.id)) AS dependent_dp_count
+   FROM ((public.it_services its
+     LEFT JOIN public.technology_lifecycle_reference tlr ON ((its.lifecycle_reference_id = tlr.id)))
+     LEFT JOIN public.workspaces w ON ((its.owner_workspace_id = w.id)))
+  WHERE (its.lifecycle_reference_id IS NOT NULL);
 
 
 --
@@ -8196,24 +9690,16 @@ CREATE VIEW public.vw_program_summary WITH (security_invoker='true') AS
 
 CREATE VIEW public.vw_run_rate_by_vendor WITH (security_invoker='true') AS
  SELECT w.namespace_id,
-    COALESCE(dpsp.vendor_org_id, sp.manufacturer_org_id) AS vendor_org_id,
-    o.name AS vendor_name,
-    'Software'::text AS cost_channel,
-    sum(COALESCE(sp.annual_cost, (0)::numeric)) AS total_cost
-   FROM (((((public.deployment_profile_software_products dpsp
-     JOIN public.software_products sp ON ((sp.id = dpsp.software_product_id)))
-     JOIN public.deployment_profiles dp ON ((dp.id = dpsp.deployment_profile_id)))
-     JOIN public.applications a ON ((a.id = dp.application_id)))
-     JOIN public.workspaces w ON ((w.id = a.workspace_id)))
-     LEFT JOIN public.organizations o ON ((o.id = COALESCE(dpsp.vendor_org_id, sp.manufacturer_org_id))))
-  WHERE ((a.operational_status = 'operational'::text) AND (dp.dp_type = 'application'::text))
-  GROUP BY w.namespace_id, COALESCE(dpsp.vendor_org_id, sp.manufacturer_org_id), o.name
-UNION ALL
- SELECT w.namespace_id,
     its.vendor_org_id,
     o.name AS vendor_name,
     'IT Service'::text AS cost_channel,
-    sum(COALESCE(dpis.allocation_value, (0)::numeric)) AS total_cost
+    sum(
+        CASE
+            WHEN (dpis.allocation_basis = 'fixed'::text) THEN COALESCE(dpis.allocation_value, (0)::numeric)
+            WHEN ((dpis.allocation_basis = 'percent'::text) AND (dpis.allocation_value > (100)::numeric)) THEN COALESCE(dpis.allocation_value, (0)::numeric)
+            WHEN (dpis.allocation_basis = 'percent'::text) THEN COALESCE(((its.annual_cost * dpis.allocation_value) / (100)::numeric), (0)::numeric)
+            ELSE COALESCE(dpis.allocation_value, (0)::numeric)
+        END) AS total_cost
    FROM (((((public.deployment_profile_it_services dpis
      JOIN public.it_services its ON ((its.id = dpis.it_service_id)))
      JOIN public.deployment_profiles dp ON ((dp.id = dpis.deployment_profile_id)))
@@ -8334,6 +9820,44 @@ CREATE VIEW public.vw_software_contract_expiry WITH (security_invoker='true') AS
 
 
 --
+-- Name: vw_tag_standards_status; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_tag_standards_status WITH (security_invoker='true') AS
+ SELECT dptp.id AS tag_id,
+    dptp.deployment_profile_id,
+    dptp.technology_product_id,
+    tp.name AS technology_name,
+    tp.version AS technology_version,
+    COALESCE(NULLIF(tp.product_family, ''::text), tp.name) AS product_family,
+    tp.category_id,
+    tpc.name AS category_name,
+    w.namespace_id,
+    ts.id AS standard_id,
+    ts.status AS asserted_status,
+    ts.preferred_product_id,
+    pp.name AS preferred_product_name,
+        CASE
+            WHEN (ts.id IS NULL) THEN 'unassessed'::text
+            WHEN (ts.status = 'non_standard'::text) THEN 'non_standard'::text
+            WHEN (ts.status = 'under_review'::text) THEN 'under_review'::text
+            WHEN (ts.status = 'retiring'::text) THEN 'containment'::text
+            WHEN ((ts.status = 'standard'::text) AND ((ts.preferred_product_id IS NULL) OR (ts.preferred_product_id = tp.id))) THEN 'preferred'::text
+            WHEN (ts.status = 'standard'::text) THEN 'conforming'::text
+            ELSE 'unassessed'::text
+        END AS conformance_status
+   FROM (((((((public.deployment_profile_technology_products dptp
+     JOIN public.technology_products tp ON ((tp.id = dptp.technology_product_id)))
+     JOIN public.deployment_profiles dp ON ((dp.id = dptp.deployment_profile_id)))
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+     JOIN public.applications a ON ((a.id = dp.application_id)))
+     LEFT JOIN public.technology_product_categories tpc ON ((tpc.id = tp.category_id)))
+     LEFT JOIN public.technology_standards ts ON (((ts.namespace_id = w.namespace_id) AND (ts.category_id = tp.category_id) AND (ts.product_family = COALESCE(NULLIF(tp.product_family, ''::text), tp.name)))))
+     LEFT JOIN public.technology_products pp ON ((pp.id = ts.preferred_product_id)))
+  WHERE (a.operational_status = 'operational'::text);
+
+
+--
 -- Name: vw_technology_health_summary; Type: VIEW; Schema: public; Owner: -
 --
 
@@ -8371,6 +9895,30 @@ CREATE VIEW public.vw_technology_health_summary WITH (security_invoker='true') A
             WHEN (tlr.id IS NOT NULL) THEN 'incomplete_data'::text
             ELSE 'incomplete_data'::text
         END;
+
+
+--
+-- Name: vw_technology_standards_summary; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_technology_standards_summary WITH (security_invoker='true') AS
+ SELECT namespace_id,
+    count(DISTINCT category_id) AS categories_with_data,
+    count(*) FILTER (WHERE ((asserted_status IS NULL) AND (prevalence_pct >= (40)::numeric))) AS implied_pending_review,
+    count(*) FILTER (WHERE (asserted_status = 'standard'::text)) AS asserted_standard_count,
+    count(*) FILTER (WHERE (asserted_status = 'non_standard'::text)) AS asserted_non_standard_count,
+    count(*) FILTER (WHERE (asserted_status = 'under_review'::text)) AS under_review_count,
+    count(*) FILTER (WHERE (asserted_status = 'retiring'::text)) AS retiring_count,
+    count(DISTINCT category_id) FILTER (WHERE (prevalence_pct >= (70)::numeric)) AS strong_standard_categories
+   FROM public.vw_implied_technology_standards its
+  GROUP BY namespace_id;
+
+
+--
+-- Name: VIEW vw_technology_standards_summary; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.vw_technology_standards_summary IS 'Namespace-level KPI aggregation for technology standards intelligence. Counts implied, asserted, and under-review standards across all categories.';
 
 
 --
@@ -8693,6 +10241,118 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
+-- Name: messages_2026_03_10; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_10 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_03_11; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_11 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_03_12; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_12 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_03_13; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_13 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_03_14; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_14 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_03_15; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_15 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_03_16; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_03_16 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: realtime; Owner: -
 --
 
@@ -8889,6 +10549,55 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
+-- Name: messages_2026_03_10; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_10 FOR VALUES FROM ('2026-03-10 00:00:00') TO ('2026-03-11 00:00:00');
+
+
+--
+-- Name: messages_2026_03_11; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_11 FOR VALUES FROM ('2026-03-11 00:00:00') TO ('2026-03-12 00:00:00');
+
+
+--
+-- Name: messages_2026_03_12; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_12 FOR VALUES FROM ('2026-03-12 00:00:00') TO ('2026-03-13 00:00:00');
+
+
+--
+-- Name: messages_2026_03_13; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_13 FOR VALUES FROM ('2026-03-13 00:00:00') TO ('2026-03-14 00:00:00');
+
+
+--
+-- Name: messages_2026_03_14; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_14 FOR VALUES FROM ('2026-03-14 00:00:00') TO ('2026-03-15 00:00:00');
+
+
+--
+-- Name: messages_2026_03_15; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_15 FOR VALUES FROM ('2026-03-15 00:00:00') TO ('2026-03-16 00:00:00');
+
+
+--
+-- Name: messages_2026_03_16; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_16 FOR VALUES FROM ('2026-03-16 00:00:00') TO ('2026-03-17 00:00:00');
+
+
+--
 -- Name: refresh_tokens id; Type: DEFAULT; Schema: auth; Owner: -
 --
 
@@ -8909,6 +10618,22 @@ ALTER TABLE ONLY auth.mfa_amr_claims
 
 ALTER TABLE ONLY auth.audit_log_entries
     ADD CONSTRAINT audit_log_entries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: custom_oauth_providers custom_oauth_providers_identifier_key; Type: CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.custom_oauth_providers
+    ADD CONSTRAINT custom_oauth_providers_identifier_key UNIQUE (identifier);
+
+
+--
+-- Name: custom_oauth_providers custom_oauth_providers_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.custom_oauth_providers
+    ADD CONSTRAINT custom_oauth_providers_pkey PRIMARY KEY (id);
 
 
 --
@@ -9152,6 +10877,38 @@ ALTER TABLE ONLY public.alert_preferences
 
 
 --
+-- Name: application_categories application_categories_namespace_id_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_categories
+    ADD CONSTRAINT application_categories_namespace_id_code_key UNIQUE (namespace_id, code);
+
+
+--
+-- Name: application_categories application_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_categories
+    ADD CONSTRAINT application_categories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: application_category_assignments application_category_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_category_assignments
+    ADD CONSTRAINT application_category_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: application_category_assignments application_category_assignments_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_category_assignments
+    ADD CONSTRAINT application_category_assignments_unique UNIQUE (application_id, category_id);
+
+
+--
 -- Name: application_compliance application_compliance_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9213,6 +10970,14 @@ ALTER TABLE ONLY public.application_roadmap
 
 ALTER TABLE ONLY public.application_services
     ADD CONSTRAINT application_services_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: applications applications_app_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.applications
+    ADD CONSTRAINT applications_app_id_unique UNIQUE (app_id);
 
 
 --
@@ -9752,6 +11517,14 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: it_service_technology_products istp_unique_link; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_technology_products
+    ADD CONSTRAINT istp_unique_link UNIQUE (it_service_id, technology_product_id);
+
+
+--
 -- Name: it_service_providers it_service_providers_it_service_id_deployment_profile_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9765,6 +11538,30 @@ ALTER TABLE ONLY public.it_service_providers
 
 ALTER TABLE ONLY public.it_service_providers
     ADD CONSTRAINT it_service_providers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: it_service_software_products it_service_software_products_it_service_id_software_product_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_software_products
+    ADD CONSTRAINT it_service_software_products_it_service_id_software_product_key UNIQUE (it_service_id, software_product_id);
+
+
+--
+-- Name: it_service_software_products it_service_software_products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_software_products
+    ADD CONSTRAINT it_service_software_products_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: it_service_technology_products it_service_technology_products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_technology_products
+    ADD CONSTRAINT it_service_technology_products_pkey PRIMARY KEY (id);
 
 
 --
@@ -10128,6 +11925,22 @@ ALTER TABLE ONLY public.technology_products
 
 
 --
+-- Name: technology_standards technology_standards_namespace_category_family_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technology_standards
+    ADD CONSTRAINT technology_standards_namespace_category_family_key UNIQUE (namespace_id, category_id, product_family);
+
+
+--
+-- Name: technology_standards technology_standards_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technology_standards
+    ADD CONSTRAINT technology_standards_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: technology_lifecycle_reference tlr_unique_product; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10296,6 +12109,62 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
+-- Name: messages_2026_03_10 messages_2026_03_10_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_10
+    ADD CONSTRAINT messages_2026_03_10_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_11 messages_2026_03_11_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_11
+    ADD CONSTRAINT messages_2026_03_11_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_12 messages_2026_03_12_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_12
+    ADD CONSTRAINT messages_2026_03_12_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_13 messages_2026_03_13_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_13
+    ADD CONSTRAINT messages_2026_03_13_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_14 messages_2026_03_14_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_14
+    ADD CONSTRAINT messages_2026_03_14_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_15 messages_2026_03_15_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_15
+    ADD CONSTRAINT messages_2026_03_15_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_16 messages_2026_03_16_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_16
+    ADD CONSTRAINT messages_2026_03_16_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
 -- Name: subscription pk_subscription; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
@@ -10403,6 +12272,34 @@ CREATE INDEX audit_logs_instance_id_idx ON auth.audit_log_entries USING btree (i
 --
 
 CREATE UNIQUE INDEX confirmation_token_idx ON auth.users USING btree (confirmation_token) WHERE ((confirmation_token)::text !~ '^[0-9 ]*$'::text);
+
+
+--
+-- Name: custom_oauth_providers_created_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX custom_oauth_providers_created_at_idx ON auth.custom_oauth_providers USING btree (created_at);
+
+
+--
+-- Name: custom_oauth_providers_enabled_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX custom_oauth_providers_enabled_idx ON auth.custom_oauth_providers USING btree (enabled);
+
+
+--
+-- Name: custom_oauth_providers_identifier_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX custom_oauth_providers_identifier_idx ON auth.custom_oauth_providers USING btree (identifier);
+
+
+--
+-- Name: custom_oauth_providers_provider_type_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX custom_oauth_providers_provider_type_idx ON auth.custom_oauth_providers USING btree (provider_type);
 
 
 --
@@ -11365,6 +13262,34 @@ CREATE INDEX idx_invitations_token ON public.invitations USING btree (token);
 
 
 --
+-- Name: idx_istp_it_service; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_istp_it_service ON public.it_service_technology_products USING btree (it_service_id);
+
+
+--
+-- Name: idx_istp_technology_product; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_istp_technology_product ON public.it_service_technology_products USING btree (technology_product_id);
+
+
+--
+-- Name: idx_it_services_contract_end; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_it_services_contract_end ON public.it_services USING btree (contract_end_date) WHERE (contract_end_date IS NOT NULL);
+
+
+--
+-- Name: idx_it_services_lifecycle_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_it_services_lifecycle_ref ON public.it_services USING btree (lifecycle_reference_id) WHERE (lifecycle_reference_id IS NOT NULL);
+
+
+--
 -- Name: idx_it_services_namespace; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11561,6 +13486,13 @@ CREATE INDEX idx_service_types_namespace ON public.service_types USING btree (na
 
 
 --
+-- Name: idx_software_products_lifecycle_ref; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_software_products_lifecycle_ref ON public.software_products USING btree (lifecycle_reference_id) WHERE (lifecycle_reference_id IS NOT NULL);
+
+
+--
 -- Name: idx_software_products_manufacturer; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -11750,6 +13682,55 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
+-- Name: messages_2026_03_10_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_10_inserted_at_topic_idx ON realtime.messages_2026_03_10 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_11_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_11_inserted_at_topic_idx ON realtime.messages_2026_03_11 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_12_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_12_inserted_at_topic_idx ON realtime.messages_2026_03_12 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_13_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_13_inserted_at_topic_idx ON realtime.messages_2026_03_13 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_14_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_14_inserted_at_topic_idx ON realtime.messages_2026_03_14 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_15_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_15_inserted_at_topic_idx ON realtime.messages_2026_03_15 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_16_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_16_inserted_at_topic_idx ON realtime.messages_2026_03_16 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
 -- Name: subscription_subscription_id_entity_filters_action_filter_key; Type: INDEX; Schema: realtime; Owner: -
 --
 
@@ -11813,6 +13794,104 @@ CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes 
 
 
 --
+-- Name: messages_2026_03_10_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_10_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_10_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_10_pkey;
+
+
+--
+-- Name: messages_2026_03_11_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_11_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_11_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_11_pkey;
+
+
+--
+-- Name: messages_2026_03_12_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_12_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_12_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_12_pkey;
+
+
+--
+-- Name: messages_2026_03_13_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_13_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_13_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_13_pkey;
+
+
+--
+-- Name: messages_2026_03_14_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_14_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_14_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_14_pkey;
+
+
+--
+-- Name: messages_2026_03_15_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_15_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_15_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_15_pkey;
+
+
+--
+-- Name: messages_2026_03_16_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_16_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_16_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_16_pkey;
+
+
+--
 -- Name: users on_auth_user_created; Type: TRIGGER; Schema: auth; Owner: -
 --
 
@@ -11824,6 +13903,20 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXEC
 --
 
 CREATE TRIGGER add_workspace_creator_trigger AFTER INSERT ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.add_creator_to_workspace_users();
+
+
+--
+-- Name: application_categories audit_application_categories; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_application_categories AFTER INSERT OR DELETE OR UPDATE ON public.application_categories FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: application_category_assignments audit_application_category_assignments; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_application_category_assignments AFTER INSERT OR DELETE OR UPDATE ON public.application_category_assignments FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -11841,6 +13934,13 @@ CREATE TRIGGER audit_applications AFTER INSERT OR DELETE OR UPDATE ON public.app
 
 
 --
+-- Name: business_assessments audit_business_assessments; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_business_assessments AFTER INSERT OR DELETE OR UPDATE ON public.business_assessments FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
 -- Name: contacts audit_contacts; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11852,6 +13952,20 @@ CREATE TRIGGER audit_contacts AFTER INSERT OR DELETE OR UPDATE ON public.contact
 --
 
 CREATE TRIGGER audit_criticality_types AFTER INSERT OR DELETE OR UPDATE ON public.criticality_types FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: custom_field_values audit_custom_field_values; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_custom_field_values AFTER INSERT OR DELETE OR UPDATE ON public.custom_field_values FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: data_centers audit_data_centers; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_data_centers AFTER INSERT OR DELETE OR UPDATE ON public.data_centers FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -11901,6 +14015,13 @@ CREATE TRIGGER audit_findings AFTER INSERT OR DELETE OR UPDATE ON public.finding
 --
 
 CREATE TRIGGER audit_ideas AFTER INSERT OR DELETE OR UPDATE ON public.ideas FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: individuals audit_individuals; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_individuals AFTER INSERT OR DELETE OR UPDATE ON public.individuals FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -11974,6 +14095,27 @@ CREATE TRIGGER audit_invitations AFTER INSERT OR DELETE OR UPDATE ON public.invi
 
 
 --
+-- Name: it_service_providers audit_it_service_providers; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_it_service_providers AFTER INSERT OR DELETE OR UPDATE ON public.it_service_providers FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: it_service_software_products audit_it_service_software_products; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_it_service_software_products AFTER INSERT OR DELETE OR UPDATE ON public.it_service_software_products FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: it_service_technology_products audit_it_service_technology_products; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_it_service_technology_products AFTER INSERT OR DELETE OR UPDATE ON public.it_service_technology_products FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
 -- Name: it_services audit_it_services; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -11985,6 +14127,13 @@ CREATE TRIGGER audit_it_services AFTER INSERT OR DELETE OR UPDATE ON public.it_s
 --
 
 CREATE TRIGGER audit_namespace_users AFTER INSERT OR DELETE OR UPDATE ON public.namespace_users FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: namespaces audit_namespaces; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_namespaces AFTER INSERT OR DELETE OR UPDATE ON public.namespaces FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -12044,6 +14193,20 @@ CREATE TRIGGER audit_sensitivity_types AFTER INSERT OR DELETE OR UPDATE ON publi
 
 
 --
+-- Name: software_products audit_software_products; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_software_products AFTER INSERT OR DELETE OR UPDATE ON public.software_products FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: technical_assessments audit_technical_assessments; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_technical_assessments AFTER INSERT OR DELETE OR UPDATE ON public.technical_assessments FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
 -- Name: technology_lifecycle_reference audit_technology_lifecycle_reference; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -12055,6 +14218,13 @@ CREATE TRIGGER audit_technology_lifecycle_reference AFTER INSERT OR DELETE OR UP
 --
 
 CREATE TRIGGER audit_technology_products AFTER INSERT OR DELETE OR UPDATE ON public.technology_products FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: technology_standards audit_technology_standards; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_technology_standards AFTER INSERT OR DELETE OR UPDATE ON public.technology_standards FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -12079,10 +14249,31 @@ CREATE TRIGGER audit_vendor_lifecycle_sources AFTER INSERT OR DELETE OR UPDATE O
 
 
 --
+-- Name: workspace_budgets audit_workspace_budgets; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_workspace_budgets AFTER INSERT OR DELETE OR UPDATE ON public.workspace_budgets FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: workspace_groups audit_workspace_groups; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_workspace_groups AFTER INSERT OR DELETE OR UPDATE ON public.workspace_groups FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
 -- Name: workspace_users audit_workspace_users; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER audit_workspace_users AFTER INSERT OR DELETE OR UPDATE ON public.workspace_users FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: workspaces audit_workspaces; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_workspaces AFTER INSERT OR DELETE OR UPDATE ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -12163,6 +14354,13 @@ CREATE TRIGGER seed_alert_preferences AFTER INSERT ON public.namespaces FOR EACH
 
 
 --
+-- Name: namespaces seed_application_categories; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER seed_application_categories AFTER INSERT ON public.namespaces FOR EACH ROW EXECUTE FUNCTION public.copy_application_categories_to_new_namespace();
+
+
+--
 -- Name: namespaces seed_organization_settings; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -12174,6 +14372,27 @@ CREATE TRIGGER seed_organization_settings AFTER INSERT ON public.namespaces FOR 
 --
 
 CREATE TRIGGER seed_software_product_categories AFTER INSERT ON public.namespaces FOR EACH ROW EXECUTE FUNCTION public.copy_software_product_categories_to_new_namespace();
+
+
+--
+-- Name: deployment_profile_it_services set_updated_at_dpis; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER set_updated_at_dpis BEFORE UPDATE ON public.deployment_profile_it_services FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: deployment_profile_software_products set_updated_at_dpsp; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER set_updated_at_dpsp BEFORE UPDATE ON public.deployment_profile_software_products FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: technology_standards set_updated_at_technology_standards; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER set_updated_at_technology_standards BEFORE UPDATE ON public.technology_standards FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -12240,6 +14459,13 @@ CREATE TRIGGER update_application_compliance_updated_at BEFORE UPDATE ON public.
 
 
 --
+-- Name: application_integrations update_application_integrations_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_application_integrations_updated_at BEFORE UPDATE ON public.application_integrations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: application_roadmap update_application_roadmap_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -12275,10 +14501,24 @@ CREATE TRIGGER update_business_assessments_updated_at BEFORE UPDATE ON public.bu
 
 
 --
+-- Name: contacts update_contacts_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_contacts_updated_at BEFORE UPDATE ON public.contacts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: custom_field_values update_custom_field_values_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER update_custom_field_values_updated_at BEFORE UPDATE ON public.custom_field_values FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: data_centers update_data_centers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_data_centers_updated_at BEFORE UPDATE ON public.data_centers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -12310,10 +14550,24 @@ CREATE TRIGGER update_ideas_updated_at BEFORE UPDATE ON public.ideas FOR EACH RO
 
 
 --
+-- Name: individuals update_individuals_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_individuals_updated_at BEFORE UPDATE ON public.individuals FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: initiatives update_initiatives_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER update_initiatives_updated_at BEFORE UPDATE ON public.initiatives FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: it_service_providers update_it_service_providers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_it_service_providers_updated_at BEFORE UPDATE ON public.it_service_providers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -12373,6 +14627,13 @@ CREATE TRIGGER update_programs_updated_at BEFORE UPDATE ON public.programs FOR E
 
 
 --
+-- Name: service_type_categories update_service_type_categories_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_service_type_categories_updated_at BEFORE UPDATE ON public.service_type_categories FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: software_products update_software_products_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -12394,6 +14655,20 @@ CREATE TRIGGER update_technology_lifecycle_reference_updated_at BEFORE UPDATE ON
 
 
 --
+-- Name: technology_products update_technology_products_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_technology_products_updated_at BEFORE UPDATE ON public.technology_products FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: user_sessions update_user_sessions_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_user_sessions_updated_at BEFORE UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
 -- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -12405,6 +14680,20 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH RO
 --
 
 CREATE TRIGGER update_vendor_lifecycle_sources_updated_at BEFORE UPDATE ON public.vendor_lifecycle_sources FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: workspace_budgets update_workspace_budgets_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_workspace_budgets_updated_at BEFORE UPDATE ON public.workspace_budgets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: workspace_groups update_workspace_groups_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_workspace_groups_updated_at BEFORE UPDATE ON public.workspace_groups FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -12614,6 +14903,30 @@ ALTER TABLE ONLY public.alert_preferences
 
 ALTER TABLE ONLY public.alert_preferences
     ADD CONSTRAINT alert_preferences_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: application_categories application_categories_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_categories
+    ADD CONSTRAINT application_categories_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: application_category_assignments application_category_assignments_application_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_category_assignments
+    ADD CONSTRAINT application_category_assignments_application_id_fkey FOREIGN KEY (application_id) REFERENCES public.applications(id) ON DELETE CASCADE;
+
+
+--
+-- Name: application_category_assignments application_category_assignments_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_category_assignments
+    ADD CONSTRAINT application_category_assignments_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.application_categories(id) ON DELETE CASCADE;
 
 
 --
@@ -13289,6 +15602,46 @@ ALTER TABLE ONLY public.it_service_providers
 
 
 --
+-- Name: it_service_software_products it_service_software_products_it_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_software_products
+    ADD CONSTRAINT it_service_software_products_it_service_id_fkey FOREIGN KEY (it_service_id) REFERENCES public.it_services(id) ON DELETE CASCADE;
+
+
+--
+-- Name: it_service_software_products it_service_software_products_software_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_software_products
+    ADD CONSTRAINT it_service_software_products_software_product_id_fkey FOREIGN KEY (software_product_id) REFERENCES public.software_products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: it_service_technology_products it_service_technology_products_it_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_technology_products
+    ADD CONSTRAINT it_service_technology_products_it_service_id_fkey FOREIGN KEY (it_service_id) REFERENCES public.it_services(id) ON DELETE CASCADE;
+
+
+--
+-- Name: it_service_technology_products it_service_technology_products_technology_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_service_technology_products
+    ADD CONSTRAINT it_service_technology_products_technology_product_id_fkey FOREIGN KEY (technology_product_id) REFERENCES public.technology_products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: it_services it_services_lifecycle_reference_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.it_services
+    ADD CONSTRAINT it_services_lifecycle_reference_id_fkey FOREIGN KEY (lifecycle_reference_id) REFERENCES public.technology_lifecycle_reference(id) ON DELETE SET NULL;
+
+
+--
 -- Name: it_services it_services_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13537,6 +15890,14 @@ ALTER TABLE ONLY public.software_products
 
 
 --
+-- Name: software_products software_products_lifecycle_reference_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.software_products
+    ADD CONSTRAINT software_products_lifecycle_reference_id_fkey FOREIGN KEY (lifecycle_reference_id) REFERENCES public.technology_lifecycle_reference(id) ON DELETE SET NULL;
+
+
+--
 -- Name: software_products software_products_manufacturer_org_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13614,6 +15975,38 @@ ALTER TABLE ONLY public.technology_products
 
 ALTER TABLE ONLY public.technology_products
     ADD CONSTRAINT technology_products_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: technology_standards technology_standards_asserted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technology_standards
+    ADD CONSTRAINT technology_standards_asserted_by_fkey FOREIGN KEY (asserted_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: technology_standards technology_standards_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technology_standards
+    ADD CONSTRAINT technology_standards_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.technology_product_categories(id);
+
+
+--
+-- Name: technology_standards technology_standards_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technology_standards
+    ADD CONSTRAINT technology_standards_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: technology_standards technology_standards_preferred_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technology_standards
+    ADD CONSTRAINT technology_standards_preferred_product_id_fkey FOREIGN KEY (preferred_product_id) REFERENCES public.technology_products(id) ON DELETE SET NULL;
 
 
 --
@@ -13940,6 +16333,23 @@ CREATE POLICY "Admins can delete alert_preferences in current namespace" ON publ
 
 
 --
+-- Name: application_categories Admins can delete application_categories in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can delete application_categories in current namespace" ON public.application_categories FOR DELETE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
+
+
+--
+-- Name: application_category_assignments Admins can delete application_category_assignments; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can delete application_category_assignments" ON public.application_category_assignments FOR DELETE USING ((public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (EXISTS ( SELECT 1
+   FROM (public.applications a
+     JOIN public.workspaces w ON ((w.id = a.workspace_id)))
+  WHERE ((a.id = application_category_assignments.application_id) AND (w.namespace_id = public.get_current_namespace_id()))))));
+
+
+--
 -- Name: assessment_factor_options Admins can delete assessment_factor_options in current namespac; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -14190,6 +16600,13 @@ CREATE POLICY "Admins can delete technology_products in current namespace" ON pu
 
 
 --
+-- Name: technology_standards Admins can delete technology_standards in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can delete technology_standards in current namespace" ON public.technology_standards FOR DELETE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
+
+
+--
 -- Name: workflow_definitions Admins can delete workflow_definitions in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -14200,7 +16617,7 @@ CREATE POLICY "Admins can delete workflow_definitions in current namespace" ON p
 -- Name: workspace_budgets Admins can delete workspace_budgets in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can delete workspace_budgets in current namespace" ON public.workspace_budgets FOR DELETE TO authenticated USING ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+CREATE POLICY "Admins can delete workspace_budgets in current namespace" ON public.workspace_budgets FOR DELETE TO authenticated USING ((public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (workspace_id IN ( SELECT w.id
    FROM (public.workspaces w
      JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
   WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text))))));
@@ -14260,6 +16677,23 @@ CREATE POLICY "Admins can insert alert_preferences in current namespace" ON publ
    FROM (public.workspaces w
      JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
   WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text)))))));
+
+
+--
+-- Name: application_categories Admins can insert application_categories in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can insert application_categories in current namespace" ON public.application_categories FOR INSERT WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
+
+
+--
+-- Name: application_category_assignments Admins can insert application_category_assignments; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can insert application_category_assignments" ON public.application_category_assignments FOR INSERT WITH CHECK ((public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (EXISTS ( SELECT 1
+   FROM (public.applications a
+     JOIN public.workspaces w ON ((w.id = a.workspace_id)))
+  WHERE ((a.id = application_category_assignments.application_id) AND (w.namespace_id = public.get_current_namespace_id()))))));
 
 
 --
@@ -14423,6 +16857,13 @@ CREATE POLICY "Admins can insert technology_products in current namespace" ON pu
 
 
 --
+-- Name: technology_standards Admins can insert technology_standards in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can insert technology_standards in current namespace" ON public.technology_standards FOR INSERT WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
+
+
+--
 -- Name: workflow_definitions Admins can insert workflow_definitions in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -14433,10 +16874,12 @@ CREATE POLICY "Admins can insert workflow_definitions in current namespace" ON p
 -- Name: workspace_budgets Admins can insert workspace_budgets in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can insert workspace_budgets in current namespace" ON public.workspace_budgets FOR INSERT WITH CHECK ((workspace_id IN ( SELECT w.id
+CREATE POLICY "Admins can insert workspace_budgets in current namespace" ON public.workspace_budgets FOR INSERT WITH CHECK (((workspace_id IN ( SELECT workspaces.id
+   FROM public.workspaces
+  WHERE (workspaces.namespace_id = public.get_current_namespace_id()))) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (workspace_id IN ( SELECT w.id
    FROM (public.workspaces w
      JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
-  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text)))));
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text)))))));
 
 
 --
@@ -14498,6 +16941,13 @@ CREATE POLICY "Admins can update alert_preferences in current namespace" ON publ
    FROM (public.workspaces w
      JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
   WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text))))))));
+
+
+--
+-- Name: application_categories Admins can update application_categories in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can update application_categories in current namespace" ON public.application_categories FOR UPDATE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id())))) WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
 
 
 --
@@ -14692,6 +17142,13 @@ CREATE POLICY "Admins can update technology_products in current namespace" ON pu
 
 
 --
+-- Name: technology_standards Admins can update technology_standards in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can update technology_standards in current namespace" ON public.technology_standards FOR UPDATE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id())))) WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
+
+
+--
 -- Name: workflow_definitions Admins can update workflow_definitions in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -14702,10 +17159,10 @@ CREATE POLICY "Admins can update workflow_definitions in current namespace" ON p
 -- Name: workspace_budgets Admins can update workspace_budgets in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can update workspace_budgets in current namespace" ON public.workspace_budgets FOR UPDATE TO authenticated USING ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+CREATE POLICY "Admins can update workspace_budgets in current namespace" ON public.workspace_budgets FOR UPDATE TO authenticated USING ((public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (workspace_id IN ( SELECT w.id
    FROM (public.workspaces w
      JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
-  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text)))))) WITH CHECK ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text)))))) WITH CHECK ((public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (workspace_id IN ( SELECT w.id
    FROM (public.workspaces w
      JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
   WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text))))));
@@ -14755,6 +17212,20 @@ CREATE POLICY "Admins can update workspace_settings in current namespace" ON pub
 --
 
 CREATE POLICY "Admins can update workspaces in current namespace" ON public.workspaces FOR UPDATE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id())))) WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()))));
+
+
+--
+-- Name: application_categories All users can view application_categories; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "All users can view application_categories" ON public.application_categories FOR SELECT USING (true);
+
+
+--
+-- Name: application_category_assignments All users can view application_category_assignments; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "All users can view application_category_assignments" ON public.application_category_assignments FOR SELECT USING (true);
 
 
 --
@@ -16416,6 +18887,13 @@ CREATE POLICY "Namespace admins can view all workspace members in their namesp" 
 
 
 --
+-- Name: application_categories Platform admins can delete application_categories; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Platform admins can delete application_categories" ON public.application_categories FOR DELETE USING (public.check_is_platform_admin());
+
+
+--
 -- Name: audit_logs Platform admins can delete audit logs for retention; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -16497,6 +18975,13 @@ CREATE POLICY "Platform admins can delete users" ON public.users FOR DELETE USIN
 --
 
 CREATE POLICY "Platform admins can delete vendor_lifecycle_sources" ON public.vendor_lifecycle_sources FOR DELETE USING (public.check_is_platform_admin());
+
+
+--
+-- Name: application_categories Platform admins can insert application_categories; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Platform admins can insert application_categories" ON public.application_categories FOR INSERT WITH CHECK (public.check_is_platform_admin());
 
 
 --
@@ -16637,6 +19122,13 @@ CREATE POLICY "Platform admins can manage integration_status_types" ON public.in
 --
 
 CREATE POLICY "Platform admins can manage sensitivity_types" ON public.sensitivity_types USING (public.check_is_platform_admin()) WITH CHECK (public.check_is_platform_admin());
+
+
+--
+-- Name: application_categories Platform admins can update application_categories; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Platform admins can update application_categories" ON public.application_categories FOR UPDATE USING (public.check_is_platform_admin()) WITH CHECK (public.check_is_platform_admin());
 
 
 --
@@ -17305,6 +19797,13 @@ CREATE POLICY "Users can view technology_products in current namespace" ON publi
 
 
 --
+-- Name: technology_standards Users can view technology_standards in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view technology_standards in current namespace" ON public.technology_standards FOR SELECT USING ((namespace_id = public.get_current_namespace_id()));
+
+
+--
 -- Name: namespace_users Users can view their own namespace roles; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -17396,6 +19895,18 @@ CREATE POLICY "Users can view workspaces in current namespace" ON public.workspa
 --
 
 ALTER TABLE public.alert_preferences ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: application_categories; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.application_categories ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: application_category_assignments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.application_category_assignments ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: application_compliance; Type: ROW SECURITY; Schema: public; Owner: -
@@ -17692,6 +20203,90 @@ ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.it_service_providers ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: it_service_software_products; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.it_service_software_products ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: it_service_software_products it_service_software_products_delete; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_software_products_delete ON public.it_service_software_products FOR DELETE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_software_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_software_products it_service_software_products_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_software_products_insert ON public.it_service_software_products FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_software_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_software_products it_service_software_products_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_software_products_select ON public.it_service_software_products FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_software_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_software_products it_service_software_products_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_software_products_update ON public.it_service_software_products FOR UPDATE TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_software_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_technology_products; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.it_service_technology_products ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: it_service_technology_products it_service_technology_products_delete; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_technology_products_delete ON public.it_service_technology_products FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_technology_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_technology_products it_service_technology_products_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_technology_products_insert ON public.it_service_technology_products FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_technology_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_technology_products it_service_technology_products_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_technology_products_select ON public.it_service_technology_products FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_technology_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
+-- Name: it_service_technology_products it_service_technology_products_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY it_service_technology_products_update ON public.it_service_technology_products FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM public.it_services its
+  WHERE ((its.id = it_service_technology_products.it_service_id) AND (its.namespace_id = (current_setting('app.current_namespace_id'::text, true))::uuid)))));
+
+
+--
 -- Name: it_services; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -17854,6 +20449,12 @@ ALTER TABLE public.technology_product_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.technology_products ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: technology_standards; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.technology_standards ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: user_sessions; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -17938,6 +20539,34 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: objects Anyone can view avatars; Type: POLICY; Schema: storage; Owner: -
+--
+
+CREATE POLICY "Anyone can view avatars" ON storage.objects FOR SELECT USING ((bucket_id = 'avatars'::text));
+
+
+--
+-- Name: objects Users can delete their own avatar; Type: POLICY; Schema: storage; Owner: -
+--
+
+CREATE POLICY "Users can delete their own avatar" ON storage.objects FOR DELETE USING (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+
+
+--
+-- Name: objects Users can update their own avatar; Type: POLICY; Schema: storage; Owner: -
+--
+
+CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE USING (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+
+
+--
+-- Name: objects Users can upload their own avatar; Type: POLICY; Schema: storage; Owner: -
+--
+
+CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT WITH CHECK (((bucket_id = 'avatars'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text)));
+
+
+--
 -- Name: buckets; Type: ROW SECURITY; Schema: storage; Owner: -
 --
 
@@ -17990,6 +20619,20 @@ ALTER TABLE storage.vector_indexes ENABLE ROW LEVEL SECURITY;
 --
 
 CREATE PUBLICATION supabase_realtime WITH (publish = 'insert, update, delete, truncate');
+
+
+--
+-- Name: supabase_realtime_messages_publication; Type: PUBLICATION; Schema: -; Owner: -
+--
+
+CREATE PUBLICATION supabase_realtime_messages_publication WITH (publish = 'insert, update, delete, truncate');
+
+
+--
+-- Name: supabase_realtime_messages_publication messages; Type: PUBLICATION TABLE; Schema: realtime; Owner: -
+--
+
+ALTER PUBLICATION supabase_realtime_messages_publication ADD TABLE ONLY realtime.messages;
 
 
 --
@@ -18048,5 +20691,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict yIjvezCuWFH4JHwC5XzYhqCHLCmI1IOugzEnaZugLTPnf28Xe0kfCe13q5Fzayt
+\unrestrict Ym9MuhxMPfNYCR9q226BF9TnurhAQwh70yChmUgjuwnAoRIWgjUtyNdFT9OOIuC
 

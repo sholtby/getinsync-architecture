@@ -1,6 +1,6 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.16
+**Version:** 1.17
 **Date:** March 12, 2026
 **Status:** 🟢 ACTIVE  
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
@@ -27,7 +27,7 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 
 | Changed? | Category | Triggers |
 |----------|----------|----------|
-| ☐ | New tables created | → Run Section 2 (Security Posture) + Section 6d (Security Regression) |
+| ☐ | New tables created | → Run Section 2 (Security Posture, incl. §2.3 Namespace Seeding) + Section 6d (Security Regression) |
 | ☐ | Existing tables modified (columns, constraints) | → Run Section 3 (Deep Validation) + Section 6d (Security Regression) |
 | ☐ | RLS policies added or changed | → Run Section 6d (Security Regression) |
 | ☐ | GRANTs added or changed | → Run Section 6d (Security Regression) |
@@ -139,6 +139,34 @@ When new tables are created this session, also verify these per-table checks tha
 - **updated_at trigger:** Required on tables with an `updated_at` column. Check `SELECT column_name FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'updated_at';` — if the column exists, the trigger should too.
 
 **Pass criteria:** All applicable checks return expected results. Document any intentional exclusions in the session handover.
+
+### 2.3 — Namespace Seeding Validation (only when new namespace-scoped tables are created)
+
+When new tables with a `namespace_id` column are created, verify they have a seeding trigger (if they are reference/config tables). This catches the case where a new namespace-scoped reference table is added but forgotten in the provisioning flow.
+
+```sql
+-- Namespace-scoped reference tables (has is_active) missing a seeding trigger on namespaces
+SELECT c.table_name as missing_seed_trigger
+FROM information_schema.columns c
+WHERE c.column_name = 'namespace_id' AND c.table_schema = 'public'
+AND c.table_name NOT LIKE 'vw_%'
+AND EXISTS (
+  SELECT 1 FROM information_schema.columns c2
+  WHERE c2.table_name = c.table_name AND c2.column_name = 'is_active' AND c2.table_schema = 'public'
+)
+AND NOT EXISTS (
+  SELECT 1 FROM pg_trigger t
+  JOIN pg_proc p ON t.tgfoid = p.oid
+  JOIN pg_class cl ON t.tgrelid = cl.oid
+  WHERE cl.relname = 'namespaces'
+  AND (p.proname LIKE '%' || c.table_name || '%' OR p.proname LIKE '%' || replace(c.table_name, '_', '%') || '%')
+)
+ORDER BY c.table_name;
+```
+
+**Pass criteria:** Query returns zero rows. Any row = a namespace-scoped reference table exists without a corresponding seeding trigger on `namespaces`. Investigate whether the table needs seed data for new namespaces.
+
+**Known exceptions:** `notification_rules` and `workflow_definitions` have `is_active` but are intentionally unseeded (future features with zero rows across all namespaces as of March 2026). If these appear in results, they can be ignored until their features are built.
 
 ---
 
@@ -849,6 +877,7 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 | v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
 | v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
 | v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
+| v1.17 | 2026-03-12 | **Added §2.3: Namespace Seeding Validation.** SQL query checks for namespace-scoped reference tables (has `is_active` + `namespace_id`) missing a seeding trigger on `namespaces`. Runs when new tables are created. Known exceptions documented: `notification_rules`, `workflow_definitions` (future features). Updated Section 1 trigger for new tables to include §2.3. |
 | v1.16 | 2026-03-12 | **§6h scope expansion.** Guide index now includes `feature-walkthrough.md`, `whats-new.md`, and `user-documentation/` badge reference. Added mandatory What's New entry step. Added feature-walkthrough check for Moderate/Major changes. Added §6h.6 version bump reminder. Summary checklist expanded with What's New and walkthrough rows. |
 | v1.15 | 2026-03-12 | **§6h rewrite: "Write It Now" replaces "Flag It".** Section renamed to "User Documentation — Write It Now". Three-tier scope system (Minor/Moderate/Major) determines action level. Claude now writes/updates the actual user guide during the session instead of deferring to a flag in the handover. Added §6h.4 (writing procedure for updates and new guides), §6h.5 (guard rail for unfinished dependencies). Updated summary/pass criteria: no deferred flags, docs must be written and committed this session. |
 | v1.14 | 2026-03-12 | **Added Section 6h: User Documentation Check.** New mandatory section for sessions that change user-facing behavior. Checks existing guides in `guides/user-help/`, flags updates needed or new guides needed. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized doc locations). Updated Section 1 triggers, Document Map. |
