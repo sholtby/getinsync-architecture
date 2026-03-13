@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-12 (v1.66)
+Last updated: 2026-03-13 (v1.67)
 
 ---
 
@@ -198,7 +198,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | core/namespace-management-ui.md | v1.0 | 🟢 | Phase 25.10 namespace management UI |
 | core/namespace-workspace-ui.md | v1.0 | ☪ | Namespace/Workspace UI patterns |
 | features/realtime-subscriptions/realtime-subscriptions-architecture.md | v1.0 | 🟡 | **Supabase Realtime** — Postgres Changes, Presence, Broadcast. 6 use cases (P1–P6), 3 React hooks. P1 ships with Roadmap Kanban. |
-| infrastructure/edge-functions-layer-architecture.md | v1.2 | 🟡 | **Edge Functions layer** — Deno runtime, 8 consumers, 6 functions. jose/JWKS auth, 6-tool MCP registry, search-to-chat handoff contract. §16.4 multi-region placeholder, §17 inbound API placeholder. |
+| infrastructure/edge-functions-layer-architecture.md | v1.3 | 🟢 | **Edge Functions layer** — Deno runtime, 8 consumers, 6 functions. Shared scaffold deployed: auth.ts (jose/JWKS), error-handler.ts, handleCors(). lifecycle-lookup auth fix deployed. 6-tool MCP registry, search-to-chat handoff contract. §16.4 multi-region, §17 inbound API placeholders. |
 
 ### Global Search
 
@@ -752,6 +752,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
 | v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
+| v1.62 | 2026-03-13 | Edge Functions layer v1.2→v1.3: **Shared scaffold deployed.** `_shared/auth.ts` (jose/JWKS local JWT verification), `_shared/error-handler.ts` (standardized error responses with error codes), `_shared/cors.ts` updated with `handleCors()` helper. `lifecycle-lookup` auth pattern fixed — §6.5 401 bug resolved. Phase E1 scaffold complete. |
 | v1.61 | 2026-03-11 | Roadmap architecture v1.3→v1.4: §8.8.5 NEW global workspace selector sync — Roadmap auto-filters when workspace changes in nav. §8.8.2 scoping table corrected (initiatives/ideas workspace_id is Optional, not Required). Membership-based client-side filtering ensures users only see items from their workspaces + org-wide items. Org-wide null filter bug fixed. RLS gap documented (SELECT is namespace-level, future work for workspace-level). |
 | v1.60 | 2026-03-11 | **Standards Intelligence Phase 1 DEPLOYED.** New: `standards-intelligence.md` v1.2 (🟢). Schema: 93→95 tables, 361→369 RLS, 51→53 triggers, 32→36 views, 55→57 functions. New table: `technology_standards` (4 RLS, audit trigger). New views: `vw_implied_technology_standards`, `vw_technology_standards_summary`. New RPCs: `assert_technology_standard()`, `refresh_technology_standard_prevalence()`. Frontend: Standards sub-tab, KPI cards, category table, assert modal, StandardsBadge. pgTAP sentinels updated (93→95 tables, 30→36 views, 51→53 triggers). |
 | v1.59 | 2026-03-11 | Budget management v1.7→v1.8: Workspace view replaced Applications/IT Services sub-tabs with unified view + ITSpendFilterDrawer (Category: All/Applications/IT Services). KPI cards filter-responsive. ProjectedSpendCard collapsed by default with localStorage persistence. formatCurrency negative number fix. New component: ITSpendFilterDrawer.tsx. |

@@ -1,8 +1,8 @@
 # Edge Functions Infrastructure Layer
 
-**Version:** 1.2
-**Date:** March 9, 2026
-**Status:** 🟡 DESIGNED (lifecycle-lookup deployed, gap analysis placeholders added)  
+**Version:** 1.3
+**Date:** March 13, 2026
+**Status:** 🟢 PARTIALLY DEPLOYED (shared scaffold + lifecycle-lookup auth fix deployed)  
 **Repo path:** `infrastructure/edge-functions-layer.md`  
 **Prerequisite:** None — foundational infrastructure document
 
@@ -209,11 +209,11 @@ Function names use kebab-case. Each function is a single entry point that may ha
 
 ```
 supabase/functions/_shared/
-├── cors.ts                 # Standard CORS headers (DEPLOYED)
+├── cors.ts                 # Standard CORS headers + handleCors() helper (DEPLOYED)
 ├── supabase-admin.ts       # Service-role client factory (DEPLOYED)
 ├── lifecycle-utils.ts      # Lifecycle status computation (DEPLOYED)
-├── auth.ts                 # JWT validation via jose/JWKS — see §6.2 (TODO: implement)
-├── error-handler.ts        # Standardized error responses — see §12 (TODO: implement)
+├── auth.ts                 # JWT validation via jose/JWKS — see §6.2 (DEPLOYED)
+├── error-handler.ts        # Standardized error responses — see §12 (DEPLOYED)
 ├── audit.ts                # Write to audit_logs via service role (PLANNED)
 └── rate-limit.ts           # Per-user rate limiting (PLANNED)
 ```
@@ -341,7 +341,7 @@ verify_jwt = false  # Validates via webhook signature instead
 
 ### 6.5 Known Issue: `auth.getUser(token)` 401 Failures (March 2026)
 
-**Status:** Diagnosed. Fix pending (update `lifecycle-lookup` to use §6.2 pattern).
+**Status:** ✅ FIXED (March 13, 2026). `lifecycle-lookup` updated to use §6.2 jose/JWKS pattern. `_shared/auth.ts` deployed.
 
 **Affected functions:**
 - `technology-catalog-search` — **retired**, replaced by direct browser client (`src/lib/endoflife-client.ts`)
@@ -927,6 +927,7 @@ Two planned integrations will drive the inbound API design:
 
 | Version | Date | Changes |
 |---|---|---|
+| v1.3 | 2026-03-13 | **Scaffold deployed.** `_shared/auth.ts` (jose JWKS verification) and `_shared/error-handler.ts` (standardized error responses) implemented. `_shared/cors.ts` updated with `handleCors()` helper. `lifecycle-lookup` updated to use new auth pattern — §6.5 401 bug fixed. §5.3 updated to reflect deployed status. |
 | v1.2 | 2026-03-09 | **Gap analysis response.** Added §16.4 multi-region placeholder (deferred until first non-CA customer). Added §17 inbound API layer placeholder (design triggers Q3 with Phase 37c). Expanded §15.3 with 6-tool MCP registry table and extraction criteria. Added §15.4 search-to-chat handoff contract. Per `reviews/edge-functions-gap-analysis.md`. |
 | v1.1 | 2026-03-09 | **Auth pattern update.** §6.2 rewritten: replaced `auth.getUser(token)` (network round-trip) with `jose` JWKS local verification (Supabase's March 2026 recommendation). Added §6.5 documenting 401 root cause, affected functions, and fix plan. §5.2 updated: `lifecycle-lookup` status → Deployed, `technology-catalog-search` → Retired (replaced by browser client). §5.3 updated to reflect actual deployed `_shared/` utilities vs planned. |
 | v1.0 | 2026-03-04 | Initial architecture. Eight consumer features mapped. Secret management (Edge Secrets + Vault). Function registry. Auth pattern. MCP inline tool strategy. Canadian data residency analysis. Implementation sequence E1–E8. |
