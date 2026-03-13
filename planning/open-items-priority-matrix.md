@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 12, 2026 (Master Level-Set)
+**As of:** March 13, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -67,7 +67,7 @@ These features have complete architecture documents but no code implementation. 
 
 | Feature | Architecture Doc | Effort | Priority | Notes |
 |---------|-----------------|--------|----------|-------|
-| **Edge Functions Infrastructure** | infrastructure/edge-functions-layer-architecture.md v1.2 | 3-5 days | **TIER 1** | Shared scaffold (auth, CORS, error handling, audit). lifecycle-lookup deployed; 7 more functions planned. 4 HIGH gaps in multi-region routing. |
+| **Edge Functions Infrastructure** | infrastructure/edge-functions-layer-architecture.md v1.2 | 3-5 days | **TIER 1** | **Phase 1 COMPLETE (Mar 13).** Shared scaffold deployed (_shared/auth.ts, cors.ts, error-handler.ts). lifecycle-lookup redeployed with JWKS auth. Deploy with `--no-verify-jwt` (ES256 gateway issue). Remaining: 7 more functions planned, 4 HIGH gaps in multi-region routing. |
 | **AI Chat MVP** | features/ai-chat/mvp.md, v2.md, v3-multicloud.md | 3-5 days | **TIER 1** | Natural language APM queries. Edge Function + Claude API + embeddings. 3 design iterations. |
 | **Gamification & Data Quality** | features/gamification/architecture.md v1.2 | 2-3 days | TIER 2 | Audit-log-driven achievements, streaks, data quality flags. Self-contained. |
 | **Tech Scoring Patterns** | features/assessment/tech-scoring-patterns.md | 1-2 days | TIER 2 | Pre-fill T-score defaults from hosting type + pattern. Reduces assessment fatigue. |
