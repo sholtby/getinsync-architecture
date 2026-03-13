@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-12 (v1.65)
+Last updated: 2026-03-12 (v1.66)
 
 ---
 
@@ -204,7 +204,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/global-search/architecture.md | v1.0 | 🟡 | **Global search — Ctrl+K overlay, 12 entity types, categorized results, cascading to AI chat. Prerequisite for AI chat UX.** |
+| features/global-search/architecture.md | v1.0 | 🟢 | **Global search — DEPLOYED. Ctrl+K overlay, 12 entity types, categorized results. RPC + frontend fully built.** |
 
 ### In-App Support
 
@@ -480,7 +480,25 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Recent Changes (v1.25 → v1.26)
+## Recent Changes (v1.65 → v1.66)
+
+### Master Level-Set & Priority Matrix Update (Mar 12, 2026)
+
+**Priority matrix updated** (`planning/open-items-priority-matrix.md`):
+- 12 items moved to Completed (Mar 8–12): RBAC gating (#40, #41, #42), filter drawer (#55), Cost Analysis bug (#58), Edit App tabs (#62), Standards Intelligence Ph1+Ph2, In-App Support S.1–S.5/S.7, Roadmap workspace filtering, User avatar, Global Search, Visual Diagram 3-level
+- 4 new items added: #63 (servers on visual/dashboard), #64 (namespace UI completion), #65 (budget alerts frontend), #66 (assessment tour S.6)
+- New "Feature Roadmap" section added: 11 designed-but-unbuilt features with tier priorities (Edge Functions + AI Chat = Tier 1)
+- Open items count: 37 (12 completed, 4 new)
+
+**Status tag updates:**
+- `features/global-search/architecture.md` — 🟡 → 🟢 (RPC + frontend fully built)
+
+**CLAUDE.md updated:**
+- Open Items table (11 items) replaced with pointer to `planning/open-items-priority-matrix.md` (single source of truth)
+
+---
+
+## Previous Changes (v1.25 → v1.26)
 
 ### Automated Testing & Explicit GRANTs (Feb 23, 2026)
 

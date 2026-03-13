@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 8, 2026 (Phase 28c DP Catalog Search Complete)
+**As of:** March 12, 2026 (Master Level-Set)
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -11,12 +11,10 @@
 | 2 | SOC2 Policy | Information Security Policy | Required for SOC2 — umbrella policy covering all controls. ~2-3 hrs. **OVERDUE (due Feb 27).** | -- | Delta (GPD-528) |
 | 3 | SOC2 Policy | Change Management Policy | Required for SOC2 — codify existing Git/architecture workflow. ~1-2 hrs. Also enable GitHub branch protection on `main` (no force push, no deletion) as CC8.1 evidence. **OVERDUE (due Feb 27).** | -- | Delta (GPD-529) + Stuart (branch protection) |
 | 4 | SOC2 Policy | Incident Response Plan | Required for SOC2 — detect > assess > contain > notify runbook. ~2-3 hrs. **OVERDUE (due Feb 27).** | -- | Delta (GPD-530) |
-| 40 | RBAC | UI role gating — 13 actions lack frontend role checks | Security debt — RLS protects DB but UI shows create/delete/edit buttons to all roles. Demo risk + principle violation. See identity-security/rbac-permissions.md §8.4. ~2-3 days. | -- | Stuart + Claude Code |
-| 62 | Refactoring | Edit Application tab refactoring — extract Deployments + Costs tabs | General tab overloaded with DPs, costs, and identity. Lift Deployments and Costs into their own tabs. Tab bar already built (6 tabs), Integrations + Visual already live. Create mode = no tab bar (single-scroll). ~4-6 hrs across 2 Claude Code segments. Assessment tab parked (needs #43 resolved). | -- | Stuart + Claude Code |
 
 ---
 
-## MEDIUM — Security & Compliance
+## MEDIUM — Security, Compliance & Features
 
 | # | Category | Item | Why MED | Blocked By | Assigned |
 |---|----------|------|---------|------------|----------|
@@ -33,13 +31,13 @@
 | 17 | Marketing | Website update | Professional credibility. Claude Code task. ~1 day. | -- | Stuart + Claude Code |
 | 18 | Analytics | Power BI Foundation — deploy 14 views | 14 vw_pbi_* views exist but not deployed. First dashboard build. | -- | Stuart |
 | 37 | Demo | Riverside demo data refresh | Demo namespace needs updated data for sales demos. Tech tagging done (#19 closed). Remaining: hosting_type fill, assessment scores. | -- | Stuart |
-| 41 | RBAC | Permission-aware Supabase hooks | Custom hooks (useCanEdit, useCanDelete, useCanCreate) that read user role. Foundation for #40. ~1-2 days. | -- | Stuart |
-| 42 | RBAC | Role-gated settings sidebar | Some settings visible to viewers that should be admin-only. ~0.5 day. | #41 | Stuart |
-| 43 | RBAC | Assessment permission split — who can assess vs edit app | Currently same permission. Should be separable. Architecture decision needed. Blocks Assessment tab (#62). ~1-2 days. | #41 | Stuart |
+| 43 | RBAC | Assessment permission split — who can assess vs edit app | Currently same permission. Should be separable. Architecture decision needed. ~1-2 days. | -- | Stuart |
 | 44 | RBAC | Flag CREATE viewer exception — flags INSERT policy allows any workspace member | ADR: Flags are governance, not data edits. Viewer can create but not update/delete. Part of gamification Phase 1. | Gamification Phase 1 | Stuart |
-| 55 | UX | Filter drawer pattern → push to other dashboards | Extract TechnologyHealth FilterDrawer as reusable component. Apply to: main Dashboard, Portfolios, By Application list, Integration Management. Consistent UX pattern across app. ~1-2 days. Partially addressed by Dashboard Refresh Phase D. | -- | Stuart + Claude Code |
-| 57 | UX | Scope indicator — show user's data visibility | Display "N of M workspaces" indicator in tab bar or header. Users who don't see all workspaces should know their view is filtered. Prevents confusion where partial data looks like complete data. ~0.5 day. | Dashboard Refresh C.1 | Stuart + Claude Code |
-| 58 | Bug | Cost Analysis crashes when portfolioId='all' | Cost Analysis page passes selectedPortfolioId directly to Supabase queries without checking for the special 'all' value. .eq('portfolio_id', 'all') returns 400. Pre-existing bug exposed by "All Portfolios" mode. ~1 hr. | -- | Stuart + Claude Code |
+| 57 | UX | Scope indicator — show user's data visibility | Display "N of M workspaces" indicator in tab bar or header. Users who don't see all workspaces should know their view is filtered. ~0.5 day. | -- | Stuart + Claude Code |
+| 63 | Feature | Servers on Visual Diagram + Dashboard | Visual diagram and dashboard are missing server data. Server_name exists on DPs but not surfaced in visual or dashboard views. ~2-3 days. | -- | Stuart + Claude Code |
+| 64 | Feature | Namespace Management UI completion | Phase 25.10 partially built. Remaining scope TBD. Prerequisites met (25.8, 25.9 complete). | -- | Stuart + Claude Code |
+| 65 | Feature | Budget Alerts frontend | DB layer deployed (alert_preferences table, vw_budget_alerts view). Frontend pending. ~1-2 days. | -- | Stuart + Claude Code |
+| 66 | Feature | In-App Support S.6 — Assessment tour | Shepherd.js already integrated (S.2 complete). Step-by-step assessment walkthrough. ~0.5 day. | -- | Stuart + Claude Code |
 
 ---
 
@@ -57,13 +55,55 @@
 | 46 | Documentation | Archive RBAC draft + Excel; update identity-security cross-refs | Superseded by identity-security/rbac-permissions.md. Update identity-security v1.1 §5 to point to new doc. ~30 min. | -- | Stuart |
 | 49 | Database | Drop CHECK constraints on application_integrations | criticality, direction, integration_type, frequency, status, data_format, sensitivity, data_classification columns still have CHECK constraints. Now redundant since values come from reference tables. Low risk — constraints don't hurt, but they block adding new values to reference tables. | -- | Stuart |
 | 50 | Database | Lifecycle status cron refresh | current_status is trigger-computed, not auto-refreshing when date boundaries cross. Add weekly cron: `UPDATE technology_lifecycle_reference SET updated_at = now();` or Supabase pg_cron. | -- | Stuart |
-| 51 | Feature | Surface Technology Health on Application Detail page | Option C: General tab gets summary badge (worst lifecycle status + tag count line). Deployments tab gets per-DP OS/DB/Web columns with LifecycleBadge. Data from vw_application_infrastructure_report filtered by application_id. ~1-2 days. Fits naturally into #62 General tab cleanup (Project 3). | #62 | Stuart + Claude Code |
+| 51 | Feature | Surface Technology Health on Application Detail page | Option C: General tab gets summary badge (worst lifecycle status + tag count line). Deployments tab gets per-DP OS/DB/Web columns with LifecycleBadge. Data from vw_application_infrastructure_report filtered by application_id. ~1-2 days. | -- | Stuart + Claude Code |
 | 60 | Refactoring | ChartsView.tsx decomposition (984 lines) | Over 800-line threshold. Grew with filter drawer integration, DP labels, bubble fixes, and getEntryKey() helper. Candidates: extract BubbleChart sub-component, extract filter logic into a hook, extract Priority Backlog table section. ~0.5-1 day. | -- | Stuart + Claude Code |
 | 61 | Bug | Tech Health CSV export labels rows as "applications" but exports at DP level | Screen shows "15 applications" but CSV has 16 rows because Hexagon OnCall has 2 DPs. Fix: change column header and count label in export to say "deployment profiles" not "applications". One-liner. | -- | Stuart + Claude Code |
 
 ---
 
-## Completed This Session (Mar 8)
+## Feature Roadmap — Designed, Not Yet Built
+
+These features have complete architecture documents but no code implementation. See MANIFEST.md for document links.
+
+| Feature | Architecture Doc | Effort | Priority | Notes |
+|---------|-----------------|--------|----------|-------|
+| **Edge Functions Infrastructure** | infrastructure/edge-functions-layer-architecture.md v1.2 | 3-5 days | **TIER 1** | Shared scaffold (auth, CORS, error handling, audit). lifecycle-lookup deployed; 7 more functions planned. 4 HIGH gaps in multi-region routing. |
+| **AI Chat MVP** | features/ai-chat/mvp.md, v2.md, v3-multicloud.md | 3-5 days | **TIER 1** | Natural language APM queries. Edge Function + Claude API + embeddings. 3 design iterations. |
+| **Gamification & Data Quality** | features/gamification/architecture.md v1.2 | 2-3 days | TIER 2 | Audit-log-driven achievements, streaks, data quality flags. Self-contained. |
+| **Tech Scoring Patterns** | features/assessment/tech-scoring-patterns.md | 1-2 days | TIER 2 | Pre-fill T-score defaults from hosting type + pattern. Reduces assessment fatigue. |
+| **Realtime Subscriptions** | features/realtime-subscriptions/architecture.md v1.0 | 2-3 days | TIER 2 | Backend deployed (WAL, publication config). Frontend hooks + components pending. |
+| **Business Capability** | catalogs/business-capability.md v1.0 | 2-3 days | TIER 2 | Hierarchical taxonomy, tag-based app mapping. Additive, no breaking changes. |
+| **Application Relationships (Suites)** | core/composite-application.md v2.0 | 2-3 days | TIER 2 | Suite/family relationships. Schema changes needed. Phase 1 scoped. |
+| **Standards Intelligence Ph2** | features/technology-health/standards-intelligence.md | 2-3 days | TIER 2 | T-score integration. Phase 1 deployed. |
+| **Cloud Discovery** | features/cloud-discovery/architecture.md | Large | FUTURE | AWS/Azure/GCP connectors. Enterprise feature. |
+| **Unified Chat** | features/support/unified-chat-integration.md | Large | FUTURE | Blocked on Edge Functions + AI Chat + conversation persistence tables. |
+| **ITSM Integration (Phase 37)** | features/integrations/itsm-api-research.md | 15-20 days | FUTURE | ServiceNow + HaloITSM publish/subscribe. Q3+. |
+
+---
+
+## Completed Mar 8–12
+
+| Item | Resolution |
+|------|------------|
+| #40 — RBAC UI role gating | ✅ COMPLETE. `usePermissions` hook at `src/hooks/usePermissions.ts`. UI gating on ApplicationDetailDrawer + other components. |
+| #41 — Permission-aware hooks | ✅ COMPLETE. Centralized `usePermissions` returns all permission flags (canEditDP, canEditLifecycle, canEditCost, canCreateApp, etc). |
+| #42 — Role-gated settings sidebar | ✅ COMPLETE. `feat/settings-readonly-non-admin` merged. Read-only mode for non-admins with info banner + disabled inputs + hidden save button. |
+| #55 — Filter drawer reusable | ✅ COMPLETE. `TechHealthFilterDrawerShell` shared component + 7 implementations (Tech Health x3, App Health, IT Spend, Roadmap, Charts). |
+| #58 — Cost Analysis crash (portfolioId='all') | ✅ FIXED. `CostAnalysisPanel.tsx` handles both undefined and 'all' with `isAllPortfolios` guard. |
+| #62 — Edit Application tab refactoring | ✅ COMPLETE. Deployments & Costs extracted to `DeploymentsTab` in `ApplicationPage.tsx`. |
+| Standards Intelligence Phase 1 (S.1–S.6) | ✅ DEPLOYED. 2 tables, 2 views, 2 RPCs. Standards sub-tab with KPI cards + category table + assert modal. |
+| Standards Phase 2 — conformance badges | ✅ DEPLOYED. `feat/standards-phase2-badges` merged. Badges on Tech Health tables. |
+| In-App Support S.1–S.5, S.7 | ✅ DEPLOYED. Provider abstraction, Shepherd.js tours, Crisp, HelpMenu, GitBook, Chatwoot. |
+| Roadmap workspace-aware filtering | ✅ DEPLOYED. Global workspace selector sync + membership filtering. KPI bar fix included. |
+| User avatar + first name display | ✅ DEPLOYED. `feat/user-avatar` merged. Photo upload, 4-tier fallback, Supabase Storage bucket. |
+| Settings sidebar restructure | ✅ COMPLETE. My Profile link added, Organization Settings renamed. |
+| Main Dashboard Refresh | ✅ DONE / SUPERSEDED. Dashboard reworked. |
+| Main App Navigation | ✅ DONE / SUPERSEDED. Navigation implemented. |
+| Global Search (Ctrl+K) | ✅ FULLY BUILT. RPC + frontend overlay. |
+| Roadmap UI | ✅ FULLY BUILT. Schema + Gantt/Kanban/Grid UI. |
+| Visual Diagram 3-level | ✅ BUILT. App → DP → Blast Radius walkable. Servers pending (#63). |
+
+## Completed Mar 8
 
 | Item | Resolution |
 |------|------------|
@@ -71,53 +111,35 @@
 | Phase 28b — Version Picker + Auto-Population | ✅ COMPLETE. `TechnologyCatalogSearchModal` with search-first flow + version picker. `TechnologyProductModal` prePopulated prop with auto-match for manufacturer/category/lifecycle. Bug fix: namespace_id filter on category query. |
 | Phase 28c — DP Technology Linking Flow | ✅ COMPLETE. `LinkTechnologyProductModal` enhanced with "Search catalog & create new" escape hatch. Chained modal flow with z-index fix. IT Service/Software Product deferred (already have AI Lookup). |
 
-## Completed Mar 5 — Session 3
+## Completed Mar 5
 
 | Item | Resolution |
 |------|------------|
 | Phase 27b.4 — IT Service lifecycle linking | ✅ COMPLETE. ITServiceModal rewritten with lifecycle reference search/create/display. LifecycleBadge added to IT Service catalog grid. Schema gaps deployed (lifecycle_reference_id FK on it_services). |
 | Phase 27b.5 — Software Product lifecycle linking | ✅ COMPLETE. SoftwareProductModal rewritten with lifecycle reference search/create/display. Lifecycle join added to SoftwareProductsSettings fetch. Schema gaps deployed (lifecycle_reference_id FK on software_products). |
 | Phase 27 schema gaps (5 scripts) | ✅ DEPLOYED. it_services.lifecycle_reference_id FK, software_products.lifecycle_reference_id FK, it_service_technology_products junction table (with GRANT/RLS/audit), vw_it_service_lifecycle_risk view, vw_dp_lifecycle_risk_combined view. |
-
-## Completed Mar 5 — Session 2
-
-| Item | Resolution |
-|------|------------|
-| Cost Model Reunification Phase 3F | ✅ COMPLETE. Quick Calculator for IT Service allocation — inline Unit Price × Quantity = Total popover in IT Service dependency table. Saves as `allocation_basis='fixed'`. |
 | Cost Model Reunification (all phases) | ✅ ALL PHASES COMPLETE (0–3). Phase 3 shipped: TypeScript types, ITServiceModal contract fields, IT Service→Software Product linking, cost component verification, Contract Expiry Widget, Quick Calculator. |
-| phase3-handover.md cleanup | ✅ Deleted temporary handover doc as instructed. |
+| Per-workspace portfolio memory | ✅ COMPLETE. Workspace switching restores last-used portfolio per workspace. |
+| Per-DP assessment buttons in drawer | ✅ COMPLETE. ApplicationDetailDrawer shows per-DP "Assess" buttons. |
+| Consumer assessment label fix | ✅ COMPLETE. Assessment columns show correct labels. |
+| pgTAP plan count alignment | ✅ FIXED. Plan count 416 → 423. |
 
-## Completed Mar 5 — Session 1
-
-| Item | Resolution |
-|------|------------|
-| Per-workspace portfolio memory | ✅ COMPLETE. Workspace switching now restores last-used portfolio per workspace. `user_sessions.portfolio_by_workspace` JSONB column added. localStorage map with DB sync for cross-device persistence. Three timing bugs fixed (stale data detection, effect ordering, 'all' leaking). |
-| Per-DP assessment buttons in drawer | ✅ COMPLETE. ApplicationDetailDrawer shows per-deployment-profile "Assess" buttons. Each button navigates to the correct DP's assessment. |
-| Consumer assessment label fix | ✅ COMPLETE. Assessment columns now show correct labels matching DP-level assessment data. |
-| pgTAP plan count alignment | ✅ FIXED. Plan count updated from 416 → 423 to match actual test count (93 tables, 51 audit triggers, 30 views). |
-
-## Completed Mar 3
+## Completed Mar 3 and Prior
 
 | Item | Resolution |
 |------|------------|
-| #53 Pagination | ✅ CLOSED. By Application grouped table has 10/25/50/100/All page size selector. Confirmed working. |
-| #54 KPI reframe | ✅ CLOSED. At Risk / Extended Support / Mainstream KPI cards count applications, not tags. Donut charts count tags (intentional — tag-level composition). |
+| #53 Pagination | ✅ CLOSED. By Application grouped table has page size selector. |
+| #54 KPI reframe | ✅ CLOSED. KPI cards count applications, donuts count tags. |
 | #56 Back arrow | ✅ CLOSED. Tech Health back arrow navigates correctly. |
-| #52 Workspace Tech Health | ✅ CLOSED. Workspace filter in Tech Health filter drawer is sufficient. No dedicated route needed. |
-| #38 Documentation | ✅ CLOSED. security-posture-overview updated to v1.2 (48 triggers, 29/29 custom views). |
-| #39 Documentation | ✅ CLOSED. soc2-evidence-index updated to v1.2 (48 triggers). |
-
-## Completed Prior Sessions
-
-| Item | Resolution |
-|------|------------|
-| #59 ChartsView duplicate key warning | ✅ FIXED Mar 2. Root cause: `application.id` used as React key, but multiple portfolio assignments share the same app. Solution: `getEntryKey()` helper using `portfolioAssignment.id` as unique key. Also fixed wrong DP links and tooltips. |
-| Filter persistence Dashboard → Charts | ✅ COMPLETE Mar 2. `AppHealthFilterState` snapshot captured on "View full analysis" click, passed as `initialFilters` to ChartsView. |
-| PAID filter label fix | ✅ FIXED Mar 2. "Improve" → "Ignore", "Divest" → "Delay". |
-| Warning badge indentation | ✅ FIXED Mar 2. AlertTriangle moved to inline after app name. |
-| #35 IT Value Creation implementation | ✅ COMPLETE Feb 22. Phase 21 deployed. 8 tables, 4 views, seed data. |
-| #34 Technology Health Dashboard | ✅ COMPLETE. All 4 tabs functional. Promoted to main tab bar. |
-| Dashboard Refresh Phases A–C.4 | ✅ COMPLETE. Views deployed, decomposition done, KPI bar wired, tab bar deployed, filter persistence done. |
+| #52 Workspace Tech Health | ✅ CLOSED. Workspace filter in filter drawer is sufficient. |
+| #38, #39 Documentation | ✅ CLOSED. security-posture-overview and soc2-evidence-index updated. |
+| #59 ChartsView duplicate key warning | ✅ FIXED Mar 2. |
+| Filter persistence Dashboard → Charts | ✅ COMPLETE Mar 2. |
+| PAID filter label fix | ✅ FIXED Mar 2. |
+| Warning badge indentation | ✅ FIXED Mar 2. |
+| #35 IT Value Creation implementation | ✅ COMPLETE Feb 22. Phase 21 deployed. |
+| #34 Technology Health Dashboard | ✅ COMPLETE. All 4 tabs functional. |
+| Dashboard Refresh Phases A–C.4 | ✅ COMPLETE. |
 
 ---
 
@@ -125,10 +147,11 @@
 
 | Priority | Count | Theme |
 |----------|-------|-------|
-| **HIGH** | 5 | 3 SOC2 policies (OVERDUE) + RBAC UI gating + Edit App refactoring |
-| **MEDIUM** | 19 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC enforcement, filter drawer, scope indicator, Cost Analysis bug |
+| **HIGH** | 3 | 3 SOC2 policies (OVERDUE) — Delta-assigned |
+| **MEDIUM** | 21 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC assessment split, scope indicator, servers on visual/dashboard, namespace UI, budget alerts, assessment tour |
 | **LOW** | 13 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail |
-| **Total Open** | 37 | No new open items this session. Phase 28a+28b+28c complete. 28d (data quality badges) remains. |
+| **Feature Roadmap** | 11 | Edge Functions (T1), AI Chat (T1), Gamification (T2), Scoring Patterns (T2), Realtime (T2), Business Capability (T2), App Relationships (T2), Standards Ph2 (T2), Cloud Discovery (Future), Unified Chat (Future), ITSM (Future) |
+| **Total Open** | 37 | 12 items completed Mar 8–12. 4 new items added (#63–#66). Feature Roadmap section added. |
 
 ### SOC2 Policy Scorecard
 
