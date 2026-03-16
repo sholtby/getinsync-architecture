@@ -1,7 +1,7 @@
 # identity-security/rbac-permissions.md
 GetInSync NextGen — RBAC & Permission Architecture
 
-Last updated: 2026-03-11
+Last updated: 2026-03-16
 
 ---
 
@@ -423,6 +423,7 @@ These decisions were made during the RBAC design process (originally tracked in 
 | 12 | Editor vs Steward | Editor = any app in workspace; Steward = assigned apps only | Steward is delegated authority from Owner |
 | 13 | Flag Creation | **Any workspace member including Viewer** (Feb 14, 2026) | Governance observation, not data edit. Solves "person who notices ≠ person who fixes." |
 | 14 | Namespace Role UI | **Admin toggle instead of role dropdown** (Mar 12, 2026) | Only 2 of 5 namespace roles active (admin, viewer). Dropdown with 2 options where one is almost always the default adds cognitive load. "Viewer" appearing at both namespace and workspace levels caused confusion. Toggle silently defaults to `viewer`; only surfaces a choice when granting admin. Schema still supports all 5 roles — when delegated authority is needed, toggle converts to role selector. **Prerequisite for delegation:** enforce permission ceiling in `usePermissions` and RLS before activating namespace `editor`. |
+| 15 | Admin Invite Auto-Grant | **Namespace admin invite auto-assigns all workspaces as admin** (Mar 16, 2026) | RBAC §3.2 defines namespace admin scope as "one namespace, all workspaces." The invite flow previously required manual workspace selection even for admins, allowing a namespace admin to be created with access to only a subset of workspaces. Now: checking "Grant Organization Admin access" auto-selects all workspaces with admin role and locks the dropdowns. Combined with the existing `add_creator_to_workspace_users` trigger (which auto-adds namespace admins to newly created workspaces), this ensures namespace admins always have full workspace coverage. |
 
 ---
 
@@ -506,6 +507,7 @@ Rename `contacts.workspace_role` value `read_only` → `viewer` for consistency 
 |---------|------|---------|
 | v1.0 | 2026-02-14 | Initial version. Consolidated from identity-security v1.1 (RBAC sections), permission-matrix-final.xlsx, and RBAC matrix draft. Added as-built gap analysis from Feb 13 schema. Added flag viewer exception (gamification v1.2 ADR). Added tier mapping using current trial/essentials/plus/enterprise values. Documented naming inconsistency (viewer vs read_only). |
 | v1.1 | 2026-03-12 | ADR #14: Namespace role UI simplified to admin toggle. Open Question #6: Permission ceiling not enforced — parked for future delegation work. |
+| v1.2 | 2026-03-16 | ADR #15: Admin invite auto-assigns all workspaces as admin. Closes gap between §3.2 design intent and invite flow implementation. |
 
 ---
 
