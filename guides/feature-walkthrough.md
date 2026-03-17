@@ -326,7 +326,7 @@ Six tabs along the top of the detail page:
 
 The primary form for managing an application's metadata and its primary Deployment Profile.
 
-**Application metadata** — Name, description, short description, lifecycle status, operational status.
+**Application metadata** — Name, description (under 300 characters), primary use case (2-paragraph technical abstract), lifecycle status, application category, operational status. A "Generate with AI" button above the description fills description, use case, and category simultaneously using AI.
 
 **Primary Deployment Profile** — Environment (Production, DR, Dev, etc.), region, hosting type (SaaS, On-Prem, Cloud, Hybrid), cloud provider, disaster recovery status, data center assignment, annual licensing cost, annual technology cost, estimated technical debt, and remediation effort (T-shirt size).
 

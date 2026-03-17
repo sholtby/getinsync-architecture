@@ -6,7 +6,8 @@ Recent updates to GetInSync NextGen.
 
 ## March 17, 2026
 
-- **Generate with AI — Application Descriptions** — Click the "Generate with AI" sparkle button next to the Description field when editing an application. An AI assistant generates a concise description based on the application name, including the manufacturer and primary use case. More entity types coming soon.
+- **Generate with AI — Description, Use Case & Category** — The "Generate with AI" button on the Application form now fills three fields at once: a concise description (under 300 characters), a detailed primary use case (2-paragraph technical abstract with manufacturer and website URL), and auto-selects the best-fit Application Category. If the AI doesn't recognize the application, the generated text appears in grey italic so you know it needs manual entry.
+- **Primary Use Case Field** — New text field on the Application form for a detailed use case description. Can be filled manually or via the AI generate button.
 
 ## March 16, 2026
 
