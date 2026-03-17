@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 13, 2026
+**As of:** March 16, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -34,7 +34,7 @@
 | 43 | RBAC | Assessment permission split — who can assess vs edit app | Currently same permission. Should be separable. Architecture decision needed. ~1-2 days. | -- | Stuart |
 | 44 | RBAC | Flag CREATE viewer exception — flags INSERT policy allows any workspace member | ADR: Flags are governance, not data edits. Viewer can create but not update/delete. Part of gamification Phase 1. | Gamification Phase 1 | Stuart |
 | 57 | UX | Scope indicator — show user's data visibility | Display "N of M workspaces" indicator in tab bar or header. Users who don't see all workspaces should know their view is filtered. ~0.5 day. | -- | Stuart + Claude Code |
-| 63 | Feature | Servers on Visual Diagram + Dashboard | Visual diagram and dashboard are missing server data. Server_name exists on DPs but not surfaced in visual or dashboard views. ~2-3 days. | -- | Stuart + Claude Code |
+| 63 | Feature | Servers on Visual Diagram + Dashboard | Visual diagram and dashboard are missing server data. Server_name now editable on DP cards/modals (Mar 16). Remaining: surface on Visual Diagram + Overview dashboard. ~1-2 days. | -- | Stuart + Claude Code |
 | 64 | Feature | Namespace Management UI completion | Phase 25.10 partially built. Remaining scope TBD. Prerequisites met (25.8, 25.9 complete). | -- | Stuart + Claude Code |
 | 65 | Feature | Budget Alerts frontend | DB layer deployed (alert_preferences table, vw_budget_alerts view). Frontend pending. ~1-2 days. | -- | Stuart + Claude Code |
 | 66 | Feature | In-App Support S.6 — Assessment tour | Shepherd.js already integrated (S.2 complete). Step-by-step assessment walkthrough. ~0.5 day. | -- | Stuart + Claude Code |

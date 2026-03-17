@@ -41,8 +41,11 @@ Each deployment profile captures:
 | **Cloud Provider** | AWS, Azure, GCP, Oracle Cloud, or other (if cloud-hosted) |
 | **Region** | The geographic region or data center where it runs |
 | **Data Center** | Your organization's specific data center (for on-premises or hybrid) |
+| **Server Name** | Optional label for the physical or virtual server (for on-premises, hybrid, or third-party hosted deployments) |
 
-The hosting type drives what other fields are relevant. For example, if you select "SaaS," you do not need to specify a data center. If you select "On-Premises," you do not need a cloud provider.
+The hosting type drives what other fields are relevant. For example, if you select "SaaS," you do not need to specify a data center. If you select "On-Premises," you do not need a cloud provider. The Server Name field only appears for hosting types where a long-lived server is expected (On-Premises, Hybrid, Third-Party Hosted).
+
+As you type a server name, suggestions from existing server names in your organization appear automatically. This helps maintain consistency — for example, if someone already entered "PROD-SQL-01," you will see it suggested rather than accidentally typing "Prod-SQL-1."
 
 ---
 
