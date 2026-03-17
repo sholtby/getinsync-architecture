@@ -687,9 +687,14 @@ If a feature depends on external setup that Stuart hasn't completed yet (e.g., a
 - ✅ Note "Requires [X] to be configured — contact your administrator" where applicable
 - ❌ Do NOT skip documentation entirely because of a dependency
 
-### 6h.6 — Version Bump Reminder
+### 6h.6 — Version Bump (CalVer)
 
-If this session shipped user-visible features to production, remind Stuart to bump `version` in `package.json` before or after merging to `main`. The version is displayed at the bottom of the Profile Settings page.
+If this session shipped user-visible features to production, bump `version` in `package.json` using CalVer format `YYYY.MM.patch`:
+- **New month?** → `YYYY.MM.1`
+- **Same month, another release?** → increment patch (e.g. `2026.3.1` → `2026.3.2`)
+- **No user-visible changes?** → no bump
+
+The version is displayed at the bottom of the Profile Settings page (`GetInSync v{version}`).
 
 ### Summary
 
