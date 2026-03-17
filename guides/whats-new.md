@@ -4,6 +4,10 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## March 17, 2026
+
+- **Generate with AI — Application Descriptions** — Click the "Generate with AI" sparkle button next to the Description field when editing an application. An AI assistant generates a concise description based on the application name, including the manufacturer and primary use case. More entity types coming soon.
+
 ## March 16, 2026
 
 - **Server Name on Deployment Profiles** — You can now set and edit a Server Name on deployment profiles with On-Premises, Hybrid, Third-Party Hosted, or Cloud hosting types. As you type, existing server names from your organization are suggested to prevent duplicates. Server names appear in Tech Health reports and CSV exports.
