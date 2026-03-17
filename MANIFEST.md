@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-16 (v1.72)
+Last updated: 2026-03-16 (v1.73)
 
 ---
 
@@ -132,6 +132,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
 | identity-security/rbac-permissions.md | v1.2 | 🟢 | RBAC permission matrix — role-action mapping. Phase A UI gating complete (Mar 11). ADR #14: admin toggle replaces org role dropdown (Mar 12). |
 | core/involved-party.md | v1.9 | 🟢 | Contacts, organizations — tier names + role names corrected (updated Feb 23) |
+| core/leadership-contacts-architecture.md | v1.0 | 🟡 | Workspace & portfolio leadership contacts — junction tables extending application_contacts pattern up the hierarchy |
 | planning/super-admin-provisioning.md | v0.2 | 🟢 | Platform admin namespace provisioning |
 | identity-security/user-registration.md | v1.0 | 🟢 | Signup and invitation flows |
 
@@ -277,6 +278,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | schema/demo-namespace-template.sql | v2.0 | 🟢 | Demo data SQL script |
 | operations/demo-namespace-checklist.md | v2.0 | 🟢 | Demo setup checklist |
 | operations/demo-credentials.md | v1.1 | 🟢 | Demo environment credentials |
+| operations/imports/garland-showcase-demo-plan.md | v1.0 | 🟡 | City of Garland showcase demo — 21 apps, 4 workspaces, IT Service cost model |
 | test-data-load-green-fields-v2.txt | v2.0 | ☪ | Green field test data |
 
 ### Reviews & Gap Analyses
@@ -754,6 +756,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
 | v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
+| v1.73 | 2026-03-16 | NEW: core/leadership-contacts-architecture.md v1.0 🟡. Workspace & portfolio leadership contacts — junction tables extending application_contacts pattern. NEW: operations/imports/garland-showcase-demo-plan.md v1.0 🟡. City of Garland showcase demo plan — 21 apps, 4 workspaces, IT Service cost model. |
 | v1.72 | 2026-03-16 | rbac-permissions.md v1.1→v1.2: ADR #15 — Admin invite auto-assigns all workspaces as admin. Closes gap between §3.2 design intent ("one namespace, all workspaces") and invite flow. InviteUserModal: admin toggle now auto-selects all workspaces, locks dropdowns, shows info banner. whats-new.md: March 16 entry. |
 | v1.71 | 2026-03-13 | **AI Chat v2 — Tool-Use DEPLOYED.** Edge Function rewritten with Anthropic tool-use API. Two tools: `search_portfolio` (existing embedding search) and `query_database` (SQL SELECT via `chat_query_portfolio()` RPC). Non-streaming tool loop (max 3 iterations) then streams final answer as SSE. New DB function: `chat_query_portfolio()` (SECURITY DEFINER, service_role only, SELECT-only validation). Schema: 57→58 functions. Frontend: updated suggestion prompts for analytical queries. |
 | v1.69 | 2026-03-13 | Updated guides/user-help/tech-health.md: added Verify button documentation. Updated guides/whats-new.md: March 13 entries (Edge Functions scaffold, lifecycle verify, duplicate key fix). |
