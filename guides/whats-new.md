@@ -6,6 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## March 17, 2026
 
+- **Leadership Contacts on Workspaces & Portfolios** — You can now assign leadership and governance contacts (Leader, Business Owner, Technical Owner, Steward, Budget Owner, Sponsor) directly from the Edit modal on the Workspaces in Namespace and Portfolios settings pages. Set a primary contact for each role — the primary leader's name appears on workspace cards.
 - **Generate with AI — Description, Use Case & Category** — The "Generate with AI" button on the Application form now fills three fields at once: a concise description (under 300 characters), a detailed primary use case (2-paragraph technical abstract with manufacturer and website URL), and auto-selects the best-fit Application Category. If the AI doesn't recognize the application, the generated text appears in grey italic so you know it needs manual entry.
 - **Primary Use Case Field** — New text field on the Application form for a detailed use case description. Can be filled manually or via the AI generate button.
 

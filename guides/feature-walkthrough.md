@@ -426,7 +426,7 @@ Physical data center locations. Linked to Deployment Profiles for infrastructure
 
 #### 8.2.1 Workspaces in Namespace
 
-List and manage all workspaces (Namespace Admin only). Create new workspaces for additional business units or divisions.
+List and manage all workspaces (Namespace Admin only). Create new workspaces for additional business units or divisions. Click **Edit** on a workspace card to open the edit modal, which includes a **Leadership** section for assigning governance contacts (Leader, Business Owner, Technical Owner, Steward, Budget Owner, Sponsor). The primary leader's name appears on the workspace card.
 
 #### 8.2.2 Workspace Groups
 
@@ -438,7 +438,7 @@ Per-workspace user role assignments. A user can have different roles in differen
 
 #### 8.2.4 Portfolios
 
-Manage portfolio hierarchy within the current workspace. Create, rename, delete, and nest portfolios.
+Manage portfolio hierarchy within the current workspace. Create, rename, delete, and nest portfolios. Click **Edit** on a portfolio to open the edit modal, which includes a **Leadership** section for assigning governance contacts. The primary leader's name appears in the portfolio header.
 
 #### 8.2.5 Import Applications
 
