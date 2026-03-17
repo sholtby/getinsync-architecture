@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Date:** 2026-03-16
-**Status:** 🟡 DESIGNED — awaiting implementation
+**Status:** 🟢 AS-BUILT — schema deployed + frontend shipped
 **Location:** `core/leadership-contacts.md`
 **Depends on:** contacts table (deployed), application_contacts pattern (deployed)
 

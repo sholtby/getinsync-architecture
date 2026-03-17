@@ -132,7 +132,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/rls-policy-addendum.md | v2.4 | 🟢 | RLS v2.4 addendum — updated patterns for new table checklist |
 | identity-security/rbac-permissions.md | v1.2 | 🟢 | RBAC permission matrix — role-action mapping. Phase A UI gating complete (Mar 11). ADR #14: admin toggle replaces org role dropdown (Mar 12). |
 | core/involved-party.md | v1.9 | 🟢 | Contacts, organizations — tier names + role names corrected (updated Feb 23) |
-| core/leadership-contacts-architecture.md | v1.0 | 🟡 | Workspace & portfolio leadership contacts — junction tables extending application_contacts pattern up the hierarchy |
+| core/leadership-contacts-architecture.md | v1.0 | 🟢 | Workspace & portfolio leadership contacts — junction tables extending application_contacts pattern up the hierarchy |
 | planning/super-admin-provisioning.md | v0.2 | 🟢 | Platform admin namespace provisioning |
 | identity-security/user-registration.md | v1.0 | 🟢 | Signup and invitation flows |
 

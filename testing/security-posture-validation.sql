@@ -33,14 +33,14 @@ WITH expected_tables AS (
     'namespace_users','namespaces','notification_rules',
     'notifications','operational_statuses','organization_settings',
     'organizations','platform_admins','portfolio_assignments',
-    'portfolio_settings','portfolios','program_initiatives',
+    'portfolio_contacts','portfolio_settings','portfolios','program_initiatives',
     'programs','remediation_efforts','sensitivity_types',
     'service_type_categories','service_types','software_product_categories',
     'software_products','standard_regions','technical_assessments',
     'technology_lifecycle_reference','technology_product_categories',
     'technology_products','technology_standards','user_sessions','users',
     'vendor_lifecycle_sources','workflow_definitions','workflow_instances',
-    'workspace_budgets','workspace_group_members','workspace_group_publications',
+    'workspace_budgets','workspace_contacts','workspace_group_members','workspace_group_publications',
     'workspace_groups','workspace_role_options','workspace_settings',
     'workspace_users','workspaces'
   ]) AS table_name
@@ -60,10 +60,10 @@ expected_audit_tables AS (
     'it_service_software_products',
     'it_services','namespace_users','operational_statuses',
     'organizations','platform_admins','portfolio_assignments',
-    'portfolios','program_initiatives','programs',
+    'portfolio_contacts','portfolios','program_initiatives','programs',
     'sensitivity_types','technology_lifecycle_reference','technology_products',
     'user_sessions','users','vendor_lifecycle_sources',
-    'workspace_users'
+    'workspace_contacts','workspace_users'
   ]) AS table_name
 ),
 
