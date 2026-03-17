@@ -41,9 +41,9 @@ Each deployment profile captures:
 | **Cloud Provider** | AWS, Azure, GCP, Oracle Cloud, or other (if cloud-hosted) |
 | **Region** | The geographic region or data center where it runs |
 | **Data Center** | Your organization's specific data center (for on-premises or hybrid) |
-| **Server Name** | Optional label for the physical or virtual server (for on-premises, hybrid, or third-party hosted deployments) |
+| **Server Name** | Optional label for the physical or virtual server (for on-premises, hybrid, third-party hosted, or cloud deployments) |
 
-The hosting type drives what other fields are relevant. For example, if you select "SaaS," you do not need to specify a data center. If you select "On-Premises," you do not need a cloud provider. The Server Name field only appears for hosting types where a long-lived server is expected (On-Premises, Hybrid, Third-Party Hosted).
+The hosting type drives what other fields are relevant. For example, if you select "SaaS," you do not need to specify a data center. If you select "On-Premises," you do not need a cloud provider. The Server Name field only appears for hosting types where a long-lived server is expected (On-Premises, Hybrid, Third-Party Hosted, Cloud).
 
 As you type a server name, suggestions from existing server names in your organization appear automatically. This helps maintain consistency — for example, if someone already entered "PROD-SQL-01," you will see it suggested rather than accidentally typing "Prod-SQL-1."
 
@@ -71,7 +71,8 @@ The primary profile's technical scores appear on the App Health dashboard by def
 3. Click **Add Deployment Profile**
 4. Select the hosting type — the form adapts to show relevant fields
 5. Fill in environment, provider, region, or data center as applicable
-6. Save
+6. If your hosting type involves a long-lived server (On-Premises, Hybrid, Third-Party Hosted, or Cloud), you can optionally enter a **Server Name** — suggestions from existing server names in your organization appear as you type, helping you stay consistent
+7. Save
 
 The first profile you create automatically becomes the primary. You can change which profile is primary at any time.
 

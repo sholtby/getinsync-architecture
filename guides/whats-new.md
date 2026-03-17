@@ -6,7 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## March 16, 2026
 
-- **Server Name on Deployment Profiles** — You can now set and edit a Server Name on deployment profiles with On-Premises, Hybrid, or Third-Party Hosted hosting types. As you type, existing server names from your organization are suggested to prevent duplicates. Server names appear in Tech Health reports and CSV exports.
+- **Server Name on Deployment Profiles** — You can now set and edit a Server Name on deployment profiles with On-Premises, Hybrid, Third-Party Hosted, or Cloud hosting types. As you type, existing server names from your organization are suggested to prevent duplicates. Server names appear in Tech Health reports and CSV exports.
 - **Admin Invite Fix** — Inviting a user as Organization Admin now automatically grants admin access to all workspaces. Previously, workspaces had to be selected manually, which could result in an admin with incomplete access.
 
 ## March 13, 2026
