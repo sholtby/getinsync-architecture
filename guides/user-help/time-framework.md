@@ -52,7 +52,7 @@ Each factor is rated 1–5 by an assessor, then combined using weighted averages
 
 ### Technical Health Score
 
-Based on **technical factors** (T01–T15) that measure the application's infrastructure quality:
+Based on **technical factors** (T01–T14) that measure the application's infrastructure quality:
 
 - Platform currency — Is the underlying technology current?
 - Security controls — Are proper security measures in place?

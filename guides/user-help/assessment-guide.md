@@ -44,7 +44,7 @@ Here are the key factors and what they ask:
 
 ---
 
-## Scoring Technical Factors (T01–T15)
+## Scoring Technical Factors (T01–T14)
 
 Technical factors measure the quality and risk of the application's infrastructure. These are scored **per deployment profile** — if your application runs in two locations, you assess each one separately.
 

@@ -27,7 +27,7 @@ Audience: Product team, implementers, and customers configuring assessments.
 | **TIME** | "What should we *do* with this application?" | Strategic direction |
 | **PAID** | "How urgently do we need to *fix* technical debt?" | Remediation priority |
 
-Both frameworks use the same underlying assessment factors (B1-B10, T01-T15) but with **different weightings** and **different derived scores**.
+Both frameworks use the same underlying assessment factors (B1-B10, T01-T14) but with **different weightings** and **different derived scores**.
 
 ### 2.2 Key Conceptual Distinction
 
@@ -93,24 +93,24 @@ Business Fit is a weighted average of business factors (B1-B10):
 
 ### 3.5 Technical Health Calculation
 
-Technical Health is a weighted average of technical factors (T01-T15, excluding T12):
+Technical Health is a weighted average of technical factors (T01-T14):
 
 | Factor | Code | Weight |
 |--------|------|--------|
 | Platform Footprint | T01 | 10% |
 | Vendor Support Status | T02 | 10% |
 | Security Controls | T04 | 10% |
-| Data Accessibility | T15 | 9% |
+| Data Accessibility | T14 | 9% |
 | Resilience & Recovery | T05 | 8% |
 | Observability | T06 | 8% |
 | Integration Capabilities | T07 | 8% |
-| Integration Count | T14 | 7% |
+| Integrations | T13 | 7% |
 | Identity Assurance | T08 | 6% |
 | Development Platform Currency | T03 | 5% |
 | Platform Portability | T09 | 5% |
 | Configurability | T10 | 5% |
 | Data Sensitivity Controls | T11 | 5% |
-| Modern UX | T13 | 4% |
+| Modern UX | T12 | 4% |
 
 **Formula:** `Tech_Health = Σ(Factor_Score × Weight) / Σ(Weights)`, normalized to 0-100
 
@@ -298,7 +298,7 @@ Assessment configuration is scoped to the **Namespace** level:
 | Score Type | Lives On | Reason |
 |------------|----------|--------|
 | B1-B10 (Business Factors) | Portfolio Assignment | Business context varies by portfolio |
-| T01-T15 (Technical Factors) | Deployment Profile | Technical reality is deployment-specific |
+| T01-T14 (Technical Factors) | Deployment Profile | Technical reality is deployment-specific |
 | Business Fit | Portfolio Assignment | Derived from B-scores |
 | Tech Health | Deployment Profile | Derived from T-scores |
 | Criticality | Portfolio Assignment | Derived from subset of B-scores |
@@ -310,7 +310,7 @@ Assessment configuration is scoped to the **Namespace** level:
 
 ```
 Deployment Profile
-├── T01-T15 scores (manual assessment)
+├── T01-T14 scores (manual assessment)
 ├── Tech Health = weighted average of all T-scores
 └── Tech Risk = inverted weighted average of risk-relevant T-scores
 
