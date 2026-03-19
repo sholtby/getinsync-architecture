@@ -1,6 +1,6 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.0
+**Version:** 2.1
 **Date:** March 19, 2026
 **Status:** ✅ IMPLEMENTED
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-The Visual tab on the Application Detail page renders an interactive graph using **React Flow** (@xyflow/react) with **dagre** (@dagrejs/dagre) for automatic layout. Users navigate three drill-down levels via single-click on nodes. Breadcrumb navigation provides level context and backtracking.
+The Visual tab on the Application Detail page renders an interactive graph using **React Flow** (@xyflow/react) with **dagre** (@dagrejs/dagre) for automatic layout. Users navigate three drill-down levels via click interactions (single-click for apps, double-click for DPs). Breadcrumb navigation provides level context and backtracking.
 
 ### Technology Stack
 
@@ -33,34 +33,41 @@ The Visual tab on the Application Detail page renders an interactive graph using
 ## Three-Level Drill-Down
 
 ```
-Level 1: App Graph              Level 2: DP Overview            Level 3: Blast Radius
-─────────────────              ──────────────────              ─────────────────────
-Connected Apps ──┐             [FOCUSED APP]                   Connected Apps ──┐
-External Systems─┤                  |                          External Systems─┤
-                 ├──[FOCUSED APP]   ├── DP 1                                    ├──[SELECTED DP]
-Connected Apps ──┤                  ├── DP 2                   Connected Apps ──┤
-External Systems─┘                  └── DP 3                   External Systems─┘
+Level 1: App Graph (TB)         Level 2: DP Overview (TB)       Level 3: Blast Radius (LR)
+─────────────────────          ──────────────────              ─────────────────────
+  Connected App 1                [FOCUSED APP]                  Connected Apps ──┐
+  Connected App 2                     |                         External Systems─┤
+  External System 1              ├── DP 1                                        ├──[SELECTED DP]
+       |                         ├── DP 2                       Connected Apps ──┤
+  [FOCUSED APP]                  └── DP 3                       External Systems─┘
+       |
+  DP 1   DP 2   DP 3
 
-Layout: LR (left-right)        Layout: TB (top-bottom)         Layout: LR (left-right)
+Layout: TB (top-bottom)        Layout: TB (top-bottom)         Layout: LR (left-right)
 ```
 
-### Level 1 — App Graph
+### Level 1 — App Graph (Three-Tier Vertical)
 
-**Center:** Focused application
-**Surrounding:** All connected apps + external systems (from integrations)
-**Layout direction:** Left-to-right (LR)
+**Top tier:** Connected apps + external systems (from integrations)
+**Center tier:** Focused application
+**Bottom tier:** Deployment profiles for the focused app
+**Layout direction:** Top-to-bottom (TB)
 
-- Edges represent integrations from `vw_integration_detail`
+Dagre enforces three-tier separation: integration edges flow from connected apps (top) into the focused app (center), and dashed edges flow from the focused app down to DP nodes (bottom).
+
+- Integration edges from `vw_integration_detail`
 - Edge color indicates criticality: critical (#ef4444), important (#f59e0b), nice_to_have (#94a3b8)
 - Edge style: dashed for deprecated/retired integrations
 - Edge labels show integration_type
-- Edge arrows follow direction (upstream/downstream/bidirectional)
+- App-to-DP edges: dashed gray (#94a3b8), 1px
 - MiniMap shown on Level 1 only
 
 **Click actions:**
 - Click focused app → drill to Level 2
 - Click connected app → navigate to that app's page
 - Click external system → no action
+- Single-click DP → select only (React Flow default)
+- Double-click DP → drill to Level 3 (blast radius for that DP)
 
 ### Level 2 — Deployment Profiles
 
@@ -74,7 +81,8 @@ Layout: LR (left-right)        Layout: TB (top-bottom)         Layout: LR (left-
 
 **Click actions:**
 - Click app node → back to Level 1
-- Click DP node → drill to Level 3 for that DP
+- Single-click DP → select only
+- Double-click DP → drill to Level 3 for that DP
 
 ### Level 3 — Blast Radius
 
@@ -105,6 +113,8 @@ Renders applications and external systems with consistent styling.
 - Focused app has teal border; others have gray
 - Shows workspace name below app name
 
+**Hover tooltip:** Non-focused app nodes show a tooltip on hover with app name, workspace name, TIME quadrant, and criticality score. Tooltip is an absolutely-positioned div inside the node component (not a portal).
+
 **Handles:** All four sides (Left, Right, Top, Bottom) for flexible edge routing.
 
 ### DPNode (`src/components/visual/nodes/DPNode.tsx`)
@@ -122,6 +132,8 @@ Renders deployment profiles with hosting-aware icons.
 - Hosting type badge
 - Server name (truncated)
 - Tech health percentage with color coding (green >=70, amber >=40, red <40)
+
+**Hover hint:** Shows "Double-click to explore" text below the node on hover.
 
 **Handles:** All four sides.
 
