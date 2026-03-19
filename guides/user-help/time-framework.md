@@ -87,12 +87,12 @@ Each quadrant maps naturally to a type of Roadmap initiative:
 | Modernize | Migration, replatform, re-architecture |
 | Eliminate | Retirement, decommission |
 
-See [Creating and Managing Initiatives](/user-help/roadmap-initiatives) to turn your TIME analysis into funded action plans.
+See [Creating and Managing Initiatives](roadmap-initiatives.md) to turn your TIME analysis into funded action plans.
 
 ---
 
 ## Common Misconceptions
 
-- **TIME is not a risk framework.** It answers "what to do" (strategic direction), not "how urgent." For urgency, see the [PAID framework](/user-help/paid-framework).
+- **TIME is not a risk framework.** It answers "what to do" (strategic direction), not "how urgent." For urgency, see the [PAID framework](paid-framework.md).
 - **End-of-support does not automatically mean low Technical Health.** An assessor considers many factors — vendor support is only one of them.
 - **Scores are not permanent.** Reassess applications whenever circumstances change (new deployment, vendor acquisition, business pivot).

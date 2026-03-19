@@ -78,6 +78,6 @@ On the App Health tab, use the view toggle to switch between TIME and PAID views
 
 ## Next Steps
 
-- [TIME Quadrant Explanation](/user-help/time-framework) — Understand strategic direction scoring
-- [How to Assess an Application](/user-help/assessment-guide) — The assessment process that feeds both frameworks
-- [Creating and Managing Initiatives](/user-help/roadmap-initiatives) — Turn PAID urgency into funded projects
+- [TIME Quadrant Explanation](time-framework.md) — Understand strategic direction scoring
+- [How to Assess an Application](assessment-guide.md) — The assessment process that feeds both frameworks
+- [Creating and Managing Initiatives](roadmap-initiatives.md) — Turn PAID urgency into funded projects

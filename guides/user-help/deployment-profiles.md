@@ -101,6 +101,6 @@ Deployment profiles also support compliance tracking. By recording where each ap
 
 ## Next Steps
 
-- [How to Assess an Application](/user-help/assessment-guide) — Score your deployment profiles
-- [Reading Tech Health Indicators](/user-help/tech-health) — See infrastructure risk across all deployments
-- [Getting Started](/user-help/getting-started) — Back to the onboarding guide
+- [How to Assess an Application](assessment-guide.md) — Score your deployment profiles
+- [Reading Tech Health Indicators](tech-health.md) — See infrastructure risk across all deployments
+- [Getting Started](getting-started.md) — Back to the onboarding guide

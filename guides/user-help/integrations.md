@@ -118,6 +118,6 @@ Before creating a Roadmap initiative to retire or migrate an application, check 
 
 ## Next Steps
 
-- [What Are Deployment Profiles?](/user-help/deployment-profiles) — Understand where applications run
-- [Creating and Managing Initiatives](/user-help/roadmap-initiatives) — Plan changes that account for integrations
-- [Getting Started](/user-help/getting-started) — Back to the onboarding guide
+- [What Are Deployment Profiles?](deployment-profiles.md) — Understand where applications run
+- [Creating and Managing Initiatives](roadmap-initiatives.md) — Plan changes that account for integrations
+- [Getting Started](getting-started.md) — Back to the onboarding guide
