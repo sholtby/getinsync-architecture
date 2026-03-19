@@ -114,7 +114,7 @@ The default view when you select Application Health.
 - **Add Existing App** — assign an unassigned application to the current portfolio
 - **New Application** — create a new Business Application
 
-**Filter controls** — filter by workspace (in cross-workspace view), portfolio (in All Portfolios view), operational status (Operational, Planned, Retired), and App Health filters (lifecycle status, hosting type, TIME quadrant, PAID action, assessment status).
+**Filter controls** — filter by workspace (in cross-workspace view), portfolio (in All Portfolios view), operational status (Operational, Planned, Retired), and App Health filters (lifecycle status, hosting type, application category, operational status, business owner, TIME quadrant, PAID action, assessment status, crown jewel, business fit, criticality, remediation effort).
 
 **Portfolio Analysis** — two side-by-side mini scatter charts showing TIME and PAID quadrant positioning of assessed applications. Click "View Full Charts" to enter the Charts View. Only appears when assessed applications exist.
 
@@ -132,7 +132,7 @@ The default view when you select Application Health.
 - **Unassessed** — applications that have not yet been assessed
 - **Needs Attention** — applications flagged for action based on assessment results
 
-**Application Table** — sortable, paginated table of applications in the current scope. Columns include App ID, Name, Portfolio (in All Portfolios view), Workspace (in My Workspaces view), Assessment Status, Business Fit, Tech Health, TIME Quadrant, PAID Action, and Annual Cost. Row actions: Assess, Edit, Move/Copy, Remove.
+**Application Table** — sortable, paginated table of applications in the current scope. Columns: Application (name + operational status dot + hosting badge + owner), Category (application category badges), Lifecycle (lifecycle status), Assessment (TIME/PAID quadrants or "Not Started"), Remediation (t-shirt size XS–2XL), and Run Rate (annual cost). Click any row to open the Application Detail Drawer.
 
 Expandable rows reveal Deployment Profiles beneath each application.
 

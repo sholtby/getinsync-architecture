@@ -4,6 +4,14 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## March 18, 2026
+
+- **Application Category Column** — The Application Health table now shows each application's assigned categories as compact badges, making it easy to see portfolio segmentation at a glance.
+- **Remediation Effort Column** — The Application Health table now displays the remediation effort t-shirt size (XS–2XL) for each application, previously only available as a filter.
+- **Application Category Filter** — New filter in the App Health filter drawer lets you narrow applications by category (e.g., "Infrastructure & Ops", "Business Apps").
+- **Operational Status Filter** — New filter to show or hide applications by their operational status (Operational, Planned, Retired) — previously only visible as a colored dot.
+- **Business Owner Filter** — New filter to narrow the application list by business owner name, answering "which apps does this person own?"
+
 ## March 17, 2026
 
 - **Leadership Contacts on Workspaces & Portfolios** — You can now assign leadership and governance contacts (Leader, Business Owner, Technical Owner, Steward, Budget Owner, Sponsor) directly from the Edit modal on the Workspaces in Namespace and Portfolios settings pages. Set a primary contact for each role — the primary leader's name appears on workspace cards.
