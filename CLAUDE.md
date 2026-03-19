@@ -277,6 +277,7 @@ git branch -r --merged dev | grep -v 'main\|dev\|HEAD'
 - Do NOT show duplicate count displays (e.g. filter count at top AND pagination count at bottom)
 - Do NOT ship feature changes without updating the corresponding architecture doc
 - Do NOT refactor existing code to match Bulletproof React patterns unless Stuart asks
+- Do NOT put non-publishable files in `guides/` — that directory syncs live to docs.getinsync.ca (see GitBook section)
 
 ---
 
@@ -332,6 +333,66 @@ When the app queries a Supabase view, the TypeScript interface MUST exactly matc
 
 ---
 
+## GitBook Docs Site — Live Sync from `guides/`
+
+The `guides/` directory in this repo syncs automatically to **docs.getinsync.ca** via GitBook Git Sync.
+
+**Every push to `main` that touches `guides/` triggers a live publish.** There is no staging — changes go straight to the public docs site.
+
+### What belongs in `guides/`
+
+Only markdown files intended for public docs.getinsync.ca belong in `guides/`. Currently:
+
+| Path | Published URL |
+|------|--------------|
+| `guides/whats-new.md` | `docs.getinsync.ca/whats-new` |
+| `guides/user-help/getting-started.md` | `docs.getinsync.ca/user-help/getting-started` |
+| `guides/user-help/assessment-guide.md` | `docs.getinsync.ca/user-help/assessment-guide` |
+| `guides/user-help/time-framework.md` | `docs.getinsync.ca/user-help/time-framework` |
+| `guides/user-help/paid-framework.md` | `docs.getinsync.ca/user-help/paid-framework` |
+| `guides/user-help/deployment-profiles.md` | `docs.getinsync.ca/user-help/deployment-profiles` |
+| `guides/user-help/tech-health.md` | `docs.getinsync.ca/user-help/tech-health` |
+| `guides/user-help/roadmap-initiatives.md` | `docs.getinsync.ca/user-help/roadmap-initiatives` |
+| `guides/user-help/integrations.md` | `docs.getinsync.ca/user-help/integrations` |
+
+### What does NOT belong in `guides/`
+
+- `.docx` files, `.zip` files, or any non-markdown assets — move to `marketing/`
+- Internal architecture docs — those stay in their existing directories (`core/`, `features/`, etc.)
+- Draft docs not ready for public — keep in `marketing/` or another directory until ready
+
+### Internal link rules
+
+GitBook Git Sync resolves markdown links as **relative file paths**, not URL paths. When linking between pages in `guides/user-help/`:
+
+```markdown
+<!-- CORRECT — relative file path -->
+See [What Are Deployment Profiles?](deployment-profiles.md)
+
+<!-- WRONG — absolute URL path (resolves to GitHub, not GitBook) -->
+See [What Are Deployment Profiles?](/user-help/deployment-profiles)
+
+<!-- WRONG — bare slug (also resolves to GitHub) -->
+See [What Are Deployment Profiles?](/deployment-profiles)
+```
+
+For links from `user-help/` to `whats-new.md` (one level up): `[What's New](../whats-new.md)`
+
+### When editing user help articles
+
+1. Edit the `.md` file in `guides/user-help/`
+2. Use relative file paths for all internal cross-references
+3. Commit and push to `main` — GitBook re-syncs automatically within ~1 minute
+4. Update `guides/whats-new.md` if the change is user-visible
+
+### Do NOT
+
+- Do NOT put non-publishable files (`.docx`, `.zip`, images, drafts) in `guides/`
+- Do NOT use absolute URL paths or bare slugs in markdown links
+- Do NOT create new subdirectories in `guides/` without telling Stuart — new folders create new sections on the live docs site
+
+---
+
 ## Architecture Documentation Reference
 
 Stuart maintains architecture docs in the `getinsync-architecture` repo (symlinked at `./docs-architecture/`).
@@ -379,6 +440,10 @@ When you change a feature area, update the corresponding doc:
 | Namespace / Workspace UI | `core/namespace-management-ui.md` |
 | Workspace Groups | `core/workspace-group.md` |
 | Gamification | `features/gamification/architecture.md` |
+| User Help Articles | `guides/user-help/*.md` (GitBook-synced — see GitBook section above) |
+| What's New / Changelog | `guides/whats-new.md` (GitBook-synced) |
+| Feature Walk-Through | `marketing/feature-walkthrough.md` |
+| Tech Health Badges | `marketing/user-documentation/technology-health-badges.md` |
 
 If your feature area is not listed, `grep -r "keyword" docs-architecture/` to find the right doc, or tell Stuart it is missing.
 
@@ -418,5 +483,5 @@ Track these for future sessions. When Stuart asks to continue refactoring, start
 
 ---
 
-*Last updated: March 5, 2026*
+*Last updated: March 19, 2026*
 *Update this file when architecture rules change.*

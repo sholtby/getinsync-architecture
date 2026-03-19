@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-16 (v1.73)
+Last updated: 2026-03-19 (v1.74)
 
 ---
 
@@ -246,11 +246,13 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
 | gis-phase-work-plan-23-25.md | v1.0 | ☪ | Historical work plan |
 
-### User Guides & Documentation
+### User Guides & Documentation (GitBook-synced: `guides/` → docs.getinsync.ca)
+
+> **`guides/` syncs live to docs.getinsync.ca via GitBook Git Sync.** Only publishable `.md` files belong here.
+> Internal links must use relative file paths (e.g., `deployment-profiles.md`), not URL paths.
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| guides/feature-walkthrough.md | v1.0 | 🟢 | Screen-by-screen feature walkthrough for enterprise architects, CSDM mapping |
 | guides/whats-new.md | **v1.0** | 🟢 | **User-facing release changelog — dated entries for every user-visible change** |
 | guides/user-help/getting-started.md | v1.0 | 🟢 | New user onboarding, key concepts, navigation, profile settings |
 | guides/user-help/assessment-guide.md | v1.0 | 🟢 | Assessment walkthrough (business + technical) |
@@ -260,7 +262,15 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | guides/user-help/deployment-profiles.md | v1.0 | 🟢 | Deployment profiles concept and creation |
 | guides/user-help/roadmap-initiatives.md | v1.0 | 🟢 | Creating and managing initiatives |
 | guides/user-help/integrations.md | v1.0 | 🟢 | Managing application integrations |
-| guides/user-documentation/technology-health-badges.md | v1.0 | 🟡 | Badge status reference (lifecycle + conformance colors) — draft for GitBook |
+
+### Marketing & Product Documentation
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| marketing/feature-walkthrough.md | v1.0 | 🟢 | Screen-by-screen feature walkthrough for enterprise architects, CSDM mapping (moved from guides/) |
+| marketing/user-documentation/technology-health-badges.md | v1.0 | 🟡 | Badge status reference (lifecycle + conformance colors) — draft, moved from guides/ |
+| marketing/GetInSync-NextGen-Feature-Walkthrough.docx | — | ☪ | Word version of feature walkthrough |
+| marketing/GetInSync_NextGen_Product_Overview_Mar2026.docx | — | ☪ | Product overview document |
 
 ### Development Workflow
 
@@ -756,6 +766,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
 | v1.62 | 2026-03-12 | Session-end checklist v1.11→v1.14: §6h user documentation check added (6h.1/6h.2/6h.3), Section 1 triggers updated. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized). Implementation plan path refs updated. Overview run rate KPI aligned to cost model (`vw_workspace_budget_summary`). Budget empty state message for non-admin editors. CLAUDE.md: backlog item #11 (dead dashboard summary code), user doc checklist item, 3 feature-to-doc map entries. |
+| v1.74 | 2026-03-19 | GitBook Git Sync setup. `guides/` directory now syncs live to docs.getinsync.ca. Moved non-publishable files out of `guides/`: feature-walkthrough.md, .docx files, user-documentation/ → `marketing/`. Fixed internal links in all 8 user-help articles (relative file paths for GitBook). CLAUDE.md: added GitBook Docs Site section with sync rules, link format, do-not list. Updated Feature-to-Doc Map with user help, marketing entries. |
 | v1.73 | 2026-03-16 | NEW: core/leadership-contacts-architecture.md v1.0 🟡. Workspace & portfolio leadership contacts — junction tables extending application_contacts pattern. NEW: operations/imports/garland-showcase-demo-plan.md v1.0 🟡. City of Garland showcase demo plan — 21 apps, 4 workspaces, IT Service cost model. |
 | v1.72 | 2026-03-16 | rbac-permissions.md v1.1→v1.2: ADR #15 — Admin invite auto-assigns all workspaces as admin. Closes gap between §3.2 design intent ("one namespace, all workspaces") and invite flow. InviteUserModal: admin toggle now auto-selects all workspaces, locks dropdowns, shows info banner. whats-new.md: March 16 entry. |
 | v1.71 | 2026-03-13 | **AI Chat v2 — Tool-Use DEPLOYED.** Edge Function rewritten with Anthropic tool-use API. Two tools: `search_portfolio` (existing embedding search) and `query_database` (SQL SELECT via `chat_query_portfolio()` RPC). Non-streaming tool loop (max 3 iterations) then streams final answer as SSE. New DB function: `chat_query_portfolio()` (SECURITY DEFINER, service_role only, SELECT-only validation). Schema: 57→58 functions. Frontend: updated suggestion prompts for analytical queries. |
