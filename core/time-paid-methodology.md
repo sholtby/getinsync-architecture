@@ -144,10 +144,10 @@ Prioritizes **technical debt remediation** by balancing **Business Criticality**
 
 | Quadrant | Characteristics | Recommended Action |
 |----------|-----------------|-------------------|
-| **ADDRESS** | Critical app, high risk | Immediate remediation; top priority |
 | **PLAN** | Critical app, low risk | Schedule improvements; proactive maintenance |
-| **DELAY** | Non-critical, high risk | Fix when able; lower priority than ADDRESS |
+| **ADDRESS** | Critical app, high risk | Immediate remediation; top priority |
 | **IGNORE** | Non-critical, low risk | Accept the risk; minimal investment |
+| **DELAY** | Non-critical, high risk | Fix when able; lower priority than ADDRESS |
 
 ### 4.3 PAID Axes
 
@@ -192,10 +192,10 @@ Default thresholds (configurable per Namespace):
 
 | Condition | Quadrant |
 |-----------|----------|
-| Criticality ≥ 50 AND Tech Risk ≥ 50 | ADDRESS |
 | Criticality ≥ 50 AND Tech Risk < 50 | PLAN |
-| Criticality < 50 AND Tech Risk ≥ 50 | DELAY |
+| Criticality ≥ 50 AND Tech Risk ≥ 50 | ADDRESS |
 | Criticality < 50 AND Tech Risk < 50 | IGNORE |
+| Criticality < 50 AND Tech Risk ≥ 50 | DELAY |
 
 ---
 
