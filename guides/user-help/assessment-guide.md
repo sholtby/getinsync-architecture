@@ -10,7 +10,7 @@ This guide walks you through the process step by step.
 
 Make sure the application has at least one **deployment profile**. A deployment profile describes where and how the application runs (e.g., "SaaS on AWS" or "On-premises in Toronto data center"). Technical factors are scored per deployment profile, so you need at least one.
 
-If the application has no deployment profile, add one first. See [What Are Deployment Profiles?](/deployment-profiles).
+If the application has no deployment profile, add one first. See [What Are Deployment Profiles?](/user-help/deployment-profiles).
 
 ---
 
@@ -75,11 +75,11 @@ Your application is plotted on the TIME chart (Business Fit vs. Technical Health
 - **Modernize** — Business-critical but technically failing. Replatform or replace.
 - **Eliminate** — Low value and poor technology. Plan retirement.
 
-See [TIME Quadrant Explanation](/time-framework) for details.
+See [TIME Quadrant Explanation](/user-help/time-framework) for details.
 
 ### PAID Quadrant Placement
 
-The same scores also feed the PAID chart (Business Criticality vs. Technical Risk), which tells you how urgently to act. See [PAID Quadrant Explanation](/paid-framework).
+The same scores also feed the PAID chart (Business Criticality vs. Technical Risk), which tells you how urgently to act. See [PAID Quadrant Explanation](/user-help/paid-framework).
 
 ### Numeric Scores
 
@@ -115,6 +115,6 @@ Assessment history is tracked, so you can see how scores change over time.
 
 ## Next Steps
 
-- [What Are Deployment Profiles?](/deployment-profiles) — Make sure profiles exist before assessing
-- [Reading Tech Health Indicators](/tech-health) — Use lifecycle data to inform technical scores
-- [Creating and Managing Initiatives](/roadmap-initiatives) — Turn assessment results into action
+- [What Are Deployment Profiles?](/user-help/deployment-profiles) — Make sure profiles exist before assessing
+- [Reading Tech Health Indicators](/user-help/tech-health) — Use lifecycle data to inform technical scores
+- [Creating and Managing Initiatives](/user-help/roadmap-initiatives) — Turn assessment results into action

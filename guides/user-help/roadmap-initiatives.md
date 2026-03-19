@@ -106,7 +106,7 @@ Some initiatives depend on others. For example, you might need to migrate a data
 
 ## Next Steps
 
-- [TIME Quadrant Explanation](/time-framework) — Understand what drives the "what to do" decision
-- [PAID Quadrant Explanation](/paid-framework) — Understand what drives the "how urgent" decision
-- [Reading Tech Health Indicators](/tech-health) — Find at-risk technologies that need initiatives
-- [Getting Started](/getting-started) — Back to the onboarding guide
+- [TIME Quadrant Explanation](/user-help/time-framework) — Understand what drives the "what to do" decision
+- [PAID Quadrant Explanation](/user-help/paid-framework) — Understand what drives the "how urgent" decision
+- [Reading Tech Health Indicators](/user-help/tech-health) — Find at-risk technologies that need initiatives
+- [Getting Started](/user-help/getting-started) — Back to the onboarding guide

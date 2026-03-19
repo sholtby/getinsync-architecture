@@ -61,7 +61,7 @@ Click any application name to open its detail view. You will see:
 
 Assessments are how you score an application's business value and technical health. The results place your app on the **TIME quadrant** — telling you whether to Tolerate, Invest, Modernize, or Eliminate it.
 
-See [How to Assess an Application](/assessment-guide) for a step-by-step walkthrough.
+See [How to Assess an Application](/user-help/assessment-guide) for a step-by-step walkthrough.
 
 ---
 
@@ -140,10 +140,10 @@ You are never stuck. Use the **Help menu** (the question-mark icon in the header
 
 Ready to go deeper? Here are the most useful articles to read next:
 
-- [TIME Quadrant Explanation](/time-framework) — Understand what the quadrants mean
-- [PAID Quadrant Explanation](/paid-framework) — Understand technical debt prioritization
-- [How to Assess an Application](/assessment-guide) — Step-by-step assessment walkthrough
-- [What Are Deployment Profiles?](/deployment-profiles) — Why the same app can have multiple profiles
-- [Reading Tech Health Indicators](/tech-health) — Understand infrastructure risk
-- [Creating and Managing Initiatives](/roadmap-initiatives) — Turn findings into action
-- [Managing Application Integrations](/integrations) — Document data flows between systems
+- [TIME Quadrant Explanation](/user-help/time-framework) — Understand what the quadrants mean
+- [PAID Quadrant Explanation](/user-help/paid-framework) — Understand technical debt prioritization
+- [How to Assess an Application](/user-help/assessment-guide) — Step-by-step assessment walkthrough
+- [What Are Deployment Profiles?](/user-help/deployment-profiles) — Why the same app can have multiple profiles
+- [Reading Tech Health Indicators](/user-help/tech-health) — Understand infrastructure risk
+- [Creating and Managing Initiatives](/user-help/roadmap-initiatives) — Turn findings into action
+- [Managing Application Integrations](/user-help/integrations) — Document data flows between systems

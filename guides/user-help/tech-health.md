@@ -79,7 +79,7 @@ The vendor is actively developing this product. You receive:
 
 The vendor has stopped adding features but still provides security patches (often for an additional fee). This is a warning sign — plan your upgrade.
 
-**Action needed:** Begin planning migration to a supported version. See [Creating and Managing Initiatives](/roadmap-initiatives).
+**Action needed:** Begin planning migration to a supported version. See [Creating and Managing Initiatives](/user-help/roadmap-initiatives).
 
 ### End of Support (EoS)
 
@@ -127,13 +127,13 @@ When you identify an at-risk technology:
 2. **Assess the impact** — Is this technology running in production? How many users are affected?
 3. **Create a Roadmap initiative** — Document the upgrade plan, timeline, and budget
 
-See [Creating and Managing Initiatives](/roadmap-initiatives) for how to turn Tech Health findings into funded projects.
+See [Creating and Managing Initiatives](/user-help/roadmap-initiatives) for how to turn Tech Health findings into funded projects.
 
 ---
 
 ## Next Steps
 
-- [What Are Deployment Profiles?](/deployment-profiles) — Understand where technologies are deployed
-- [How to Assess an Application](/assessment-guide) — Use lifecycle data to inform technical scores
-- [Creating and Managing Initiatives](/roadmap-initiatives) — Plan upgrades for at-risk technologies
-- [Getting Started](/getting-started) — Back to the onboarding guide
+- [What Are Deployment Profiles?](/user-help/deployment-profiles) — Understand where technologies are deployed
+- [How to Assess an Application](/user-help/assessment-guide) — Use lifecycle data to inform technical scores
+- [Creating and Managing Initiatives](/user-help/roadmap-initiatives) — Plan upgrades for at-risk technologies
+- [Getting Started](/user-help/getting-started) — Back to the onboarding guide
