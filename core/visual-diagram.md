@@ -1,278 +1,286 @@
-# GetInSync NextGen — Visual Diagram Architecture (Phase 28c)
+# GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 1.0  
-**Date:** February 10, 2026  
-**Status:** 🟡 SPEC — Not yet implemented
-
----
-
-## Concept: Three-Level Walkable Visual
-
-Each level is focused on ONE entity in the center. Users walk between 
-levels by double-clicking nodes. Every level uses the same D3 component 
-pattern: top tier → center → bottom tier.
-
-```
-Level 1: App Visual          Level 2: DP Visual           Level 3: Service Visual
-─────────────────           ──────────────────           ─────────────────────
-  Connected Apps              Parent Application           All DPs using this
-  + External Systems              (one node)               service/product
-       |                            |                           |
-  [FOCUSED APP]              [FOCUSED DP]               [FOCUSED SERVICE]
-       |                            |                           |
-  Deployment                  Tech Stack:                  Vendor, Cost,
-  Profiles                    Software, Services,          Budget info
-                              Hosting, Cloud, DR
-```
+**Version:** 2.0
+**Date:** March 19, 2026
+**Status:** ✅ IMPLEMENTED
 
 ---
 
-## Level 1: Application Visual (CURRENT — needs correction)
+## Overview
 
-**Center node:** Application  
-**Top tier:** Connected apps + external systems (from integrations)  
-**Bottom tier:** Deployment Profiles (NOT tech stack)
+The Visual tab on the Application Detail page renders an interactive graph using **React Flow** (@xyflow/react) with **dagre** (@dagrejs/dagre) for automatic layout. Users navigate three drill-down levels via single-click on nodes. Breadcrumb navigation provides level context and backtracking.
 
-### Bottom Tier DP Nodes
+### Technology Stack
 
-Each DP is a card-style node showing:
+| Library | Purpose |
+|---------|---------|
+| `@xyflow/react` | Graph rendering, pan/zoom, node dragging |
+| `@dagrejs/dagre` | Automatic directed-graph layout (LR or TB) |
+| Custom nodes | `AppNode` (apps/externals), `DPNode` (deployment profiles) |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/components/integrations/ConnectionsVisual.tsx` | Main component — ReactFlow canvas, breadcrumbs, layout persistence, navigation |
+| `src/components/visual/graphBuilders.ts` | Dagre layout + node/edge construction for all three levels |
+| `src/components/visual/nodes/AppNode.tsx` | Custom node for applications and external systems |
+| `src/components/visual/nodes/DPNode.tsx` | Custom node for deployment profiles |
+| `src/hooks/useVisualGraphData.ts` | Data fetching hook — all Supabase queries |
+
+---
+
+## Three-Level Drill-Down
+
 ```
-┌──────────────────────────────────┐
-│ 🖥  Great Plains ERP             │
-│    ● Production · Primary        │
-│    📍 City Hall DC · 🇺🇸 USA     │
-└──────────────────────────────────┘
+Level 1: App Graph              Level 2: DP Overview            Level 3: Blast Radius
+─────────────────              ──────────────────              ─────────────────────
+Connected Apps ──┐             [FOCUSED APP]                   Connected Apps ──┐
+External Systems─┤                  |                          External Systems─┤
+                 ├──[FOCUSED APP]   ├── DP 1                                    ├──[SELECTED DP]
+Connected Apps ──┤                  ├── DP 2                   Connected Apps ──┤
+External Systems─┘                  └── DP 3                   External Systems─┘
+
+Layout: LR (left-right)        Layout: TB (top-bottom)         Layout: LR (left-right)
 ```
 
-**Fields displayed:**
-- Line 1: DP name (bold)
-- Line 2: Environment (with color dot) + "Primary" badge if is_primary
-- Line 3: Data center name + country flag (if data_center_id set)
-- If no data center: show hosting_type + cloud_provider instead
+### Level 1 — App Graph
 
-**DP node style:**
-- Use ENTITY_STYLES.deployment_profile from icons.ts
-- Icon: Server
-- Fill: slate-100, stroke: slate-300
+**Center:** Focused application
+**Surrounding:** All connected apps + external systems (from integrations)
+**Layout direction:** Left-to-right (LR)
 
-**Query for DPs:**
+- Edges represent integrations from `vw_integration_detail`
+- Edge color indicates criticality: critical (#ef4444), important (#f59e0b), nice_to_have (#94a3b8)
+- Edge style: dashed for deprecated/retired integrations
+- Edge labels show integration_type
+- Edge arrows follow direction (upstream/downstream/bidirectional)
+- MiniMap shown on Level 1 only
+
+**Click actions:**
+- Click focused app → drill to Level 2
+- Click connected app → navigate to that app's page
+- Click external system → no action
+
+### Level 2 — Deployment Profiles
+
+**Top:** Focused application (single node)
+**Below:** All deployment profiles for this application
+**Layout direction:** Top-to-bottom (TB)
+
+- Excludes `dp_type = 'cost_bundle'` profiles
+- Dashed edges connect app to each DP
+- DPs ordered: is_primary DESC, then name ASC
+
+**Click actions:**
+- Click app node → back to Level 1
+- Click DP node → drill to Level 3 for that DP
+
+### Level 3 — Blast Radius
+
+**Center:** Selected deployment profile
+**Surrounding:** All connected apps + external systems (same integration data as Level 1)
+**Layout direction:** Left-to-right (LR)
+
+Shows the "blast radius" — what other systems are affected if this DP goes down.
+
+**Click actions:**
+- Click connected app → navigate to that app's page
+
+---
+
+## Custom Node Types
+
+### AppNode (`src/components/visual/nodes/AppNode.tsx`)
+
+Renders applications and external systems with consistent styling.
+
+**Icons (locked per type):**
+- Applications: `Monitor` (lucide-react)
+- External systems: `Globe` (lucide-react)
+
+**Visual indicators:**
+- TIME quadrant color stripe on left border: Invest (#10b981), Modernize (#f59e0b), Tolerate (#6b7280), Eliminate (#ef4444)
+- Crown jewel star icon when criticality >= 50
+- Focused app has teal border; others have gray
+- Shows workspace name below app name
+
+**Handles:** All four sides (Left, Right, Top, Bottom) for flexible edge routing.
+
+### DPNode (`src/components/visual/nodes/DPNode.tsx`)
+
+Renders deployment profiles with hosting-aware icons.
+
+**Icons (by hosting_type):**
+- `SaaS` → `Cloud`
+- `Hybrid` → `GitMerge`
+- Default/On-Prem → `Server`
+
+**Visual indicators:**
+- PRIMARY badge (indigo) for is_primary DPs
+- Environment color dot (from `getEnvironmentColor()`)
+- Hosting type badge
+- Server name (truncated)
+- Tech health percentage with color coding (green >=70, amber >=40, red <40)
+
+**Handles:** All four sides.
+
+---
+
+## Edge Styling
+
+All edges use `type: 'smoothstep'` with `pathOptions: { borderRadius: 0 }` for orthogonal right-angle routing.
+
+| Edge Type | Color | Style | Marker |
+|-----------|-------|-------|--------|
+| Integration (critical) | #ef4444 | solid, 2px | ArrowClosed |
+| Integration (important) | #f59e0b | solid, 2px | ArrowClosed |
+| Integration (nice_to_have) | #94a3b8 | solid, 2px | ArrowClosed |
+| Integration (deprecated/retired) | per criticality | dashed (6 3) | ArrowClosed |
+| App-to-DP (Level 2) | #94a3b8 | dashed (6 3), 1px | none |
+| DP-to-App (Level 3) | per criticality | solid/dashed, 2px | ArrowClosed |
+
+**Edge tooltips:** Hovering over an integration edge shows a tooltip with integration name, type, frequency, and data classification.
+
+---
+
+## Layout Persistence
+
+User-arranged node positions persist in `applications.visual_layout` (JSONB column).
+
+### Schema
+
 ```sql
-SELECT dp.id, dp.name, dp.environment, dp.is_primary,
-       dp.hosting_type, dp.cloud_provider, dp.data_center_id,
-       dc.name as dc_name, dc.city, dc.country_code
-FROM deployment_profiles dp
-LEFT JOIN data_centers dc ON dc.id = dp.data_center_id
-WHERE dp.application_id = :applicationId
-ORDER BY dp.is_primary DESC, dp.name;
+-- Column on applications table
+visual_layout jsonb DEFAULT NULL
 ```
 
-**Interactions:**
-- Double-click connected app → navigate to that app's Visual tab (existing)
-- Double-click external system → no action (not walkable)
-- Double-click DP node → navigate to Level 2 (DP Visual)
-- Double-click center app → navigate to Connections tab (existing)
+### Data Structure
 
-### What MOVES to Level 2:
-- ❌ Software Products (currently bottom tier)
-- ❌ IT Services (currently bottom tier)  
-- ❌ Environment node (currently bottom tier)
-- ❌ Hosting Type node (currently bottom tier)
-- ❌ Cloud Provider node (currently bottom tier)
-- ❌ DR Status node (currently bottom tier)
+```typescript
+interface SavedLayout {
+  level1?: SavedLevelLayout;
+  level2?: SavedLevelLayout;
+  level3?: SavedLevelLayout;
+}
 
-All of the above belong under the DP, not under the App.
+interface SavedLevelLayout {
+  nodes: { id: string; position: { x: number; y: number } }[];
+  viewport: { x: number; y: number; zoom: number };
+}
+```
+
+Each level's layout is saved independently. When a user drags nodes or pans/zooms, positions are saved to the appropriate level key.
+
+### Save Triggers
+
+- **Node drag stop:** Immediate save of all node positions + viewport
+- **Viewport move end:** Debounced save (500ms) of positions + viewport
+
+### Load Behavior
+
+1. Dagre computes default layout
+2. If `visual_layout[levelKey]` exists with saved node positions, override matching node positions
+3. Non-matching nodes (new integrations added since last save) keep dagre positions
+
+### Reset Layout
+
+Breadcrumb bar includes a "Reset Layout" button (right-aligned). Clicking it:
+1. Deletes the current level's key from `visual_layout`
+2. Saves the updated layout to DB
+3. Re-fetches data, triggering dagre to recompute positions
 
 ---
 
-## Level 2: Deployment Profile Visual (NEW)
+## Data Queries (`useVisualGraphData`)
 
-**Route:** Same app detail page, but triggered by double-click on DP  
-**Implementation:** Reuse ConnectionsVisual component with a mode prop  
-or create a separate DPVisual component.
-
-**Center node:** Deployment Profile
-```
-┌──────────────────────────────────┐
-│ 🖥  Great Plains ERP             │
-│    ● Production · Primary        │
-│    📍 City Hall DC · 🇺🇸 USA     │
-└──────────────────────────────────┘
-```
-
-**Top tier:** Parent application (single node)
-```
-┌──────────────────────────────────┐
-│ 📱 Great Plains ERP              │
-│    (Finance)                     │
-└──────────────────────────────────┘
-```
-- Double-click → go back to Level 1 (App Visual)
-
-**Bottom tier:** Tech stack — all technology linked to this DP
-
-### Software Products (blue nodes)
-```
-┌──────────────────────────────────┐
-│ 📦 Microsoft Dynamics GP         │
-│    Software · v18.6 · Perpetual  │
-└──────────────────────────────────┘
-```
-**Query:**
+### Focused Application
 ```sql
-SELECT dpsp.*, sp.name, sp.version, sp.license_type
-FROM deployment_profile_software_products dpsp
-JOIN software_products sp ON sp.id = dpsp.software_product_id
-WHERE dpsp.deployment_profile_id = :dpId;
+SELECT id, name, visual_layout, workspaces.name
+FROM applications
+WHERE id = :applicationId
 ```
-- Double-click → navigate to Level 3 (Software Product Visual)
 
-### IT Services (purple nodes)
-```
-┌──────────────────────────────────┐
-│ ☰  Database Services             │
-│    Built On · Per Instance       │
-└──────────────────────────────────┘
-```
-**Query:**
+### Integrations
 ```sql
-SELECT dpis.*, its.name, its.cost_model
-FROM deployment_profile_it_services dpis
-JOIN it_services its ON its.id = dpis.it_service_id
-WHERE dpis.deployment_profile_id = :dpId;
-```
-- Double-click → navigate to Level 3 (IT Service Visual)
-
-### Infrastructure nodes (from DP fields directly)
-- Environment: e.g., "Production" (green, with status dot)
-- Hosting Type: e.g., "On-Premises" (slate, with flag if data center)
-- Cloud Provider: e.g., "AWS · us-east-1" (sky blue)
-- DR Status: e.g., "Backup Only" (orange)
-- These are NOT walkable (no double-click)
-
-### Bottom tier node order (left to right):
-1. Software Products (blue)
-2. IT Services (purple)  
-3. Environment (green)
-4. Hosting (slate)
-5. Cloud Provider (sky, if present)
-6. DR Status (orange, if present)
-
----
-
-## Level 3: IT Service / Software Product Visual (NEW)
-
-**Route:** New page or modal — `/it-services/:id/visual` or inline
-
-**Center node:** IT Service or Software Product
-
-### IT Service Visual:
-```
-Center: Database Services (IT Service)
-Top:    All DPs that depend on it
-Bottom: Vendor, cost model, budget
+SELECT * FROM vw_integration_detail
+WHERE source_application_id = :applicationId
+   OR target_application_id = :applicationId
 ```
 
-**Top tier query (blast radius):**
+### Deployment Profiles
 ```sql
-SELECT dpis.deployment_profile_id, dpis.relationship_type,
-       dp.name as dp_name, dp.environment,
-       a.name as app_name, a.id as app_id,
-       w.name as workspace_name
-FROM deployment_profile_it_services dpis
-JOIN deployment_profiles dp ON dp.id = dpis.deployment_profile_id
-JOIN applications a ON a.id = dp.application_id
-JOIN workspaces w ON w.id = a.workspace_id
-WHERE dpis.it_service_id = :serviceId
-ORDER BY a.name;
+SELECT id, name, application_id, environment, hosting_type,
+       server_name, is_primary, tech_health, dp_type
+FROM deployment_profiles
+WHERE application_id = :applicationId
+  AND dp_type != 'cost_bundle'
+ORDER BY is_primary DESC, name
 ```
 
-**Top tier DP nodes show:**
-- App name (bold) + DP name if not primary
-- Workspace name (second line)
-- Relationship badge: "Built On" or "Depends On"
-- Double-click → navigate to Level 2 (DP Visual) or Level 1 (App Visual)
-
-**Bottom tier: Service details**
-- Vendor (if vendor_org_id set): organization name
-- Cost model: fixed/per_user/per_instance/consumption/tiered
-- Annual cost: formatted
-- Budget: amount + status (if budget tracking enabled)
-
-### Software Product Visual (same pattern):
-```
-Center: Microsoft Dynamics GP (Software Product)
-Top:    All DPs running this product
-Bottom: Manufacturer, license type, annual cost
-```
-
-**Top tier query:**
+### Connected Apps (parallel queries)
 ```sql
-SELECT dpsp.deployment_profile_id, dpsp.deployed_version,
-       dp.name as dp_name, dp.environment,
-       a.name as app_name, a.id as app_id,
-       w.name as workspace_name
-FROM deployment_profile_software_products dpsp
-JOIN deployment_profiles dp ON dp.id = dpsp.deployment_profile_id
-JOIN applications a ON a.id = dp.application_id
-JOIN workspaces w ON w.id = a.workspace_id
-WHERE dpsp.software_product_id = :productId
-ORDER BY a.name;
+-- App info
+SELECT id, name, workspaces.name FROM applications WHERE id IN (:connectedIds)
+
+-- TIME quadrant + criticality
+SELECT application_id, time_quadrant, criticality
+FROM portfolio_assignments WHERE application_id IN (:connectedIds)
+```
+
+### Focused App TIME Data
+```sql
+SELECT time_quadrant, criticality
+FROM portfolio_assignments
+WHERE application_id = :applicationId
+LIMIT 1
 ```
 
 ---
 
-## Walk Navigation Summary
+## Zoom Configuration
 
-| From | Double-Click | Goes To |
-|------|-------------|---------|
-| Level 1 (App) | Connected app node | Level 1 of that app |
-| Level 1 (App) | External system | No action |
-| Level 1 (App) | DP node | Level 2 of that DP |
-| Level 1 (App) | Center app | Connections tab |
-| Level 2 (DP) | Parent app node | Level 1 of that app |
-| Level 2 (DP) | Software product | Level 3 of that product |
-| Level 2 (DP) | IT service | Level 3 of that service |
-| Level 2 (DP) | Infra nodes | No action |
-| Level 3 (Service) | DP/App node | Level 2 or Level 1 |
-| Level 3 (Service) | Vendor node | No action |
+| Property | Value |
+|----------|-------|
+| fitView padding | 0.4 |
+| minZoom | 0.2 |
+| maxZoom | 2 |
+| fitView minZoom | 0.4 |
+| fitView maxZoom | 1.2 |
+| defaultViewport | { x: 0, y: 0, zoom: 0.75 } |
+| Level transition animation | 300ms duration |
 
 ---
 
-## Implementation Sequence
+## Navigation: Breadcrumbs
 
-### Step 1: Fix App Visual (Level 1 correction)
-- Remove software products, IT services, infra from bottom tier
-- Replace with DP nodes
-- Add double-click on DP → Level 2 navigation
+Breadcrumb bar at top of canvas:
 
-### Step 2: Build DP Visual (Level 2 — new)
-- New component or mode in ConnectionsVisual
-- Center: DP, Top: parent app, Bottom: tech stack
-- Wire double-click navigation
+```
+Level 1: All Apps
+Level 2: All Apps > [App Name]
+Level 3: All Apps > [App Name] > [DP Name]
+```
 
-### Step 3: Build Service/Product Visual (Level 3 — new)
-- Blast radius view
-- Center: service/product, Top: consuming DPs, Bottom: details
-- Wire double-click navigation
-
-### Step 4: Breadcrumb trail
-- Show navigation path: App → DP → Service
-- Click breadcrumb segments to jump back
+Each segment is clickable to navigate back. "Reset Layout" button is right-aligned in the breadcrumb bar.
 
 ---
 
-## Shared Component Strategy
+## Empty States
 
-All three levels should share:
-- Same D3 layout engine (three-tier vertical)
-- Same pan/zoom behavior
-- Same icon constants from icons.ts
-- Same node rendering functions
-- Same tooltip patterns
-- Same legend bar
+| Condition | Message |
+|-----------|---------|
+| No integrations AND no DPs (Level 1) | "No integrations recorded — Add connections in the Integrations tab." |
+| No DPs (Level 2) | "No deployment profiles found" + back link |
+| Loading | "Loading visualization..." |
+| Error | Error message + Retry button |
 
-Differentiated by:
-- Data queries (what to fetch)
-- Node types in each tier
-- Walk navigation targets
-- Center node styling
+---
+
+## Future Enhancements (Not Yet Built)
+
+- **Level 2 tech stack nodes:** Software products, IT services, hosting, cloud provider, DR status as nodes under each DP
+- **Level 3 service/product visual:** Blast radius centered on a service or product (all DPs using it)
+- **Inter-DP edges:** Show relationships between DPs (requires `inherits_tech_from` or similar)
+- **Legend bar:** Visual legend for edge colors, node types, TIME quadrant colors
+- **Export:** PNG/SVG export of current view

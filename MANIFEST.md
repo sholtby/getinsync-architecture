@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-19 (v1.74)
+Last updated: 2026-03-19 (v1.75)
 
 ---
 
@@ -169,7 +169,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/visual-diagram.md | v1.0 | 🟢 | Three-level walkable Visual tab (App → DP → Blast Radius) |
+| core/visual-diagram.md | v2.0 | 🟢 | Visual tab — React Flow + dagre, three-level drill-down, layout persistence |
 
 ### Technology Health & Risk
 
@@ -494,7 +494,16 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Recent Changes (v1.65 → v1.66)
+## Recent Changes (v1.74 → v1.75)
+
+### Visual Tab React Flow Overhaul (Mar 19, 2026)
+
+**Updated documents (1):**
+- `core/visual-diagram.md` — v1.0 → v2.0: Complete rewrite from D3 spec to implemented React Flow + dagre architecture. Documents three-level drill-down, custom node types (AppNode, DPNode), edge styling, layout persistence via `applications.visual_layout` JSONB column, zoom configuration, and breadcrumb navigation.
+
+---
+
+## Previous Changes (v1.65 → v1.66)
 
 ### Master Level-Set & Priority Matrix Update (Mar 12, 2026)
 
