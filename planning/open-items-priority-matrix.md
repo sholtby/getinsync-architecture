@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 19, 2026
+**As of:** March 20, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -11,7 +11,7 @@
 | 2 | SOC2 Policy | Information Security Policy | Required for SOC2 — umbrella policy covering all controls. ~2-3 hrs. **OVERDUE (due Feb 27).** | -- | Delta (GPD-528) |
 | 3 | SOC2 Policy | Change Management Policy | Required for SOC2 — codify existing Git/architecture workflow. ~1-2 hrs. Also enable GitHub branch protection on `main` (no force push, no deletion) as CC8.1 evidence. **OVERDUE (due Feb 27).** | -- | Delta (GPD-529) + Stuart (branch protection) |
 | 4 | SOC2 Policy | Incident Response Plan | Required for SOC2 — detect > assess > contain > notify runbook. ~2-3 hrs. **OVERDUE (due Feb 27).** | -- | Delta (GPD-530) |
-| 67 | Architecture | **Integration-to-DP alignment (CSDM gap)** | Integrations attach to applications but CSDM requires them on deployment profiles (service instances). Blocks accurate Visual tab Level 3, multi-deployment ownership, and correct blast radius analysis. **Must resolve before bulk customer data imports.** ADR: `features/integrations/adr-integration-dp-alignment.md`. ~2-3 days (schema + view + UI). | -- | Stuart |
+| ~~67~~ | ~~Architecture~~ | ~~Integration-to-DP alignment~~ | ✅ **CLOSED Mar 20.** Phase 1+2 deployed (Stage 1). source/target_deployment_profile_id FKs on application_integrations, vw_integration_detail rebuilt with DP columns. | -- | Stuart |
 
 ---
 
@@ -39,6 +39,7 @@
 | 64 | Feature | Namespace Management UI completion | Phase 25.10 partially built. Remaining scope TBD. Prerequisites met (25.8, 25.9 complete). | -- | Stuart + Claude Code |
 | 65 | Feature | Budget Alerts frontend | DB layer deployed (alert_preferences table, vw_budget_alerts view). Frontend pending. ~1-2 days. | -- | Stuart + Claude Code |
 | 66 | Feature | In-App Support S.6 — Assessment tour | Shepherd.js already integrated (S.2 complete). Step-by-step assessment walkthrough. ~0.5 day. | -- | Stuart + Claude Code |
+| 68 | Feature | TypeScript types — update `VwIntegrationDetail` for 4 new DP columns | source/target_deployment_profile_id + names. Consumers: IntegrationDetail components. ~0.5 day. | Stage 1 SQL deployed | Stuart + Claude Code |
 
 ---
 
@@ -81,6 +82,13 @@ These features have complete architecture documents but no code implementation. 
 | **ITSM Integration (Phase 37)** | features/integrations/itsm-api-research.md | 15-20 days | FUTURE | ServiceNow + HaloITSM publish/subscribe. Q3+. |
 
 ---
+
+## Completed Mar 20
+
+| Item | Resolution |
+|------|------------|
+| #67 Integration-to-DP alignment (CSDM gap) | ✅ CLOSED. Phase 1+2 deployed (Stage 1). source/target_deployment_profile_id FKs on application_integrations, vw_integration_detail rebuilt with DP columns. ADR: adr-integration-dp-alignment.md v1.2 ACCEPTED. |
+| AI Chat persistence tables | ✅ DEPLOYED. ai_chat_conversations + ai_chat_messages tables (8 RLS policies, 2 audit triggers). Stage 1 data layer. |
 
 ## Completed Mar 13
 
@@ -155,10 +163,10 @@ These features have complete architecture documents but no code implementation. 
 | Priority | Count | Theme |
 |----------|-------|-------|
 | **HIGH** | 3 | 3 SOC2 policies (OVERDUE) — Delta-assigned |
-| **MEDIUM** | 21 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC assessment split, scope indicator, servers on visual/dashboard, namespace UI, budget alerts, assessment tour |
+| **MEDIUM** | 22 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC assessment split, scope indicator, servers on visual/dashboard, namespace UI, budget alerts, assessment tour, VwIntegrationDetail DP columns |
 | **LOW** | 13 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail |
 | **Feature Roadmap** | 11 | Edge Functions (T1), AI Chat (T1), Gamification (T2), Scoring Patterns (T2), Realtime (T2), Business Capability (T2), App Relationships (T2), Standards Ph2 (T2), Cloud Discovery (Future), Unified Chat (Future), ITSM (Future) |
-| **Total Open** | 37 | 12 items completed Mar 8–12. 4 new items added (#63–#66). Feature Roadmap section added. |
+| **Total Open** | 38 | #67 closed Mar 20, #68 added. 12 items completed Mar 8–12. Feature Roadmap section added. |
 
 ### SOC2 Policy Scorecard
 

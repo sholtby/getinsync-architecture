@@ -1,0 +1,586 @@
+# =============================================================================
+# GetInSync NextGen — Semantic Layer Configuration
+# =============================================================================
+# Version: 1.0
+# Status: 🟡 AS-DESIGNED
+# Purpose: Maps business questions to data surfaces for AI Chat MCP tools.
+#          This file is the single source of truth for how the AI interprets
+#          and resolves business concepts against the database.
+#
+# Architecture principle: The AI never writes raw SQL. It resolves questions
+# through views and RPCs that already encode business logic. This config
+# tells it WHICH view to use and HOW to interpret the results.
+#
+# Consumer: Edge Function E1 (ai-chat) injects relevant domain context
+#           into the system prompt based on the user's question intent.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# META: Schema context
+# -----------------------------------------------------------------------------
+schema:
+  version: "2026-03-19"
+  tables: 97
+  views: 36
+  functions: 60
+  rls_policies: 372
+  
+  # Scoping rules — every query is namespace-scoped
+  scoping:
+    boundary: namespace_id
+    principle: "Nothing crosses namespace boundaries except platform admin operations"
+    enforcement: "RLS on every table; views use security_invoker=true"
+    
+  # Grain hierarchy — the AI must understand what level data lives at
+  grain_hierarchy:
+    - namespace        # Organizational boundary (e.g., "Government of Alberta")
+    - workspace        # Division/ministry (e.g., "Ministry of Finance")
+    - portfolio        # Grouping mechanism for reporting
+    - application      # The WHAT — identity, ownership, lifecycle
+    - deployment_profile  # The WHERE/HOW — assessment anchor, infrastructure
+    - portfolio_assignment  # Links DP to Portfolio; carries business scores
+
+# =============================================================================
+# DOMAIN: cost_intelligence
+# =============================================================================
+# "Where does the money go?"
+# This is the most complex domain because cost flows through two channels
+# with specific override patterns. Getting this wrong loses trust instantly.
+# =============================================================================
+
+domains:
+  cost_intelligence:
+    description: "Application and IT service cost attribution"
+    owner_principle: "Every dollar needs a home and an owner (Principle 4)"
+    
+    # -------------------------------------------------------------------------
+    # CRITICAL: The two-channel cost model
+    # -------------------------------------------------------------------------
+    # Cost reaches an application through exactly two channels.
+    # There is NO third channel. Software Products are inventory only.
+    # The AI must never say "software cost" — that column exists in views
+    # but is hardcoded to 0.
+    # -------------------------------------------------------------------------
+    
+    channels:
+      it_service:
+        description: "Shared infrastructure and managed services"
+        path: "it_services → deployment_profile_it_services (DPIS) → deployment_profile"
+        grain: deployment_profile
+        allocation_logic: |
+          DPIS junction carries allocation_basis + allocation_value.
+          Three modes:
+            - fixed: allocation_value is the dollar amount directly
+            - percent: (it_service.annual_cost × allocation_value / 100)
+            - percent > 100: treated as fixed (legacy data protection)
+          SQL pattern in vw_deployment_profile_costs:
+            CASE
+              WHEN allocation_basis = 'fixed' THEN allocation_value
+              WHEN allocation_basis = 'percent' AND allocation_value > 100 THEN allocation_value
+              WHEN allocation_basis = 'percent' THEN (annual_cost × allocation_value / 100)
+              ELSE allocation_value
+            END
+        vendor_attribution: "it_services.vendor_org_id → organizations.name"
+        
+      cost_bundle:
+        description: "Direct application costs (licenses, subscriptions, one-time)"
+        path: "deployment_profiles WHERE dp_type = 'cost_bundle'"
+        grain: application (via application_id)
+        rules:
+          - "Only cost_bundles with cost_recurrence = 'recurring' count toward run rate"
+          - "Cost bundles attach to the PRIMARY DP only (is_primary = true)"
+          - "One-time cost bundles exist but are excluded from run rate calculations"
+        vendor_attribution: "deployment_profiles.vendor_org_id → organizations.name"
+    
+    # -------------------------------------------------------------------------
+    # Cost concepts the AI can reference
+    # -------------------------------------------------------------------------
+    
+    concepts:
+      run_rate:
+        question: "What does this application cost per year?"
+        definition: "Annual operational + recurring cost. Excludes one-time and capital."
+        view: vw_application_run_rate
+        columns:
+          software_cost: "Always 0 — Software Products are inventory only"
+          service_cost: "Sum of IT Service allocations across all DPs"
+          bundle_cost: "Sum of recurring cost bundles on primary DP"
+          total_run_rate: "service_cost + bundle_cost"
+        filters:
+          - "operational_status = 'operational' (retired/decommissioned apps excluded)"
+          - "dp_type = 'application' (cost bundles counted separately)"
+        scope: namespace_id, workspace_id
+        note: "This view aggregates across ALL DPs for an application"
+        
+      dp_level_cost:
+        question: "What does this specific deployment cost?"
+        definition: "Cost attributed to a single deployment profile"
+        view: vw_deployment_profile_costs
+        columns:
+          service_cost: "DPIS allocations for this DP"
+          bundle_cost: "Cost bundles (only if is_primary = true, else 0)"
+          total_cost: "service_cost + bundle_cost"
+        note: "Foundation view — vw_application_run_rate sums from this"
+        
+      vendor_spend:
+        question: "How much are we spending with each vendor?"
+        definition: "Run rate grouped by vendor organization"
+        view: vw_run_rate_by_vendor
+        structure: "UNION ALL of IT Service channel + Cost Bundle channel"
+        columns:
+          vendor_name: "From organizations table (may be NULL for unattributed)"
+          cost_channel: "'IT Service' or 'Cost Bundle'"
+          total_cost: "Sum of allocations/costs for that vendor"
+        scope: namespace_id
+        note: "Same operational + recurring filters as run_rate"
+        
+      budget_status:
+        question: "Are we within budget?"
+        definition: "Budget vs committed spend with health thresholds"
+        view: vw_budget_status
+        columns:
+          budget: "applications.budget_amount (may be NULL)"
+          committed: "total_run_rate from vw_application_run_rate"
+          remaining: "budget - committed"
+          budget_status: "Enum: healthy/tight/over_10/over_critical/no_budget/no_costs"
+          percent_used: "Round((committed/budget) × 100, 1)"
+        thresholds:
+          healthy: "committed ≤ 80% of budget"
+          tight: "committed ≤ 100% of budget"
+          over_10: "committed ≤ 110% of budget"
+          over_critical: "committed > 110% of budget"
+        scope: namespace_id, workspace_id
+        
+      budget_alerts:
+        question: "Which applications need budget attention?"
+        definition: "Filtered budget_status for actionable items only"
+        view: vw_budget_alerts
+        alert_types:
+          over_budget: "over_10 or over_critical status"
+          nearly_exhausted: "tight status AND remaining < $5,000"
+          significant_unbudgeted: "no_budget AND committed > $10,000"
+        priority_order: "over_critical(1) → over_10(2) → nearly_exhausted(3) → unbudgeted(4)"
+        
+      budget_transfers:
+        question: "What budget moves have been made?"
+        definition: "History of budget reallocations between applications"
+        view: vw_budget_transfer_history
+        note: "NULL from/to_application_id = 'Unallocated Reserve'"
+        
+      projected_run_rate:
+        question: "What will our costs look like after planned initiatives?"
+        definition: "Current run rate + initiative estimated_run_rate_change"
+        source: "Client-side composition: vw_application_run_rate + vw_initiative_summary"
+        note: "No dedicated view — frontend ProjectedSpendCard computes this"
+    
+    # -------------------------------------------------------------------------
+    # Gotchas the AI must know
+    # -------------------------------------------------------------------------
+    
+    gotchas:
+      - label: "Software Products have no cost"
+        detail: |
+          software_cost is hardcoded to 0 in all cost views.
+          Software Products are inventory/catalog items only.
+          If a user asks "what does Oracle cost us?" — resolve through IT Services
+          where Oracle licensing is allocated, not through software_products table.
+          
+      - label: "DPSP is deprecated"
+        detail: |
+          deployment_profile_software_products (DPSP) junction still exists
+          but cost columns (annual_cost) on it are LEGACY. The correct cost path
+          is IT Services. Never reference dpsp.annual_cost in new queries.
+          
+      - label: "Cost bundles only on primary DP"
+        detail: |
+          When an application has multiple DPs, cost bundles (dp_type='cost_bundle')
+          are summed only on the primary DP (is_primary=true). Secondary DPs get
+          bundle_cost = 0. This prevents double-counting.
+          
+      - label: "Percent > 100 is treated as fixed"
+        detail: |
+          If allocation_basis='percent' but allocation_value > 100, it's treated
+          as a fixed dollar amount, not a percentage. This handles data entry errors
+          gracefully rather than producing inflated costs.
+          
+      - label: "Only operational applications"
+        detail: |
+          All cost views filter on operational_status = 'operational'.
+          Retired, decommissioned, and planned apps are excluded from run rate.
+          If a user asks about a retired app's cost, the answer is $0 in run rate
+          but you can note its historical cost from the raw tables.
+
+  # ===========================================================================
+  # DOMAIN: portfolio_health
+  # ===========================================================================
+  # "How healthy is our application portfolio?"
+  # Business scores live on portfolio_assignments.
+  # Technical scores live on deployment_profiles.
+  # This split is fundamental and the AI must respect it.
+  # ===========================================================================
+
+  portfolio_health:
+    description: "Assessment status, TIME/PAID positioning, business fitness"
+    
+    score_split:
+      business_scores:
+        location: portfolio_assignments
+        factors: "b1–b10 (weighted per namespace assessment_factors config)"
+        composites:
+          business_fit: "Weighted average of B-scores, normalized 0–100"
+          criticality: "Derived from B-scores, normalized 0–100"
+          time_quadrant: "Derived from business_fit + tech_health thresholds"
+        assessment_status_column: business_assessment_status
+        
+      technical_scores:
+        location: deployment_profiles
+        factors: "t01–t15 (weighted per namespace assessment_factors config)"
+        composites:
+          tech_health: "Weighted average of T-scores, normalized 0–100"
+          tech_risk: "Inverse of tech_health"
+          paid_action: "Derived from criticality + tech_risk thresholds"
+        assessment_status_column: tech_assessment_status
+    
+    concepts:
+      crown_jewel:
+        question: "Which applications are most critical to the organization?"
+        definition: "Applications where criticality ≥ 50 (from portfolio_assignments)"
+        derivation: "Computed, not manually flagged"
+        grain: application (not DP — same app = same crown jewel regardless of DPs)
+        view: "vw_dashboard_summary → crown_jewel_count"
+        note: "Crown jewel is a business designation, not a technical one"
+        
+      time_distribution:
+        question: "How are our applications distributed across TIME quadrants?"
+        definition: "Count of portfolio assignments by time_quadrant value"
+        values: [tolerate, invest, modernize, eliminate]
+        view: "vw_dashboard_summary → invest_count, tolerate_count, modernize_count, eliminate_count"
+        at_risk: "modernize_count + eliminate_count"
+        grain: portfolio_assignment (not application — one app can appear in multiple portfolios)
+        
+      paid_distribution:
+        question: "What technical actions are recommended?"
+        definition: "Count of DPs by paid_action value"
+        values: [plan, address, improve, divest]
+        view: "vw_dashboard_summary → plan_count, address_count, improve_count, divest_count"
+        grain: deployment_profile
+        note: |
+          Historical label mismatch: some data contains 'ignore' (maps to improve)
+          and 'delay' (maps to divest). Views handle this with IN clauses.
+          
+      assessment_completeness:
+        question: "How much of the portfolio has been assessed?"
+        definition: "Counts by assessment status"
+        view: vw_dashboard_summary
+        technical:
+          assessed_count: "tech_assessment_status = 'complete'"
+          needs_profiling_count: "tech_assessment_status = 'in_progress'"
+          not_started_count: "tech_assessment_status = 'not_started'"
+        business:
+          business_assessed_count: "business_assessment_status = 'complete'"
+          business_in_progress_count: "business_assessment_status = 'in_progress'"
+
+      scoped_summary:
+        question: "What's the health of a specific workspace or portfolio?"
+        definition: "Same KPIs as dashboard_summary but filtered by workspace/portfolio"
+        view: vw_dashboard_summary_scoped
+        parameters: [workspace_id, portfolio_id]
+        note: "Use this when user asks about a specific workspace, not the whole namespace"
+
+  # ===========================================================================
+  # DOMAIN: technology_health
+  # ===========================================================================
+  # "What's our technology risk exposure?"
+  # This domain covers lifecycle status, standards compliance, and
+  # the technology stack inventory.
+  # ===========================================================================
+
+  technology_health:
+    description: "Technology lifecycle risk, standards compliance, stack inventory"
+    
+    concepts:
+      lifecycle_summary:
+        question: "What's our technology lifecycle risk?"
+        definition: "Technology tags grouped by category and lifecycle status"
+        view: vw_technology_health_summary
+        statuses:
+          mainstream: "GA date ≤ today, no support dates expired"
+          extended: "Mainstream support ended, extended support still active"
+          end_of_support: "Extended support or EOL date has passed"
+          preview: "GA date is in the future"
+          incomplete_data: "Lifecycle reference exists but dates insufficient"
+        counts:
+          tag_count: "Number of technology tags in this category+status"
+          deployment_count: "Distinct DPs using this technology"
+          application_count: "Distinct applications affected"
+          eol_within_12mo_count: "Tags approaching EOL within 12 months"
+        scope: namespace_id
+        
+      tag_detail:
+        question: "What specific technology versions are deployed where?"
+        definition: "Per-tag lifecycle risk detail with deployment context"
+        view: vw_technology_tag_lifecycle_risk
+        includes: "Technology name, deployed version, lifecycle dates, DP and app names"
+        
+      implied_standards:
+        question: "What are our de facto technology standards?"
+        definition: "Reverse-engineered from deployment profile technology tags"
+        view: vw_implied_technology_standards
+        logic: |
+          Groups technology tags by category + product_family.
+          Computes prevalence_pct = (DPs using this family / total DPs in category).
+          Uses COALESCE(NULLIF(product_family, ''), name) to handle empty families.
+          Joins to technology_standards table for asserted status.
+        key_columns:
+          prevalence_pct: "How widely adopted (higher = more standard)"
+          asserted_status: "null/standard/non_standard/under_review/retiring"
+          best_lifecycle_status: "Worst lifecycle among versions in this family"
+        note: "prevalence_pct ≥ 40% and no asserted_status = candidate for review"
+        
+      standards_summary:
+        question: "What's our standards compliance overview?"
+        definition: "Namespace-level KPI aggregation for standards intelligence"
+        view: vw_technology_standards_summary
+        counts:
+          implied_pending_review: "prevalence ≥ 40% but not yet asserted"
+          asserted_standard_count: "Confirmed organizational standards"
+          asserted_non_standard_count: "Confirmed non-standard (needs migration)"
+          under_review_count: "Standards under evaluation"
+          retiring_count: "Standards being phased out"
+          strong_standard_categories: "Categories where prevalence ≥ 70%"
+          
+      server_report:
+        question: "What's running on each server?"
+        definition: "Server-centric technology inventory with lifecycle risk"
+        view: vw_server_technology_report
+        includes: "server_name, primary OS, worst lifecycle status, next EOL date"
+        filter: "Only DPs where server_name IS NOT NULL"
+
+  # ===========================================================================
+  # DOMAIN: roadmap
+  # ===========================================================================
+  # "What are we planning to do about it?"
+  # Findings → Initiatives → Programs. Run rate impact bridges to cost domain.
+  # ===========================================================================
+
+  roadmap:
+    description: "Findings, initiatives, programs — the action pipeline"
+    
+    concepts:
+      findings:
+        question: "What issues have been identified?"
+        definition: "Assessment-driven observations that may warrant action"
+        view: vw_finding_summary
+        key_columns: [severity, category, status, linked_initiative_count]
+        
+      initiatives:
+        question: "What actions are planned or in progress?"
+        definition: "Discrete improvement efforts with cost estimates and run rate impact"
+        view: vw_initiative_summary
+        key_columns:
+          one_time_cost_mid: "Average of low/high one-time cost estimates"
+          recurring_cost_mid: "Average of low/high recurring cost estimates"
+          run_rate_change: "Estimated annual run rate delta (positive = increase)"
+          linked_dp_count: "Deployment profiles affected"
+          linked_service_count: "IT Services affected"
+        assessment_domains:
+          icoms: "IT Operating Model & Spend"
+          bpa: "Business Process & Applications"
+          ti: "Technology Infrastructure"
+          dqa: "Data Quality & Analytics"
+          cr: "Cybersecurity Risk"
+          other: "Other"
+          
+      programs:
+        question: "How are initiatives organized into strategic programs?"
+        definition: "Groups of related initiatives with budget and timeline"
+        view: vw_program_summary
+        key_columns:
+          initiative_count: "Total initiatives in program"
+          completed_count: "Completed initiatives"
+          active_count: "In-progress initiatives"
+          total_initiative_cost_mid: "Aggregate one-time cost (midpoint)"
+          total_run_rate_change: "Net run rate impact of all non-cancelled initiatives"
+
+  # ===========================================================================
+  # DOMAIN: data_quality
+  # ===========================================================================
+  # Cross-cutting — surfaces gaps in data completeness.
+  # This is what makes the AI proactively useful ("you have 12 apps with
+  # no technology tags — want me to flag those?")
+  # ===========================================================================
+
+  data_quality:
+    description: "Assessment completeness, missing data, data hygiene"
+    
+    concepts:
+      assessment_gaps:
+        question: "Which applications haven't been assessed?"
+        queries:
+          unassessed_tech: |
+            SELECT a.name, dp.name as dp_name
+            FROM deployment_profiles dp
+            JOIN applications a ON a.id = dp.application_id
+            WHERE dp.tech_assessment_status = 'not_started'
+            AND a.operational_status = 'operational'
+          unassessed_business: |
+            SELECT a.name, pa.id
+            FROM portfolio_assignments pa
+            JOIN applications a ON a.id = pa.application_id
+            WHERE pa.business_assessment_status = 'not_started'
+            AND a.operational_status = 'operational'
+            
+      cost_gaps:
+        question: "Which applications have no cost attribution?"
+        query: |
+          SELECT a.name, a.workspace_id
+          FROM applications a
+          LEFT JOIN vw_application_run_rate rr ON rr.application_id = a.id
+          WHERE a.operational_status = 'operational'
+          AND (rr.total_run_rate IS NULL OR rr.total_run_rate = 0)
+          
+      technology_gaps:
+        question: "Which deployment profiles have no technology tags?"
+        query: |
+          SELECT dp.name, a.name as app_name
+          FROM deployment_profiles dp
+          JOIN applications a ON a.id = dp.application_id
+          LEFT JOIN deployment_profile_technology_products dptp 
+            ON dptp.deployment_profile_id = dp.id
+          WHERE dptp.id IS NULL
+          AND dp.dp_type = 'application'
+          AND a.operational_status = 'operational'
+          
+      unlinked_dps:
+        question: "Which DPs aren't in any portfolio?"
+        query: |
+          SELECT dp.name, a.name as app_name
+          FROM deployment_profiles dp
+          JOIN applications a ON a.id = dp.application_id
+          LEFT JOIN portfolio_assignments pa ON pa.deployment_profile_id = dp.id
+          WHERE pa.id IS NULL
+          AND dp.dp_type = 'application'
+          AND a.operational_status = 'operational'
+
+# =============================================================================
+# AI SYSTEM PROMPT TEMPLATE
+# =============================================================================
+# This template is injected into the AI Chat system prompt.
+# Variables in {braces} are resolved at runtime from the user's session context.
+# =============================================================================
+
+system_prompt_template: |
+  You are an Enterprise Architecture analyst for {namespace_name}.
+  You have access to {app_count} applications across {workspace_count} workspaces.
+  
+  ## How you resolve questions
+  
+  You answer questions by calling MCP tools that query pre-built database views.
+  You never write raw SQL. Every business concept has a defined resolution path.
+  
+  ## Cost rules — read these carefully
+  
+  - "Run rate" means annual operational + recurring cost. Never include one-time costs.
+  - Cost flows through exactly TWO channels: IT Services and Cost Bundles.
+  - Software Products are inventory only — they have ZERO cost attribution.
+  - If asked "what does [software] cost us?" — look at the IT Services that deliver it.
+  - Budget health thresholds: healthy (≤80%), tight (80-100%), over (100-110%), critical (>110%).
+  - Only operational applications have run rates. Retired apps = $0 run rate.
+  
+  ## Assessment rules
+  
+  - Business scores (B1-B10, business_fit, criticality) live on portfolio_assignments.
+  - Technical scores (T01-T15, tech_health, paid_action) live on deployment_profiles.
+  - These are DIFFERENT tables. Never mix them.
+  - A "crown jewel" application has criticality ≥ 50. This is derived, not flagged.
+  - TIME quadrant comes from business_fit + tech_health against namespace thresholds.
+  - PAID action comes from criticality + tech_risk against namespace thresholds.
+  
+  ## Technology rules
+  
+  - Lifecycle statuses: mainstream → extended → end_of_support → end_of_life.
+  - "Implied standards" are reverse-engineered from what's actually deployed.
+  - prevalence_pct ≥ 40% with no asserted status = candidate for standards review.
+  - Technology risk is computed from lifecycle data. GetInSync does NOT manage risk response.
+  
+  ## Tone and behavior
+  
+  - Lead with the number, then explain. "$2.4M across 47 applications" before the detail.
+  - When data is incomplete, say so: "12 of 56 applications have no cost attribution."
+  - Proactively flag data quality issues you notice.
+  - Never guess at costs. If there's no data, say "no cost data attributed."
+  - Use workspace names, not IDs. Use application names, not technical keys.
+
+# =============================================================================
+# MCP TOOL → SEMANTIC DOMAIN MAPPING
+# =============================================================================
+# Each MCP tool resolves questions within one or two semantic domains.
+# The AI uses intent classification to route to the right tool.
+# =============================================================================
+
+mcp_tools:
+  portfolio-summary:
+    domains: [portfolio_health]
+    resolves:
+      - "How many applications do we have?"
+      - "What's our TIME distribution?"
+      - "How many crown jewels?"
+      - "What percentage of apps are assessed?"
+    primary_view: vw_dashboard_summary
+    scoped_view: vw_dashboard_summary_scoped
+    
+  application-detail:
+    domains: [portfolio_health, cost_intelligence]
+    resolves:
+      - "Tell me about [application name]"
+      - "What does [application] cost?"
+      - "What's the assessment for [application]?"
+    primary_tables: [applications, deployment_profiles, portfolio_assignments]
+    cost_view: vw_deployment_profile_costs
+    
+  cost-analysis:
+    domains: [cost_intelligence]
+    resolves:
+      - "What's our total run rate?"
+      - "Who are our top vendors by spend?"
+      - "Which applications are over budget?"
+      - "Show me the budget status"
+    primary_views:
+      run_rate: vw_application_run_rate
+      vendor: vw_run_rate_by_vendor
+      budget: vw_budget_status
+      alerts: vw_budget_alerts
+      
+  technology-risk:
+    domains: [technology_health]
+    resolves:
+      - "What's our lifecycle risk exposure?"
+      - "Which technologies are end of life?"
+      - "What are our technology standards?"
+      - "What's running on [server name]?"
+    primary_views:
+      lifecycle: vw_technology_health_summary
+      tags: vw_technology_tag_lifecycle_risk
+      standards: vw_implied_technology_standards
+      standards_kpi: vw_technology_standards_summary
+      servers: vw_server_technology_report
+      
+  roadmap-status:
+    domains: [roadmap]
+    resolves:
+      - "What initiatives are planned?"
+      - "What's the projected run rate impact?"
+      - "How are our programs tracking?"
+    primary_views:
+      findings: vw_finding_summary
+      initiatives: vw_initiative_summary
+      programs: vw_program_summary
+      
+  data-quality:
+    domains: [data_quality]
+    resolves:
+      - "What data is missing?"
+      - "Which apps need attention?"
+      - "Where are our biggest data gaps?"
+    queries: "Inline queries from data_quality domain concepts"
+    note: "This tool runs ad-hoc queries, not views — keep scope tight"

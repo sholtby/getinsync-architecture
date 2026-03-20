@@ -1,16 +1,16 @@
 -- =============================================================================
 -- GetInSync NextGen — pgTAP RLS Coverage Test Suite
 -- =============================================================================
--- Version: 1.2
--- Date: 2026-02-28
--- Purpose: Automated regression tests for security posture across all 93 tables + 30 views
+-- Version: 1.7
+-- Date: 2026-03-20
+-- Purpose: Automated regression tests for security posture across all 99 tables + 38 views
 --
 -- What this tests:
---   1. RLS enabled on all 93 public tables
+--   1. RLS enabled on all 99 public tables
 --   2. GRANT (SELECT at minimum) for authenticated + service_role on all tables
---   3. Audit trigger present on 51 designated tables
---   4. security_invoker=true on all 30 views
---   5. GRANT SELECT for authenticated + service_role on all 30 views
+--   3. Audit trigger present on 57 designated tables
+--   4. security_invoker=true on all 38 views
+--   5. GRANT SELECT for authenticated + service_role on all 38 views
 --   6. No orphaned tables/views (new ones without security coverage)
 --
 -- How to run:
@@ -33,17 +33,29 @@ BEGIN;
 -- Every public table must have RLS enabled. A table without RLS
 -- is a multi-tenant data leak waiting to happen.
 
-SELECT plan(93 + 93 + 93 + 51 + 30 + 30 + 30 + 3);
--- 93 = RLS enabled checks
--- 93 = authenticated GRANT checks (tables)
--- 93 = service_role GRANT checks (tables)
--- 51 = audit trigger checks
--- 30 = view security_invoker checks
--- 30 = authenticated GRANT checks (views)
--- 30 = service_role GRANT checks (views)
+SELECT plan(95 + 95 + 95 + 53 + 32 + 32 + 32 + 3);
+-- 95 = RLS enabled checks
+-- 95 = authenticated GRANT checks (tables)
+-- 95 = service_role GRANT checks (tables)
+-- 53 = audit trigger checks
+-- 32 = view security_invoker checks
+-- 32 = authenticated GRANT checks (views)
+-- 32 = service_role GRANT checks (views)
 --  3 = summary/sentinel checks
 
--- RLS enabled on all 92 tables
+-- RLS enabled on all 99 tables
+SELECT is(
+  (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'ai_chat_conversations'),
+  true,
+  'RLS enabled: ai_chat_conversations'
+);
+
+SELECT is(
+  (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'ai_chat_messages'),
+  true,
+  'RLS enabled: ai_chat_messages'
+);
+
 SELECT is(
   (SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename = 'alert_preferences'),
   true,
@@ -608,6 +620,22 @@ SELECT is(
 -- ============================================================
 -- Every public table must grant at least SELECT to authenticated.
 -- This is checked via information_schema.table_privileges.
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='ai_chat_conversations'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: ai_chat_conversations'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='ai_chat_messages'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: ai_chat_messages'
+);
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.table_privileges
@@ -1361,6 +1389,22 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='ai_chat_conversations'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: ai_chat_conversations'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
+   WHERE table_schema='public' AND table_name='ai_chat_messages'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: ai_chat_messages'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.table_privileges
    WHERE table_schema='public' AND table_name='alert_preferences'
    AND grantee='service_role' AND privilege_type='SELECT'),
   0,
@@ -2105,11 +2149,27 @@ SELECT isnt(
 
 
 -- ============================================================
--- SECTION 4: AUDIT TRIGGER CHECKS (50 tables)
+-- SECTION 4: AUDIT TRIGGER CHECKS (57 tables)
 -- ============================================================
--- These 50 tables must have an audit trigger. The trigger name
+-- These 57 tables must have an audit trigger. The trigger name
 -- follows the pattern: audit_{tablename} or {tablename}_audit_trigger
 -- We check for ANY trigger containing 'audit' on the table.
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='ai_chat_conversations'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: ai_chat_conversations'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.triggers
+   WHERE event_object_schema='public' AND event_object_table='ai_chat_messages'
+   AND trigger_name LIKE '%audit%'),
+  0,
+  'Audit trigger: ai_chat_messages'
+);
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.triggers
@@ -2521,7 +2581,7 @@ SELECT isnt(
 
 
 -- ============================================================
--- SECTION 5: VIEW SECURITY — security_invoker=true (29 views)
+-- SECTION 5: VIEW SECURITY — security_invoker=true (38 views)
 -- ============================================================
 -- All views must use security_invoker=true to enforce RLS through
 -- the calling user's permissions, not the view definer's.
@@ -2594,6 +2654,16 @@ SELECT is(
    AND c.reloptions @> ARRAY['security_invoker=true']),
   1,
   'security_invoker=true: vw_deployment_profile_costs'
+);
+
+SELECT is(
+  (SELECT count(*)::int FROM pg_views v
+   JOIN pg_class c ON c.relname = v.viewname AND c.relnamespace = 'public'::regnamespace
+   WHERE v.schemaname = 'public'
+   AND v.viewname = 'vw_explorer_detail'
+   AND c.reloptions @> ARRAY['security_invoker=true']),
+  1,
+  'security_invoker=true: vw_explorer_detail'
 );
 
 SELECT is(
@@ -2730,6 +2800,16 @@ SELECT is(
   (SELECT count(*)::int FROM pg_views v
    JOIN pg_class c ON c.relname = v.viewname AND c.relnamespace = 'public'::regnamespace
    WHERE v.schemaname = 'public'
+   AND v.viewname = 'vw_run_rate_by_lifecycle_status'
+   AND c.reloptions @> ARRAY['security_invoker=true']),
+  1,
+  'security_invoker=true: vw_run_rate_by_lifecycle_status'
+);
+
+SELECT is(
+  (SELECT count(*)::int FROM pg_views v
+   JOIN pg_class c ON c.relname = v.viewname AND c.relnamespace = 'public'::regnamespace
+   WHERE v.schemaname = 'public'
    AND v.viewname = 'vw_run_rate_by_vendor'
    AND c.reloptions @> ARRAY['security_invoker=true']),
   1,
@@ -2828,7 +2908,7 @@ SELECT is(
 
 
 -- ============================================================
--- SECTION 5b: VIEW GRANT CHECKS — authenticated role (29 views)
+-- SECTION 5b: VIEW GRANT CHECKS — authenticated role (38 views)
 -- ============================================================
 -- Views with security_invoker=true still need explicit GRANT SELECT
 -- for the caller to access the view itself.
@@ -2887,6 +2967,14 @@ SELECT isnt(
    AND grantee='authenticated' AND privilege_type='SELECT'),
   0,
   'GRANT SELECT to authenticated: vw_deployment_profile_costs'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema='public' AND table_name='vw_explorer_detail'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: vw_explorer_detail'
 );
 
 SELECT isnt(
@@ -2995,6 +3083,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema='public' AND table_name='vw_run_rate_by_lifecycle_status'
+   AND grantee='authenticated' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to authenticated: vw_run_rate_by_lifecycle_status'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
    WHERE table_schema='public' AND table_name='vw_run_rate_by_vendor'
    AND grantee='authenticated' AND privilege_type='SELECT'),
   0,
@@ -3075,7 +3171,7 @@ SELECT isnt(
 
 
 -- ============================================================
--- SECTION 5c: VIEW GRANT CHECKS — service_role (29 views)
+-- SECTION 5c: VIEW GRANT CHECKS — service_role (38 views)
 -- ============================================================
 
 SELECT isnt(
@@ -3132,6 +3228,14 @@ SELECT isnt(
    AND grantee='service_role' AND privilege_type='SELECT'),
   0,
   'GRANT SELECT to service_role: vw_deployment_profile_costs'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema='public' AND table_name='vw_explorer_detail'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: vw_explorer_detail'
 );
 
 SELECT isnt(
@@ -3240,6 +3344,14 @@ SELECT isnt(
 
 SELECT isnt(
   (SELECT count(*)::int FROM information_schema.role_table_grants
+   WHERE table_schema='public' AND table_name='vw_run_rate_by_lifecycle_status'
+   AND grantee='service_role' AND privilege_type='SELECT'),
+  0,
+  'GRANT SELECT to service_role: vw_run_rate_by_lifecycle_status'
+);
+
+SELECT isnt(
+  (SELECT count(*)::int FROM information_schema.role_table_grants
    WHERE table_schema='public' AND table_name='vw_run_rate_by_vendor'
    AND grantee='service_role' AND privilege_type='SELECT'),
   0,
@@ -3326,27 +3438,27 @@ SELECT isnt(
 -- updating the test suite. If these fail, a new table or view
 -- was added and needs security coverage.
 
--- Expected: 97 public tables
+-- Expected: 99 public tables
 SELECT is(
   (SELECT count(*)::int FROM pg_tables WHERE schemaname = 'public'),
-  97,
-  'SENTINEL: Expected 97 public tables (update test suite if this changes)'
+  99,
+  'SENTINEL: Expected 99 public tables (update test suite if this changes)'
 );
 
--- Expected: 36 public views (excluding pgTAP internal views)
+-- Expected: 38 public views (excluding pgTAP internal views)
 SELECT is(
   (SELECT count(*)::int FROM pg_views WHERE schemaname = 'public'
    AND viewname NOT IN ('pg_all_foreign_keys', 'tap_funky')),
-  36,
-  'SENTINEL: Expected 36 public views (update test suite if this changes)'
+  38,
+  'SENTINEL: Expected 38 public views (update test suite if this changes)'
 );
 
--- Expected: 55 audit triggers (count distinct tables with audit triggers)
+-- Expected: 57 audit triggers (count distinct tables with audit triggers)
 SELECT is(
   (SELECT count(DISTINCT event_object_table)::int FROM information_schema.triggers
    WHERE event_object_schema = 'public' AND trigger_name LIKE '%audit%'),
-  55,
-  'SENTINEL: Expected 55 tables with audit triggers (update test suite if this changes)'
+  57,
+  'SENTINEL: Expected 57 tables with audit triggers (update test suite if this changes)'
 );
 
 

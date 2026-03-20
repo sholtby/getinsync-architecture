@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-19 (v1.78)
+Last updated: 2026-03-20 (v1.79)
 
 ---
 
@@ -154,7 +154,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.6 | 🟢 | pgTAP security regression — 423 assertions: RLS, GRANTs (97 tables + 36 views), audit triggers (55), view security, sentinel checks |
+| testing/pgtap-rls-coverage.sql | v1.7 | 🟢 | pgTAP security regression — 437 assertions: RLS, GRANTs (99 tables + 38 views), audit triggers (57), view security, sentinel checks |
 | testing/security-posture-validation.sql | v1.3 | 🟢 | Standalone security validation — PASS/FAIL output for all 92 tables + 29 views (incl. view GRANTs) |
 
 ### Integration & Alignment
@@ -228,6 +228,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/ai-chat/mvp.md | MVP | 🟢 | Natural language APM queries — Supabase-native |
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
 | features/ai-chat/v3-multicloud.md | v3 | 🟡 | Multi-cloud AI chat (designed, mixed refs) |
+| features/ai-chat/semantic-layer.yaml | v1.0 | 🟡 | **Semantic layer config — maps 6 business domains to 38 views/RPCs for AI Chat MCP tools and Explorer tab. Cost, portfolio, tech health, roadmap, integrations (stub), data quality.** |
 
 ### Cloud Discovery (Future — Phase 27)
 
@@ -312,7 +313,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.55** | 🟢 | **Architecture manifest — v1.55: Secure coding standards (OWASP + SOC 2)** |
+| **THIS FILE: MANIFEST.md** | **v1.79** | 🟢 | **Architecture manifest — v1.79: Stage 1 shared data layer (semantic layer, 2 new tables, 2 new views, Integration-DP Phase 1+2)** |
 
 ---
 
@@ -335,17 +336,17 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-03-13)
+## Schema Statistics (as of 2026-03-20)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 97 |
-| **Views** | 36 |
+| **Tables** | 99 |
+| **Views** | 38 |
 | **Functions (RPCs)** | 60 |
-| **RLS Policies** | 372 |
-| **Audit Triggers** | 55 |
-| **Explicit GRANTs** | 97 tables × 2 roles (authenticated + service_role) |
-| **Schema backup** | schema/nextgen-schema-current.sql (PENDING) |
+| **RLS Policies** | 380 |
+| **Audit Triggers** | 57 |
+| **Explicit GRANTs** | 99 tables × 2 roles (authenticated + service_role) |
+| **Schema backup** | schema/nextgen-schema-current.sql (2026-03-20 PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
 | **Production Namespaces** | 17 (all region = 'ca') |
@@ -370,6 +371,10 @@ The following documents were removed during the architecture audit. They describ
 | *(new table)* | application_relationships (constitutes, depends_on, replaces) | Composite Application v2.0 |
 
 **Deployed since v1.24 (removed from pending):**
+- ✅ vw_run_rate_by_lifecycle_status, vw_explorer_detail — deployed Mar 20 (Stage 1)
+- ✅ ai_chat_conversations, ai_chat_messages — deployed Mar 20 (Stage 1)
+- ✅ application_integrations: +source_deployment_profile_id, +target_deployment_profile_id — deployed Mar 20 (Integration-DP ADR Phase 1)
+- ✅ vw_integration_detail rebuilt with DP columns — deployed Mar 20 (Integration-DP ADR Phase 2)
 - ✅ applications: management_classification, csdm_stage, branch — deployed Feb 18
 - ✅ deployment_profiles: server_name — deployed Feb 18
 - ✅ technology_products: lifecycle_reference_id — deployed Feb 18
@@ -503,7 +508,26 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Recent Changes (v1.77 → v1.78)
+## Recent Changes (v1.78 → v1.79)
+
+### Stage 1: Shared Data Layer (Mar 20, 2026)
+
+**New documents (1):**
+- `features/ai-chat/semantic-layer.yaml` — v1.0 🟡. Semantic layer config mapping 6 business domains to 38 views/RPCs for AI Chat MCP tools and Explorer tab.
+
+**Updated documents (1):**
+- `testing/pgtap-rls-coverage.sql` — v1.6 → v1.7. Sentinel counts updated (99 tables, 38 views, 57 audit triggers). Added 14 test assertions for ai_chat_conversations, ai_chat_messages (RLS, GRANTs, audit triggers) and vw_run_rate_by_lifecycle_status, vw_explorer_detail (security_invoker, GRANTs).
+
+**Schema deployed (Stuart, SQL Editor):**
+- 2 new views: `vw_run_rate_by_lifecycle_status`, `vw_explorer_detail`
+- 2 new tables: `ai_chat_conversations`, `ai_chat_messages` (8 RLS policies, 2 audit triggers)
+- Integration-DP Phase 1+2: `source_deployment_profile_id`, `target_deployment_profile_id` FKs on `application_integrations`; `vw_integration_detail` rebuilt with 4 DP columns
+
+**Document count:** 101 → 102 (🟡 AS-DESIGNED +1).
+
+---
+
+## Previous Changes (v1.77 → v1.78)
 
 ### Visual Tab React Flow ADR + Status Fix (Mar 19, 2026)
 
@@ -810,6 +834,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.79 | 2026-03-20 | **Stage 1: Shared Data Layer.** NEW: semantic-layer.yaml v1.0 🟡. pgTAP v1.7 (14 new assertions, sentinels: 99 tables, 38 views, 57 triggers). Schema: 97→99 tables, 36→38 views, 55→57 triggers, 372→380 RLS. New: vw_run_rate_by_lifecycle_status, vw_explorer_detail, ai_chat_conversations, ai_chat_messages. Integration-DP Phase 1+2: source/target DP FKs on application_integrations, vw_integration_detail rebuilt. Document count 101→102, AS-DESIGNED +1. |
 | v1.78 | 2026-03-19 | NEW: `adr/adr-visual-tab-reactflow.md` v1.0 ⏸ — Visual Tab React Flow Rewrite (PARKED). D3 replacement rationale, branch contents, resume conditions. `core/visual-diagram.md` status ✅→⏸ PARKED. Document count 100→101, ☪ REFERENCE 17→18. |
 | v1.77 | 2026-03-19 | NEW: `adr/` directory with "Architecture Decision Records" manifest section. NEW: `adr/adr-dp-infrastructure-boundary.md` v1.1 ☪ — GetInSync vs ServiceNow infrastructure boundary, Garland import mapping rules generalized to all customers. MOVED: `adr/adr-integration-dp-alignment.md` from `features/integrations/`. Document count 99→100, ☪ REFERENCE 16→17. |
 | v1.76 | 2026-03-19 | Visual tab React Flow overhaul. `core/visual-diagram.md` v1.0→v2.0: complete rewrite from D3 spec to implemented React Flow + dagre architecture. |
