@@ -131,6 +131,50 @@ See [Creating and Managing Initiatives](roadmap-initiatives.md) for how to turn 
 
 ---
 
+## Explorer Tab
+
+The **Explorer** tab is a top-level view in the main navigation bar that combines portfolio and technology data into a single cross-cutting dashboard. It answers the question: **"What does my entire application landscape look like at a glance?"**
+
+### KPI Bar
+
+Eight summary cards across the top show key metrics for your filtered view:
+
+- **Applications** — Total number of operational applications
+- **Crown Jewels** — Applications with criticality score of 50 or higher
+- **Avg Tech Health** — Average technical health score across applications
+- **Avg Business Fit** — Average business fit score across applications
+- **End of Support** — Applications running on end-of-support technology
+- **Est. Tech Debt** — Total estimated technical debt
+- **Annual Run Rate** — Total annual software and service costs
+- **Tech Tags** — Total technology tags across all applications
+
+### Visualization Panels
+
+Below the KPI bar, two side-by-side panels give you a visual breakdown:
+
+- **Portfolio Distribution** — A donut chart showing how your applications are distributed across lifecycle statuses (Mainstream, Extended, End of Support, etc.)
+- **Run Rate by Support Status** — A horizontal bar chart showing how your annual costs are distributed across lifecycle statuses, helping you see how much you spend on end-of-support technology
+
+### Detail Table
+
+A full-width table lists every application with columns for name, workspace, crown jewel status, TIME quadrant, PAID action, tech health score, criticality, worst lifecycle status, estimated tech debt, owner, and support contact.
+
+You can **search** by application name, **sort** by any column, and **export to CSV**. The table includes pagination with configurable page sizes.
+
+### Filtering
+
+Click the **Filters** button in the toolbar to open the filter panel. You can filter by:
+
+- **Workspace** — Narrow to a specific workspace or view all
+- **Lifecycle Status** — Select one or more lifecycle statuses
+- **Crown Jewel** — Show all, crown jewels only, or non-crown-jewels only
+- **TIME Quadrant** — Filter by Invest, Tolerate, Modernize, Eliminate, or Unassessed
+- **PAID Action** — Filter by Address, Plan, Delay, Ignore, or Unassessed
+
+Filters apply to all three zones — KPI cards, visualization panels, and the detail table update together.
+
+---
+
 ## Next Steps
 
 - [What Are Deployment Profiles?](deployment-profiles.md) — Understand where technologies are deployed

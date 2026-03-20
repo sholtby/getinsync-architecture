@@ -4,6 +4,10 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## March 20, 2026
+
+- **Explorer Tab** — New top-level navigation tab that combines portfolio and technology data into a single cross-cutting dashboard. See your entire application landscape at a glance with 8 KPI cards, portfolio distribution donut chart, run-rate-by-lifecycle bar chart, and a searchable/sortable detail table. Filter by workspace, lifecycle status, crown jewel, TIME quadrant, and PAID action. Export to CSV.
+
 ## March 19, 2026
 
 - **Server Name on Visual Tab** — Deployment profile nodes in the Visual diagram now display the server name (when set), making it easier to identify specific servers at a glance without opening the profile.
