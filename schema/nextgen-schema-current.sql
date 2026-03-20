@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict eb3qoF9BSXsxH0vY6zSU0ody0bhwUVIutuGAhR6Xyu43wIFoCaJglThjIH3mNIE
+\restrict hfT6NwqctQAMdpMmsVKZbrMZNeg7568BAeegV22cLScgKL9k23msvO5VRYGingk
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -6285,6 +6285,43 @@ COMMENT ON COLUMN auth.users.is_sso_user IS 'Auth: Set this column to true when 
 
 
 --
+-- Name: webauthn_challenges; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.webauthn_challenges (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    challenge_type text NOT NULL,
+    session_data jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    CONSTRAINT webauthn_challenges_challenge_type_check CHECK ((challenge_type = ANY (ARRAY['signup'::text, 'registration'::text, 'authentication'::text])))
+);
+
+
+--
+-- Name: webauthn_credentials; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.webauthn_credentials (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    credential_id bytea NOT NULL,
+    public_key bytea NOT NULL,
+    attestation_type text DEFAULT ''::text NOT NULL,
+    aaguid uuid,
+    sign_count bigint DEFAULT 0 NOT NULL,
+    transports jsonb DEFAULT '[]'::jsonb NOT NULL,
+    backup_eligible boolean DEFAULT false NOT NULL,
+    backed_up boolean DEFAULT false NOT NULL,
+    friendly_name text DEFAULT ''::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_used_at timestamp with time zone
+);
+
+
+--
 -- Name: alert_preferences; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6577,6 +6614,8 @@ CREATE TABLE public.applications (
     management_classification text DEFAULT 'apm'::text,
     csdm_stage text,
     branch text,
+    primary_use_case text,
+    visual_layout jsonb,
     CONSTRAINT applications_lifecycle_status_check CHECK ((lifecycle_status = ANY (ARRAY['Mainstream'::text, 'Extended'::text, 'End of Support'::text]))),
     CONSTRAINT applications_remediation_effort_check CHECK (((remediation_effort)::text = ANY ((ARRAY['XS'::character varying, 'S'::character varying, 'M'::character varying, 'L'::character varying, 'XL'::character varying, '2XL'::character varying])::text[]))),
     CONSTRAINT chk_app_csdm_stage CHECK (((csdm_stage IS NULL) OR (csdm_stage = ANY (ARRAY['stage_0'::text, 'stage_1'::text, 'stage_2'::text, 'stage_3'::text, 'stage_4'::text])))),
@@ -6646,6 +6685,13 @@ COMMENT ON COLUMN public.applications.csdm_stage IS 'ServiceNow CSDM maturity st
 --
 
 COMMENT ON COLUMN public.applications.branch IS 'Organizational branch or division. Free text for grouping in reports.';
+
+
+--
+-- Name: COLUMN applications.visual_layout; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.applications.visual_layout IS 'Saved React Flow layout: { nodes: [{id, position: {x,y}}], viewport: {x,y,zoom} }. Null = use dagre auto-layout.';
 
 
 --
@@ -8024,6 +8070,22 @@ CREATE TABLE public.portfolio_assignments (
     CONSTRAINT portfolio_assignments_b9_future_needs_check CHECK (((b9 >= 1) AND (b9 <= 5))),
     CONSTRAINT portfolio_assignments_relationship_type_check CHECK ((relationship_type = ANY (ARRAY['publisher'::text, 'consumer'::text]))),
     CONSTRAINT portfolio_assignments_remediation_effort_check CHECK ((remediation_effort = ANY (ARRAY['XS'::text, 'S'::text, 'M'::text, 'L'::text, 'XL'::text, '2XL'::text])))
+);
+
+
+--
+-- Name: portfolio_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portfolio_contacts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    portfolio_id uuid NOT NULL,
+    contact_id uuid NOT NULL,
+    role_type text NOT NULL,
+    is_primary boolean DEFAULT false NOT NULL,
+    notes text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT portfolio_contacts_role_check CHECK ((role_type = ANY (ARRAY['leader'::text, 'business_owner'::text, 'technical_owner'::text, 'steward'::text, 'budget_owner'::text, 'sponsor'::text, 'other'::text])))
 );
 
 
@@ -10385,6 +10447,22 @@ CREATE TABLE public.workflow_instances (
 
 
 --
+-- Name: workspace_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.workspace_contacts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    contact_id uuid NOT NULL,
+    role_type text NOT NULL,
+    is_primary boolean DEFAULT false NOT NULL,
+    notes text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT workspace_contacts_role_check CHECK ((role_type = ANY (ARRAY['leader'::text, 'business_owner'::text, 'technical_owner'::text, 'steward'::text, 'budget_owner'::text, 'sponsor'::text, 'other'::text])))
+);
+
+
+--
 -- Name: workspace_group_members; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -10473,10 +10551,10 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
--- Name: messages_2026_03_10; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_17; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_10 (
+CREATE TABLE realtime.messages_2026_03_17 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10489,10 +10567,10 @@ CREATE TABLE realtime.messages_2026_03_10 (
 
 
 --
--- Name: messages_2026_03_11; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_18; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_11 (
+CREATE TABLE realtime.messages_2026_03_18 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10505,10 +10583,10 @@ CREATE TABLE realtime.messages_2026_03_11 (
 
 
 --
--- Name: messages_2026_03_12; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_19; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_12 (
+CREATE TABLE realtime.messages_2026_03_19 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10521,10 +10599,10 @@ CREATE TABLE realtime.messages_2026_03_12 (
 
 
 --
--- Name: messages_2026_03_13; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_20; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_13 (
+CREATE TABLE realtime.messages_2026_03_20 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10537,10 +10615,10 @@ CREATE TABLE realtime.messages_2026_03_13 (
 
 
 --
--- Name: messages_2026_03_14; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_21; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_14 (
+CREATE TABLE realtime.messages_2026_03_21 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10553,10 +10631,10 @@ CREATE TABLE realtime.messages_2026_03_14 (
 
 
 --
--- Name: messages_2026_03_15; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_22; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_15 (
+CREATE TABLE realtime.messages_2026_03_22 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10569,10 +10647,10 @@ CREATE TABLE realtime.messages_2026_03_15 (
 
 
 --
--- Name: messages_2026_03_16; Type: TABLE; Schema: realtime; Owner: -
+-- Name: messages_2026_03_23; Type: TABLE; Schema: realtime; Owner: -
 --
 
-CREATE TABLE realtime.messages_2026_03_16 (
+CREATE TABLE realtime.messages_2026_03_23 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -10781,52 +10859,52 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
--- Name: messages_2026_03_10; Type: TABLE ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_17; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_10 FOR VALUES FROM ('2026-03-10 00:00:00') TO ('2026-03-11 00:00:00');
-
-
---
--- Name: messages_2026_03_11; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_11 FOR VALUES FROM ('2026-03-11 00:00:00') TO ('2026-03-12 00:00:00');
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_17 FOR VALUES FROM ('2026-03-17 00:00:00') TO ('2026-03-18 00:00:00');
 
 
 --
--- Name: messages_2026_03_12; Type: TABLE ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_18; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_12 FOR VALUES FROM ('2026-03-12 00:00:00') TO ('2026-03-13 00:00:00');
-
-
---
--- Name: messages_2026_03_13; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_13 FOR VALUES FROM ('2026-03-13 00:00:00') TO ('2026-03-14 00:00:00');
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_18 FOR VALUES FROM ('2026-03-18 00:00:00') TO ('2026-03-19 00:00:00');
 
 
 --
--- Name: messages_2026_03_14; Type: TABLE ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_19; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_14 FOR VALUES FROM ('2026-03-14 00:00:00') TO ('2026-03-15 00:00:00');
-
-
---
--- Name: messages_2026_03_15; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_15 FOR VALUES FROM ('2026-03-15 00:00:00') TO ('2026-03-16 00:00:00');
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_19 FOR VALUES FROM ('2026-03-19 00:00:00') TO ('2026-03-20 00:00:00');
 
 
 --
--- Name: messages_2026_03_16; Type: TABLE ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_20; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_16 FOR VALUES FROM ('2026-03-16 00:00:00') TO ('2026-03-17 00:00:00');
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_20 FOR VALUES FROM ('2026-03-20 00:00:00') TO ('2026-03-21 00:00:00');
+
+
+--
+-- Name: messages_2026_03_21; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_21 FOR VALUES FROM ('2026-03-21 00:00:00') TO ('2026-03-22 00:00:00');
+
+
+--
+-- Name: messages_2026_03_22; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_22 FOR VALUES FROM ('2026-03-22 00:00:00') TO ('2026-03-23 00:00:00');
+
+
+--
+-- Name: messages_2026_03_23; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_03_23 FOR VALUES FROM ('2026-03-23 00:00:00') TO ('2026-03-24 00:00:00');
 
 
 --
@@ -11082,6 +11160,22 @@ ALTER TABLE ONLY auth.users
 
 ALTER TABLE ONLY auth.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webauthn_challenges webauthn_challenges_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.webauthn_challenges
+    ADD CONSTRAINT webauthn_challenges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: webauthn_credentials webauthn_credentials_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.webauthn_credentials
+    ADD CONSTRAINT webauthn_credentials_pkey PRIMARY KEY (id);
 
 
 --
@@ -11981,6 +12075,22 @@ ALTER TABLE ONLY public.portfolio_assignments
 
 
 --
+-- Name: portfolio_contacts portfolio_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portfolio_contacts
+    ADD CONSTRAINT portfolio_contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portfolio_contacts portfolio_contacts_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portfolio_contacts
+    ADD CONSTRAINT portfolio_contacts_unique UNIQUE (portfolio_id, contact_id, role_type);
+
+
+--
 -- Name: portfolio_settings portfolio_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12269,6 +12379,22 @@ ALTER TABLE ONLY public.workspace_budgets
 
 
 --
+-- Name: workspace_contacts workspace_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspace_contacts
+    ADD CONSTRAINT workspace_contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workspace_contacts workspace_contacts_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspace_contacts
+    ADD CONSTRAINT workspace_contacts_unique UNIQUE (workspace_id, contact_id, role_type);
+
+
+--
 -- Name: workspace_group_members workspace_group_members_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12365,59 +12491,59 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
--- Name: messages_2026_03_10 messages_2026_03_10_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+-- Name: messages_2026_03_17 messages_2026_03_17_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages_2026_03_10
-    ADD CONSTRAINT messages_2026_03_10_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_03_11 messages_2026_03_11_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_03_11
-    ADD CONSTRAINT messages_2026_03_11_pkey PRIMARY KEY (id, inserted_at);
+ALTER TABLE ONLY realtime.messages_2026_03_17
+    ADD CONSTRAINT messages_2026_03_17_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
--- Name: messages_2026_03_12 messages_2026_03_12_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+-- Name: messages_2026_03_18 messages_2026_03_18_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages_2026_03_12
-    ADD CONSTRAINT messages_2026_03_12_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_03_13 messages_2026_03_13_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_03_13
-    ADD CONSTRAINT messages_2026_03_13_pkey PRIMARY KEY (id, inserted_at);
+ALTER TABLE ONLY realtime.messages_2026_03_18
+    ADD CONSTRAINT messages_2026_03_18_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
--- Name: messages_2026_03_14 messages_2026_03_14_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+-- Name: messages_2026_03_19 messages_2026_03_19_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages_2026_03_14
-    ADD CONSTRAINT messages_2026_03_14_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_03_15 messages_2026_03_15_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_03_15
-    ADD CONSTRAINT messages_2026_03_15_pkey PRIMARY KEY (id, inserted_at);
+ALTER TABLE ONLY realtime.messages_2026_03_19
+    ADD CONSTRAINT messages_2026_03_19_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
--- Name: messages_2026_03_16 messages_2026_03_16_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+-- Name: messages_2026_03_20 messages_2026_03_20_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
-ALTER TABLE ONLY realtime.messages_2026_03_16
-    ADD CONSTRAINT messages_2026_03_16_pkey PRIMARY KEY (id, inserted_at);
+ALTER TABLE ONLY realtime.messages_2026_03_20
+    ADD CONSTRAINT messages_2026_03_20_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_21 messages_2026_03_21_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_21
+    ADD CONSTRAINT messages_2026_03_21_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_22 messages_2026_03_22_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_22
+    ADD CONSTRAINT messages_2026_03_22_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_03_23 messages_2026_03_23_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_03_23
+    ADD CONSTRAINT messages_2026_03_23_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
@@ -12878,6 +13004,34 @@ CREATE INDEX users_instance_id_idx ON auth.users USING btree (instance_id);
 --
 
 CREATE INDEX users_is_anonymous_idx ON auth.users USING btree (is_anonymous);
+
+
+--
+-- Name: webauthn_challenges_expires_at_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX webauthn_challenges_expires_at_idx ON auth.webauthn_challenges USING btree (expires_at);
+
+
+--
+-- Name: webauthn_challenges_user_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX webauthn_challenges_user_id_idx ON auth.webauthn_challenges USING btree (user_id);
+
+
+--
+-- Name: webauthn_credentials_credential_id_key; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE UNIQUE INDEX webauthn_credentials_credential_id_key ON auth.webauthn_credentials USING btree (credential_id);
+
+
+--
+-- Name: webauthn_credentials_user_id_idx; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX webauthn_credentials_user_id_idx ON auth.webauthn_credentials USING btree (user_id);
 
 
 --
@@ -13679,6 +13833,27 @@ CREATE INDEX idx_organizations_shared ON public.organizations USING btree (is_sh
 
 
 --
+-- Name: idx_pf_contacts_contact; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pf_contacts_contact ON public.portfolio_contacts USING btree (contact_id);
+
+
+--
+-- Name: idx_pf_contacts_portfolio; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pf_contacts_portfolio ON public.portfolio_contacts USING btree (portfolio_id);
+
+
+--
+-- Name: idx_pf_contacts_role; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_pf_contacts_role ON public.portfolio_contacts USING btree (role_type);
+
+
+--
 -- Name: idx_portfolio_assignments_application; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -13952,6 +14127,27 @@ CREATE INDEX idx_workspaces_namespace ON public.workspaces USING btree (namespac
 
 
 --
+-- Name: idx_ws_contacts_contact; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ws_contacts_contact ON public.workspace_contacts USING btree (contact_id);
+
+
+--
+-- Name: idx_ws_contacts_role; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ws_contacts_role ON public.workspace_contacts USING btree (role_type);
+
+
+--
+-- Name: idx_ws_contacts_workspace; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ws_contacts_workspace ON public.workspace_contacts USING btree (workspace_id);
+
+
+--
 -- Name: portfolio_assignments_single_publisher; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -13980,52 +14176,52 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
--- Name: messages_2026_03_10_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+-- Name: messages_2026_03_17_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
-CREATE INDEX messages_2026_03_10_inserted_at_topic_idx ON realtime.messages_2026_03_10 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_03_11_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_03_11_inserted_at_topic_idx ON realtime.messages_2026_03_11 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+CREATE INDEX messages_2026_03_17_inserted_at_topic_idx ON realtime.messages_2026_03_17 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
--- Name: messages_2026_03_12_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+-- Name: messages_2026_03_18_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
-CREATE INDEX messages_2026_03_12_inserted_at_topic_idx ON realtime.messages_2026_03_12 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_03_13_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_03_13_inserted_at_topic_idx ON realtime.messages_2026_03_13 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+CREATE INDEX messages_2026_03_18_inserted_at_topic_idx ON realtime.messages_2026_03_18 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
--- Name: messages_2026_03_14_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+-- Name: messages_2026_03_19_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
-CREATE INDEX messages_2026_03_14_inserted_at_topic_idx ON realtime.messages_2026_03_14 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_03_15_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_03_15_inserted_at_topic_idx ON realtime.messages_2026_03_15 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+CREATE INDEX messages_2026_03_19_inserted_at_topic_idx ON realtime.messages_2026_03_19 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
--- Name: messages_2026_03_16_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+-- Name: messages_2026_03_20_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
-CREATE INDEX messages_2026_03_16_inserted_at_topic_idx ON realtime.messages_2026_03_16 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+CREATE INDEX messages_2026_03_20_inserted_at_topic_idx ON realtime.messages_2026_03_20 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_21_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_21_inserted_at_topic_idx ON realtime.messages_2026_03_21 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_22_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_22_inserted_at_topic_idx ON realtime.messages_2026_03_22 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_03_23_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_03_23_inserted_at_topic_idx ON realtime.messages_2026_03_23 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
@@ -14092,101 +14288,101 @@ CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes 
 
 
 --
--- Name: messages_2026_03_10_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_17_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_10_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_03_10_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_10_pkey;
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_17_inserted_at_topic_idx;
 
 
 --
--- Name: messages_2026_03_11_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_17_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_11_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_03_11_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_11_pkey;
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_17_pkey;
 
 
 --
--- Name: messages_2026_03_12_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_18_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_12_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_03_12_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_12_pkey;
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_18_inserted_at_topic_idx;
 
 
 --
--- Name: messages_2026_03_13_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_18_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_13_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_03_13_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_13_pkey;
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_18_pkey;
 
 
 --
--- Name: messages_2026_03_14_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_19_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_14_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_03_14_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_14_pkey;
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_19_inserted_at_topic_idx;
 
 
 --
--- Name: messages_2026_03_15_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_19_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_15_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_03_15_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_15_pkey;
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_19_pkey;
 
 
 --
--- Name: messages_2026_03_16_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_20_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_16_inserted_at_topic_idx;
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_20_inserted_at_topic_idx;
 
 
 --
--- Name: messages_2026_03_16_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+-- Name: messages_2026_03_20_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_16_pkey;
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_20_pkey;
+
+
+--
+-- Name: messages_2026_03_21_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_21_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_21_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_21_pkey;
+
+
+--
+-- Name: messages_2026_03_22_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_22_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_22_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_22_pkey;
+
+
+--
+-- Name: messages_2026_03_23_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_03_23_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_03_23_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_03_23_pkey;
 
 
 --
@@ -14477,6 +14673,13 @@ CREATE TRIGGER audit_portfolio_assignments AFTER INSERT OR DELETE OR UPDATE ON p
 
 
 --
+-- Name: portfolio_contacts audit_portfolio_contacts; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_portfolio_contacts AFTER INSERT OR DELETE OR UPDATE ON public.portfolio_contacts FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
 -- Name: portfolios audit_portfolios; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -14565,6 +14768,13 @@ CREATE TRIGGER audit_vendor_lifecycle_sources AFTER INSERT OR DELETE OR UPDATE O
 --
 
 CREATE TRIGGER audit_workspace_budgets AFTER INSERT OR DELETE OR UPDATE ON public.workspace_budgets FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: workspace_contacts audit_workspace_contacts; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_workspace_contacts AFTER INSERT OR DELETE OR UPDATE ON public.workspace_contacts FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -15218,6 +15428,22 @@ ALTER TABLE ONLY auth.sessions
 
 ALTER TABLE ONLY auth.sso_domains
     ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webauthn_challenges webauthn_challenges_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.webauthn_challenges
+    ADD CONSTRAINT webauthn_challenges_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: webauthn_credentials webauthn_credentials_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.webauthn_credentials
+    ADD CONSTRAINT webauthn_credentials_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 
 --
@@ -16157,6 +16383,22 @@ ALTER TABLE ONLY public.portfolio_assignments
 
 
 --
+-- Name: portfolio_contacts portfolio_contacts_contact_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portfolio_contacts
+    ADD CONSTRAINT portfolio_contacts_contact_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: portfolio_contacts portfolio_contacts_portfolio_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portfolio_contacts
+    ADD CONSTRAINT portfolio_contacts_portfolio_fkey FOREIGN KEY (portfolio_id) REFERENCES public.portfolios(id) ON DELETE CASCADE;
+
+
+--
 -- Name: portfolios portfolios_parent_portfolio_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -16458,6 +16700,22 @@ ALTER TABLE ONLY public.workflow_instances
 
 ALTER TABLE ONLY public.workspace_budgets
     ADD CONSTRAINT workspace_budgets_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: workspace_contacts workspace_contacts_contact_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspace_contacts
+    ADD CONSTRAINT workspace_contacts_contact_fkey FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: workspace_contacts workspace_contacts_workspace_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspace_contacts
+    ADD CONSTRAINT workspace_contacts_workspace_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
 
 
 --
@@ -18139,6 +18397,17 @@ CREATE POLICY "Editors can delete organizations in current namespace" ON public.
 
 
 --
+-- Name: portfolio_contacts Editors can delete portfolio contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can delete portfolio contacts in current namespace" ON public.portfolio_contacts FOR DELETE TO authenticated USING ((public.check_is_platform_admin() OR (portfolio_id IN ( SELECT p.id
+   FROM ((public.portfolios p
+     JOIN public.workspaces w ON ((w.id = p.workspace_id)))
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))));
+
+
+--
 -- Name: portfolio_assignments Editors can delete portfolio_assignments in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -18187,6 +18456,16 @@ CREATE POLICY "Editors can delete workflow_instances in current namespace" ON pu
   WHERE ((wd.namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(wd.namespace_id) OR (EXISTS ( SELECT 1
            FROM public.workspace_users wu
           WHERE ((wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))))));
+
+
+--
+-- Name: workspace_contacts Editors can delete workspace contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can delete workspace contacts in current namespace" ON public.workspace_contacts FOR DELETE TO authenticated USING ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+   FROM (public.workspaces w
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))));
 
 
 --
@@ -18527,6 +18806,17 @@ CREATE POLICY "Editors can insert organizations in current namespace" ON public.
 
 
 --
+-- Name: portfolio_contacts Editors can insert portfolio contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can insert portfolio contacts in current namespace" ON public.portfolio_contacts FOR INSERT TO authenticated WITH CHECK ((public.check_is_platform_admin() OR (portfolio_id IN ( SELECT p.id
+   FROM ((public.portfolios p
+     JOIN public.workspaces w ON ((w.id = p.workspace_id)))
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))));
+
+
+--
 -- Name: portfolio_assignments Editors can insert portfolio_assignments in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -18587,6 +18877,16 @@ CREATE POLICY "Editors can insert workflow_instances in current namespace" ON pu
   WHERE ((wd.namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(wd.namespace_id) OR (EXISTS ( SELECT 1
            FROM public.workspace_users wu
           WHERE ((wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))))));
+
+
+--
+-- Name: workspace_contacts Editors can insert workspace contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can insert workspace contacts in current namespace" ON public.workspace_contacts FOR INSERT TO authenticated WITH CHECK ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+   FROM (public.workspaces w
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))));
 
 
 --
@@ -19099,6 +19399,21 @@ CREATE POLICY "Editors can update organizations in current namespace" ON public.
 
 
 --
+-- Name: portfolio_contacts Editors can update portfolio contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can update portfolio contacts in current namespace" ON public.portfolio_contacts FOR UPDATE TO authenticated USING ((public.check_is_platform_admin() OR (portfolio_id IN ( SELECT p.id
+   FROM ((public.portfolios p
+     JOIN public.workspaces w ON ((w.id = p.workspace_id)))
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))) WITH CHECK ((public.check_is_platform_admin() OR (portfolio_id IN ( SELECT p.id
+   FROM ((public.portfolios p
+     JOIN public.workspaces w ON ((w.id = p.workspace_id)))
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))));
+
+
+--
 -- Name: portfolio_assignments Editors can update portfolio_assignments in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -19196,6 +19511,19 @@ CREATE POLICY "Editors can update workflow_instances in current namespace" ON pu
   WHERE ((wd.namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(wd.namespace_id) OR (EXISTS ( SELECT 1
            FROM public.workspace_users wu
           WHERE ((wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))))));
+
+
+--
+-- Name: workspace_contacts Editors can update workspace contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can update workspace contacts in current namespace" ON public.workspace_contacts FOR UPDATE TO authenticated USING ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+   FROM (public.workspaces w
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))) WITH CHECK ((public.check_is_platform_admin() OR (workspace_id IN ( SELECT w.id
+   FROM (public.workspaces w
+     JOIN public.workspace_users wu ON ((wu.workspace_id = w.id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))));
 
 
 --
@@ -20152,6 +20480,16 @@ CREATE POLICY "Users can view portfolio assignments in current namespace" ON pub
 
 
 --
+-- Name: portfolio_contacts Users can view portfolio contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view portfolio contacts in current namespace" ON public.portfolio_contacts FOR SELECT TO authenticated USING ((portfolio_id IN ( SELECT p.id
+   FROM (public.portfolios p
+     JOIN public.workspaces w ON ((w.id = p.workspace_id)))
+  WHERE (w.namespace_id = public.get_current_namespace_id()))));
+
+
+--
 -- Name: portfolios Users can view portfolios in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -20228,6 +20566,15 @@ CREATE POLICY "Users can view workflow_definitions in current namespace" ON publ
 CREATE POLICY "Users can view workflow_instances in current namespace" ON public.workflow_instances FOR SELECT USING ((workflow_definition_id IN ( SELECT workflow_definitions.id
    FROM public.workflow_definitions
   WHERE (workflow_definitions.namespace_id = public.get_current_namespace_id()))));
+
+
+--
+-- Name: workspace_contacts Users can view workspace contacts in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view workspace contacts in current namespace" ON public.workspace_contacts FOR SELECT TO authenticated USING ((workspace_id IN ( SELECT w.id
+   FROM public.workspaces w
+  WHERE (w.namespace_id = public.get_current_namespace_id()))));
 
 
 --
@@ -20775,6 +21122,12 @@ ALTER TABLE public.platform_admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.portfolio_assignments ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: portfolio_contacts; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.portfolio_contacts ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: portfolio_settings; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -20905,6 +21258,12 @@ ALTER TABLE public.workflow_instances ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.workspace_budgets ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: workspace_contacts; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.workspace_contacts ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: workspace_group_members; Type: ROW SECURITY; Schema: public; Owner: -
@@ -21107,5 +21466,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict eb3qoF9BSXsxH0vY6zSU0ody0bhwUVIutuGAhR6Xyu43wIFoCaJglThjIH3mNIE
+\unrestrict hfT6NwqctQAMdpMmsVKZbrMZNeg7568BAeegV22cLScgKL9k23msvO5VRYGingk
 
