@@ -346,7 +346,7 @@ The following documents were removed during the architecture audit. They describ
 | **RLS Policies** | 380 |
 | **Audit Triggers** | 57 |
 | **Explicit GRANTs** | 99 tables × 2 roles (authenticated + service_role) |
-| **Schema backup** | schema/nextgen-schema-current.sql (2026-03-20 PENDING) |
+| **Schema backup** | schema/nextgen-schema-current.sql (2026-03-20) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
 | **Production Namespaces** | 17 (all region = 'ca') |
