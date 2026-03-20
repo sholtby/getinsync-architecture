@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 16, 2026
+**As of:** March 19, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -11,6 +11,7 @@
 | 2 | SOC2 Policy | Information Security Policy | Required for SOC2 — umbrella policy covering all controls. ~2-3 hrs. **OVERDUE (due Feb 27).** | -- | Delta (GPD-528) |
 | 3 | SOC2 Policy | Change Management Policy | Required for SOC2 — codify existing Git/architecture workflow. ~1-2 hrs. Also enable GitHub branch protection on `main` (no force push, no deletion) as CC8.1 evidence. **OVERDUE (due Feb 27).** | -- | Delta (GPD-529) + Stuart (branch protection) |
 | 4 | SOC2 Policy | Incident Response Plan | Required for SOC2 — detect > assess > contain > notify runbook. ~2-3 hrs. **OVERDUE (due Feb 27).** | -- | Delta (GPD-530) |
+| 67 | Architecture | **Integration-to-DP alignment (CSDM gap)** | Integrations attach to applications but CSDM requires them on deployment profiles (service instances). Blocks accurate Visual tab Level 3, multi-deployment ownership, and correct blast radius analysis. **Must resolve before bulk customer data imports.** ADR: `features/integrations/adr-integration-dp-alignment.md`. ~2-3 days (schema + view + UI). | -- | Stuart |
 
 ---
 
@@ -34,7 +35,7 @@
 | 43 | RBAC | Assessment permission split — who can assess vs edit app | Currently same permission. Should be separable. Architecture decision needed. ~1-2 days. | -- | Stuart |
 | 44 | RBAC | Flag CREATE viewer exception — flags INSERT policy allows any workspace member | ADR: Flags are governance, not data edits. Viewer can create but not update/delete. Part of gamification Phase 1. | Gamification Phase 1 | Stuart |
 | 57 | UX | Scope indicator — show user's data visibility | Display "N of M workspaces" indicator in tab bar or header. Users who don't see all workspaces should know their view is filtered. ~0.5 day. | -- | Stuart + Claude Code |
-| 63 | Feature | Servers on Visual Diagram + Dashboard | Visual diagram and dashboard are missing server data. Server_name now editable on DP cards/modals (Mar 16). Remaining: surface on Visual Diagram + Overview dashboard. ~1-2 days. | -- | Stuart + Claude Code |
+| 63 | Feature | Servers on Visual Diagram + Dashboard | Server_name now shows on Visual tab DP nodes + tooltip (Mar 19, branch `feat/dp-server-name-visual`). Remaining: surface on Overview dashboard. ~0.5 day. | -- | Stuart + Claude Code |
 | 64 | Feature | Namespace Management UI completion | Phase 25.10 partially built. Remaining scope TBD. Prerequisites met (25.8, 25.9 complete). | -- | Stuart + Claude Code |
 | 65 | Feature | Budget Alerts frontend | DB layer deployed (alert_preferences table, vw_budget_alerts view). Frontend pending. ~1-2 days. | -- | Stuart + Claude Code |
 | 66 | Feature | In-App Support S.6 — Assessment tour | Shepherd.js already integrated (S.2 complete). Step-by-step assessment walkthrough. ~0.5 day. | -- | Stuart + Claude Code |

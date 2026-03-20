@@ -164,12 +164,13 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/integrations/servicenow-alignment.md | v1.2 | 🟢 | CSDM mapping, sync strategy — stack-agnostic, no AWS refs found |
 | features/integrations/architecture.md | v1.2 | ☪ | External integrations (stack-agnostic) |
 | features/integrations/itsm-api-research.md | **v1.0** | 🟡 | **ITSM API research — ServiceNow + HaloITSM publish/subscribe patterns. Phase 37 scoping.** |
+| features/integrations/adr-integration-dp-alignment.md | **v1.0** | 🟡 | **ADR: Integration-to-DP alignment. CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
 
 ### Visualization
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/visual-diagram.md | v2.0 | 🟢 | Visual tab — React Flow + dagre, three-level drill-down, layout persistence |
+| core/visual-diagram.md | v2.2 | ☪ | Visual tab — D3 two-level (app graph + DP tech stack). React Flow rewrite deferred pending integration-DP alignment (see ADR). |
 
 ### Technology Health & Risk
 
