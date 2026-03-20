@@ -1,6 +1,6 @@
 # ADR: Integration-to-Deployment-Profile Alignment
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** March 19, 2026
 **Status:** PROPOSED
 **Author:** Stuart Holtby + Claude
@@ -173,10 +173,10 @@ Connected App B ──┘
 **Accepted approach:** Phased migration (Phases 1-4 above).
 
 **Immediate actions:**
-1. Do NOT merge `feat/visual-tab-reactflow` branch — abandoned
+1. Park `feat/visual-tab-reactflow` — do not merge yet. Resume after Phase 2 is complete. The React Flow renderer is correct; the data model underneath Level 3 is what needs fixing first. The D3 version has the same data gap — Level 3 blast radius was always misleading for multi-DP apps regardless of renderer.
 2. Keep existing D3 two-level visual on `dev` (server_name added via `feat/dp-server-name-visual`)
 3. Add to open items priority matrix as HIGH priority architecture item
-4. Schedule Phase 1 (schema migration) before any significant customer data imports
+4. Schedule Phase 1 + Phase 2 as a single unit of work (schema migration + view + type updates). Estimate: 1 day. Phase 3 (UI + React Flow rebuild) follows immediately after.
 
 **Deferred:**
 - React Flow visual tab rebuild (after Phase 2 is complete)
@@ -195,12 +195,19 @@ Connected App B ──┘
 
 ---
 
-## Open Questions
+## Open Question Resolutions
 
-1. Should `target_deployment_profile_id` be required for internal integrations? Or always optional?
-2. When an integration is between two apps and both have multiple DPs, should we require both source and target DP? Or allow partial specification?
-3. Should the Add Connection modal show a "which DP?" step only when the app has multiple DPs? (Single-DP apps auto-assign silently.)
-4. How does this interact with the consumer/publisher model? If Ministry B subscribes to Ministry A's DP, should they see that DP's integrations in their portfolio view?
+1. **`target_deployment_profile_id` is always optional.** Never required for internal integrations. Data fidelity improves over time as customers refine their integration mappings.
+2. **Partial specification allowed.** Source DP optional, target DP optional, both optional. An integration can specify one side, both sides, or neither. This supports gradual enrichment without blocking initial data entry.
+3. **Show DP selector only when the app has multiple DPs.** Single-DP apps auto-assign to primary silently — no UI change needed. This keeps the Add Connection modal simple for the majority case.
+4. **Yes — consumers subscribed to a published DP should see that DP's integrations in their portfolio view.** This is the core value proposition of DP-level scoping and a meaningful differentiator for the workspace group publishing model. Ministry B subscribing to Ministry A's "ProLaws - Justice (Prod)" DP sees only the integrations relevant to that specific deployment, not all ProLaws integrations across all ministries.
+
+---
+
+## Changelog
+
+- **v1.1 — March 19, 2026** — Revised decision: React Flow branch parked not abandoned. Phase 1+2 sequencing clarified. Open questions resolved.
+- **v1.0 — March 19, 2026** — Initial ADR.
 
 ---
 
