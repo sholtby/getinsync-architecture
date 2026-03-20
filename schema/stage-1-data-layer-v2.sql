@@ -401,11 +401,11 @@ CREATE POLICY "ai_chat_messages_delete" ON public.ai_chat_messages
 -- ── Audit triggers ──
 CREATE TRIGGER audit_ai_chat_conversations
   AFTER INSERT OR UPDATE OR DELETE ON public.ai_chat_conversations
-  FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_function();
+  FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 CREATE TRIGGER audit_ai_chat_messages
   AFTER INSERT OR UPDATE OR DELETE ON public.ai_chat_messages
-  FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_function();
+  FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 -- ╔═══════════════════════════════════════════════════════════════════════════╗
