@@ -4,6 +4,10 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## March 19, 2026
+
+- **Server Name on Visual Tab** — Deployment profile nodes in the Visual diagram now display the server name (when set), making it easier to identify specific servers at a glance without opening the profile.
+
 ## March 18, 2026
 
 - **Application Category Column** — The Application Health table now shows each application's assigned categories as compact badges, making it easy to see portfolio segmentation at a glance.
