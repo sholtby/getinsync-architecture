@@ -2,7 +2,7 @@
 
 **Version:** 2.2
 **Date:** March 19, 2026
-**Status:** ✅ IMPLEMENTED
+**Status:** ⏸ PARKED — branch feat/visual-tab-reactflow parked pending integration-dp-alignment Phase 1+2
 
 ---
 

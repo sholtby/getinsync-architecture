@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-19 (v1.77)
+Last updated: 2026-03-19 (v1.78)
 
 ---
 
@@ -170,7 +170,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/visual-diagram.md | v2.2 | ☪ | Visual tab — D3 two-level (app graph + DP tech stack). React Flow rewrite deferred pending integration-DP alignment (see ADR). |
+| core/visual-diagram.md | v2.2 | ⏸ | **Visual tab — PARKED. React Flow rewrite on feat/visual-tab-reactflow, pending integration-DP alignment Phase 1+2 (see ADR).** |
 
 ### Technology Health & Risk
 
@@ -305,6 +305,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
 | adr/adr-integration-dp-alignment.md | v1.2 | ☪ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
+| adr/adr-visual-tab-reactflow.md | v1.0 | ⏸ | **ADR: Visual Tab React Flow Rewrite (PARKED). D3 replaced with React Flow + dagre. Branch feat/visual-tab-reactflow complete but parked pending integration-DP alignment Phase 1+2.** |
 
 ### Change Management
 
@@ -502,7 +503,21 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Recent Changes (v1.76 → v1.77)
+## Recent Changes (v1.77 → v1.78)
+
+### Visual Tab React Flow ADR + Status Fix (Mar 19, 2026)
+
+**New documents (1):**
+- `adr/adr-visual-tab-reactflow.md` — v1.0 ⏸. ADR: Visual Tab React Flow Rewrite (PARKED). Documents D3 replacement rationale, what was built on branch, why parked (integration data model gap), resume conditions.
+
+**Updated documents (1):**
+- `core/visual-diagram.md` — Status changed from ✅ IMPLEMENTED to ⏸ PARKED (branch parked pending integration-DP alignment Phase 1+2).
+
+**Document count:** 100 → 101 (☪ REFERENCE 17 → 18).
+
+---
+
+## Previous Changes (v1.76 → v1.77)
 
 ### Architecture Decision Records Directory (Mar 19, 2026)
 
@@ -755,9 +770,9 @@ The following documents were removed during the architecture audit. They describ
 | 🟢 AS-BUILT | 55 |
 | 🟡 AS-DESIGNED | 12 |
 | 🟠 NEEDS UPDATE | 0 |
-| ☪ REFERENCE | 17 |
+| ☪ REFERENCE | 18 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **100** |
+| **Total tracked** | **101** |
 
 ---
 
@@ -795,6 +810,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.78 | 2026-03-19 | NEW: `adr/adr-visual-tab-reactflow.md` v1.0 ⏸ — Visual Tab React Flow Rewrite (PARKED). D3 replacement rationale, branch contents, resume conditions. `core/visual-diagram.md` status ✅→⏸ PARKED. Document count 100→101, ☪ REFERENCE 17→18. |
 | v1.77 | 2026-03-19 | NEW: `adr/` directory with "Architecture Decision Records" manifest section. NEW: `adr/adr-dp-infrastructure-boundary.md` v1.1 ☪ — GetInSync vs ServiceNow infrastructure boundary, Garland import mapping rules generalized to all customers. MOVED: `adr/adr-integration-dp-alignment.md` from `features/integrations/`. Document count 99→100, ☪ REFERENCE 16→17. |
 | v1.76 | 2026-03-19 | Visual tab React Flow overhaul. `core/visual-diagram.md` v1.0→v2.0: complete rewrite from D3 spec to implemented React Flow + dagre architecture. |
 | v1.75 | 2026-03-19 | GitBook Git Sync setup. `guides/` directory syncs to docs.getinsync.ca. Non-publishable files moved to `marketing/`. Internal links fixed for GitBook. |
