@@ -6,6 +6,7 @@ Welcome to the GetInSync Help Center. Use the guides below to get up and running
 
 Start here to learn the key concepts and navigate the platform.
 
+- [Navigating GetInSync](user-help/navigating-getinsync.md) — Understand the six main sections and when to use each one
 - [Getting Started with GetInSync](user-help/getting-started.md) — Your first 5 minutes: key concepts, navigation, and profile setup
 
 ## Assessing Your Applications
@@ -24,6 +25,12 @@ Work with deployment profiles, technology health, integrations, and roadmap init
 - [Reading Tech Health Indicators](user-help/tech-health.md) — Understand infrastructure risk from lifecycle data
 - [Managing Application Integrations](user-help/integrations.md) — Document data flows between systems
 - [Creating and Managing Initiatives](user-help/roadmap-initiatives.md) — Turn assessment findings into funded action plans
+
+## The Explorer
+
+Your cross-cutting portfolio view — combines application health, technology risk, and cost data in one place.
+
+- [Navigating GetInSync](user-help/navigating-getinsync.md) — Full guide to all six sections including the Explorer
 
 ## Product Updates
 
