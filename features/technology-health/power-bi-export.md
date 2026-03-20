@@ -1,6 +1,6 @@
 # GetInSync — Power BI Export Layer Architecture
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** March 13, 2026
 **Status:** 🟡 AS-DESIGNED
 **Companion to:** features/technology-health/dashboard.md, infrastructure/edge-functions-layer-architecture.md
@@ -600,14 +600,117 @@ In parallel with external BI access, the Technology Health dashboard gains an **
 
 ---
 
-## 9. Security Considerations
+## 9. Security Model — Data Access Boundaries
 
-1. **RLS is the primary access control.** All PBI views use `security_invoker = true` — the query runs as the authenticated user, not as the view definer. No cross-namespace data leakage.
-2. **Service account credentials** must be treated as secrets. Customers should use Power BI's credential store or Power Automate's secure inputs.
-3. **API keys** (Approach A) are hashed at rest (bcrypt). Raw keys are shown only once at creation time.
-4. **Rate limiting** prevents abuse. Default: 60 requests/hour per API key.
-5. **View-level permissions** (Approach A) allow namespace admins to restrict which views an API key can access.
-6. **Audit trail** — `last_used_at` on API keys + existing Supabase auth logs for service accounts.
+### 9.1 Three-Layer Security Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Layer 1: GetInSync RLS (our responsibility)                     │
+│ ─────────────────────────────────────────────                   │
+│ Enforced by PostgreSQL Row Level Security.                      │
+│ All vw_pbi_* views use security_invoker = true.                 │
+│ The authenticated user can ONLY see data in namespaces          │
+│ where they are a member. Cross-namespace data is impossible.    │
+│                                                                  │
+│ Guarantee: No customer can ever see another customer's data.    │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 2: Service Account Role (our responsibility, customer's   │
+│          choice)                                                 │
+│ ─────────────────────────────────────────────                   │
+│ The service account's role determines visibility WITHIN the     │
+│ namespace:                                                       │
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────┐     │
+│ │ Namespace admin service account                         │     │
+│ │ → Sees ALL workspaces (ministries) in the namespace     │     │
+│ │ → "Open kimono" within the namespace boundary           │     │
+│ │ → Typical for executive dashboards crossing ministries   │     │
+│ └─────────────────────────────────────────────────────────┘     │
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────┐     │
+│ │ Workspace-scoped viewer service account                 │     │
+│ │ → Sees ONLY workspaces they are a member of             │     │
+│ │ → Useful for ministry-specific Power BI reports          │     │
+│ │ → RLS naturally filters — no custom code needed          │     │
+│ └─────────────────────────────────────────────────────────┘     │
+│                                                                  │
+│ Customer chooses the role at service account creation time.      │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 3: Presentation Security (customer's responsibility)      │
+│ ─────────────────────────────────────────────                   │
+│ Once data reaches Power BI, the CUSTOMER controls who sees      │
+│ what using their existing tooling:                               │
+│                                                                  │
+│ • Power BI RLS — row-level roles filter by ministry column      │
+│ • Power BI workspace access — who can view/edit the report      │
+│ • SharePoint permissions — who can access the dashboard page    │
+│ • Power Automate — which flows run and where data lands         │
+│                                                                  │
+│ GetInSync does NOT replicate the customer's internal org chart.  │
+│ That is their Power BI RLS concern, not ours.                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 Typical Deployment: Saskatchewan Scenario
+
+**Setup:**
+1. GetInSync creates a namespace for Government of Saskatchewan
+2. 25 workspaces (one per ministry) are created within that namespace
+3. Customer requests Power BI access → Stuart provisions a service account with `admin` role
+
+**What the service account sees:**
+- All 488 applications across all 25 ministries
+- All deployment profiles, technology tags, lifecycle data
+- All contacts (owned by, supported by, managed by)
+- All workspace names and IDs
+- **Cannot see** data from any other namespace (e.g., City of Riverside)
+
+**What the customer does in Power BI:**
+- Creates Power BI RLS roles: "Agriculture" role filters `WHERE ministry = 'Agriculture'`
+- Assigns users to roles: Ministry of Agriculture analysts get the Agriculture role
+- Executive dashboards get no RLS filter → see everything (matches the service account's scope)
+- Publishes to SharePoint with page-level permissions per ministry
+
+**Security boundary summary:**
+
+| What | Who Controls | How |
+|------|-------------|-----|
+| Cross-namespace isolation | GetInSync (RLS) | `security_invoker = true` + namespace membership |
+| Within-namespace scope | Customer (service account role) | Admin = all workspaces, Viewer = assigned workspaces |
+| Within-Power BI access | Customer (Power BI RLS) | Ministry column filtering, workspace access |
+| SharePoint distribution | Customer (SharePoint permissions) | Page/list permissions per ministry |
+
+### 9.3 Phase 2 Enhancement: Workspace-Scoped API Keys
+
+For customers who want workspace-level segmentation at the API layer (e.g., each ministry gets its own API key that only returns their data):
+
+```sql
+-- Future: add workspace scoping to namespace_api_keys
+ALTER TABLE namespace_api_keys
+ADD COLUMN workspace_ids UUID[] DEFAULT '{}';
+-- empty = all workspaces in the namespace
+-- populated = only these workspaces
+```
+
+The Edge Function would add a workspace filter:
+```typescript
+if (keyRecord.workspace_ids.length > 0) {
+  query = query.in('workspace_id', keyRecord.workspace_ids);
+}
+```
+
+**Not needed for initial launch** — the admin-scoped service account + Power BI RLS covers the Saskatchewan use case. This becomes relevant when multiple departments within a customer want independent, isolated API access.
+
+### 9.4 Credential Security
+
+1. **Service account credentials** (Approach B) must be treated as secrets. Customers should use Power BI's credential store or Power Automate's secure inputs.
+2. **API keys** (Approach A) are hashed at rest (bcrypt). Raw keys are shown only once at creation time.
+3. **Rate limiting** prevents abuse. Default: 60 requests/hour per API key.
+4. **View-level permissions** (Approach A) allow namespace admins to restrict which views an API key can access.
+5. **Audit trail** — `last_used_at` on API keys + existing Supabase auth logs for service accounts.
+6. **Key rotation** — API keys can be deactivated and new ones created without downtime (multiple active keys per namespace).
+7. **Expiry** — API keys support optional `expires_at` for time-limited access (e.g., contractor engagement).
 
 ---
 
@@ -628,3 +731,4 @@ In parallel with external BI access, the Technology Health dashboard gains an **
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-03-13 | Initial. 6 PBI views, 2 auth approaches (Edge Function API + Service Account), SharePoint integration pattern, deployment checklist. |
+| v1.1 | 2026-03-15 | Added §9 three-layer security model: RLS namespace isolation → service account role scoping → customer-owned Power BI RLS. Saskatchewan deployment scenario. Workspace-scoped API keys (Phase 2 enhancement). |

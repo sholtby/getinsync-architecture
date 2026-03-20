@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GetInSync — Explorer Tab Mock</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #F9FAFB; }
+
+    /* Donut chart via conic-gradient */
+    .donut {
+      width: 180px; height: 180px; border-radius: 50%;
+      background: conic-gradient(
+        #17B41D 0deg 86.9deg,
+        #FBDD3F 86.9deg 131.8deg,
+        #D74550 131.8deg 167.4deg,
+        #128DFF 167.4deg 185.1deg,
+        #B3B3B3 185.1deg 213.7deg,
+        #e5e7eb 213.7deg 360deg
+      );
+      position: relative;
+    }
+    .donut::after {
+      content: ''; position: absolute;
+      top: 25%; left: 25%; width: 50%; height: 50%;
+      background: white; border-radius: 50%;
+    }
+
+    /* Tech panel lifecycle row */
+    .lifecycle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; padding: 0.375rem 0; }
+    .lifecycle-row + .lifecycle-row { border-top: 1px solid #f3f4f6; }
+
+    /* Chip styles */
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+
+    /* Slicer select */
+    .slicer-select {
+      width: 100%; padding: 0.375rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem;
+      font-size: 0.8125rem; color: #374151; background: white; cursor: pointer;
+    }
+    .slicer-select:focus { outline: none; border-color: #0d9488; box-shadow: 0 0 0 1px #0d9488; }
+
+    /* Table */
+    .data-table th { position: sticky; top: 0; background: #f9fafb; z-index: 1; }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+
+  <!-- Page Header -->
+  <div class="max-w-[1440px] mx-auto mb-6">
+    <div class="flex items-center gap-3 mb-1">
+      <h1 class="text-2xl font-semibold text-gray-900">Technology Health</h1>
+      <span class="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full font-medium">Explorer</span>
+      <span class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">MOCK — Layout Review</span>
+    </div>
+    <p class="text-sm text-gray-500">Cross-cutting portfolio and technology view &middot; All Workspaces</p>
+    <p class="text-xs text-gray-400 mt-0.5 italic">Future: "Workspace" and "Portfolio" labels configurable per namespace (e.g. Ministry/Branch, Department/Division)</p>
+
+    <!-- Tab bar mock -->
+    <div class="flex items-center gap-0 border-b border-gray-200 mt-4">
+      <button class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500">Analysis</button>
+      <button class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500">By Application</button>
+      <button class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500">By Technology</button>
+      <button class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500">By Server</button>
+      <button class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500">Standards</button>
+      <button class="px-4 py-2 text-sm font-medium border-b-2 border-teal-600 text-teal-700">Explorer</button>
+    </div>
+  </div>
+
+  <div class="max-w-[1440px] mx-auto space-y-6">
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 1: KPI Summary Bar                                    -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-4 lg:grid-cols-8 gap-3">
+      <!-- Apps -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-gray-900">480</div>
+        <div class="text-xs text-gray-500 mt-0.5">Applications</div>
+      </div>
+      <!-- Crown Jewels -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-amber-600">25</div>
+        <div class="text-xs text-gray-500 mt-0.5">Crown Jewels</div>
+      </div>
+      <!-- Servers -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-gray-900">695</div>
+        <div class="text-xs text-gray-500 mt-0.5">Servers</div>
+      </div>
+      <!-- Ministries -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-gray-900">24</div>
+        <div class="text-xs text-gray-500 mt-0.5">Workspaces</div>
+      </div>
+      <!-- ADDRESS -->
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-l-red-500 border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-red-600">47</div>
+        <div class="text-xs text-gray-500 mt-0.5">ADDRESS</div>
+      </div>
+      <!-- MODERNIZE -->
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-l-orange-400 border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-orange-500">62</div>
+        <div class="text-xs text-gray-500 mt-0.5">MODERNIZE</div>
+      </div>
+      <!-- End of Support -->
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-l-red-400 border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-red-500">99</div>
+        <div class="text-xs text-gray-500 mt-0.5">End of Support</div>
+      </div>
+      <!-- Tech Debt -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-semibold text-gray-900">$2.3M</div>
+        <div class="text-xs text-gray-500 mt-0.5">Est. Tech Debt</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 2: Three-column panels                                -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr_280px] gap-5">
+
+      <!-- ── Column A: Application Portfolio ─────────────────── -->
+      <div class="space-y-4">
+        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Application Portfolio</h2>
+
+        <!-- TIME Quadrant Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 class="text-sm font-semibold text-gray-800 mb-3">TIME Quadrant Distribution</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                <span class="text-sm text-gray-700">Invest</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-green-500 rounded-full" style="width:29.6%"></div></div>
+                <span class="text-sm font-semibold text-gray-900 w-8 text-right">142</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-gray-400"></span>
+                <span class="text-sm text-gray-700">Tolerate</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:38.8%"></div></div>
+                <span class="text-sm font-semibold text-gray-900 w-8 text-right">186</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-orange-400"></span>
+                <span class="text-sm text-gray-700">Modernize</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-orange-400 rounded-full" style="width:12.9%"></div></div>
+                <span class="text-sm font-semibold text-gray-900 w-8 text-right">62</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                <span class="text-sm text-gray-700">Eliminate</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-red-500 rounded-full" style="width:6.5%"></div></div>
+                <span class="text-sm font-semibold text-gray-900 w-8 text-right">31</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-gray-200 border border-gray-300"></span>
+                <span class="text-sm text-gray-400 italic">Unassessed</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-200 rounded-full" style="width:12.3%"></div></div>
+                <span class="text-sm font-semibold text-gray-400 w-8 text-right">59</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vendor Concentration Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 class="text-sm font-semibold text-gray-800 mb-3">Vendor Concentration</h3>
+          <div class="space-y-2.5">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-700">Microsoft</span>
+                <span class="text-xs text-gray-500">312 deployments</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-teal-500 rounded-full" style="width:65%"></div>
+              </div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs text-red-500 font-medium">38 EOL</span>
+                <span class="text-xs text-amber-600">91 Extended</span>
+                <span class="text-xs text-green-600">183 Mainstream</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-700">Oracle</span>
+                <span class="text-xs text-gray-500">87 deployments</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-teal-500 rounded-full" style="width:18%"></div>
+              </div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs text-red-500 font-medium">29 EOL</span>
+                <span class="text-xs text-amber-600">34 Extended</span>
+                <span class="text-xs text-green-600">24 Mainstream</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-700">Red Hat</span>
+                <span class="text-xs text-gray-500">54 deployments</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-teal-500 rounded-full" style="width:11%"></div>
+              </div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs text-red-500 font-medium">12 EOL</span>
+                <span class="text-xs text-amber-600">18 Extended</span>
+                <span class="text-xs text-green-600">24 Mainstream</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-700">Apache Foundation</span>
+                <span class="text-xs text-gray-500">41 deployments</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-teal-500 rounded-full" style="width:8.5%"></div>
+              </div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs text-red-500 font-medium">8 EOL</span>
+                <span class="text-xs text-amber-600">15 Extended</span>
+                <span class="text-xs text-green-600">18 Mainstream</span>
+              </div>
+            </div>
+            <div class="pt-1 border-t border-gray-100">
+              <span class="text-xs text-gray-400">107 total vendors &middot; Top 4 = 72% of deployments</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Annual Run Rate Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 class="text-sm font-semibold text-gray-800 mb-1">Annual Run Rate by Support Status</h3>
+          <div class="text-2xl font-bold text-gray-900 mb-3">$4.2M</div>
+          <div class="space-y-2.5">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#D74550"></span>
+                  <span class="text-sm text-gray-700">End of Support</span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900">$1.8M</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="background:#D74550; width:42.9%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#FBDD3F"></span>
+                  <span class="text-sm text-gray-700">Extended Support</span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900">$1.2M</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="background:#FBDD3F; width:28.6%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#17B41D"></span>
+                  <span class="text-sm text-gray-700">Mainstream</span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900">$1.1M</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="background:#17B41D; width:26.2%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#128DFF"></span>
+                  <span class="text-sm text-gray-700">Vendor Managed</span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900">$0.1M</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="background:#128DFF; width:2.4%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 pt-2 border-t border-gray-100">
+            <span class="text-xs text-gray-400">43% of run rate spent on unsupported technology</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Column B: Technology Support ────────────────────── -->
+      <div class="space-y-4">
+        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Technology Support</h2>
+
+        <!-- OS Panel -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-800">Operating System</h3>
+          </div>
+          <div class="lifecycle-row border-b border-gray-100 pb-2 mb-1">
+            <div class="text-center">
+              <div class="text-xl font-semibold text-gray-900">40</div>
+              <div class="text-xs text-gray-500">All OS Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-semibold text-gray-900">695</div>
+              <div class="text-xs text-gray-500">All Servers</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#D74550">9</div>
+              <div class="text-xs text-gray-500">EOL Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#D74550">66</div>
+              <div class="text-xs text-gray-500">Servers in EOL</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#A38B00">14</div>
+              <div class="text-xs text-gray-500">ES Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#A38B00">324</div>
+              <div class="text-xs text-gray-500">Servers in ES</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#17B41D">12</div>
+              <div class="text-xs text-gray-500">MS Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#17B41D">251</div>
+              <div class="text-xs text-gray-500">Servers in MS</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-400">&mdash;</div>
+              <div class="text-xs text-gray-400">Unknown Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-400">&mdash;</div>
+              <div class="text-xs text-gray-400">Servers in Unknown</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DB Panel -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-800">Database</h3>
+          </div>
+          <div class="lifecycle-row border-b border-gray-100 pb-2 mb-1">
+            <div class="text-center">
+              <div class="text-xl font-semibold text-gray-900">18</div>
+              <div class="text-xs text-gray-500">All DB Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-semibold text-gray-900">115</div>
+              <div class="text-xs text-gray-500">All DB Servers</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#D74550">9</div>
+              <div class="text-xs text-gray-500">EOL Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#D74550">43</div>
+              <div class="text-xs text-gray-500">DB Servers in EOL</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#A38B00">5</div>
+              <div class="text-xs text-gray-500">ES Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#A38B00">57</div>
+              <div class="text-xs text-gray-500">DB Servers in ES</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#17B41D">1</div>
+              <div class="text-xs text-gray-500">MS Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#17B41D">11</div>
+              <div class="text-xs text-gray-500">DB Servers in MS</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-400">&mdash;</div>
+              <div class="text-xs text-gray-400">Unknown Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-400">&mdash;</div>
+              <div class="text-xs text-gray-400">DB Servers Unknown</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Web Panel -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-800">Web Server</h3>
+          </div>
+          <div class="lifecycle-row border-b border-gray-100 pb-2 mb-1">
+            <div class="text-center">
+              <div class="text-xl font-semibold text-gray-900">29</div>
+              <div class="text-xs text-gray-500">All Web Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-semibold text-gray-900">233</div>
+              <div class="text-xs text-gray-500">All Web Servers</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#D74550">6</div>
+              <div class="text-xs text-gray-500">EOL Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#D74550">41</div>
+              <div class="text-xs text-gray-500">Web Servers in EOL</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#A38B00">6</div>
+              <div class="text-xs text-gray-500">ES Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#A38B00">80</div>
+              <div class="text-xs text-gray-500">Web Servers in ES</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#17B41D">13</div>
+              <div class="text-xs text-gray-500">MS Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold" style="color:#17B41D">81</div>
+              <div class="text-xs text-gray-500">Web Servers in MS</div>
+            </div>
+          </div>
+          <div class="lifecycle-row">
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-400">1</div>
+              <div class="text-xs text-gray-400">Unknown Versions</div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-semibold text-gray-400">1</div>
+              <div class="text-xs text-gray-400">Web Servers Unknown</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Technology Support Status Donut -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 class="text-sm font-semibold text-gray-800 mb-4">Technology Support Status</h3>
+          <div class="flex items-center gap-6">
+            <div class="donut flex-shrink-0"></div>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#17B41D"></span>
+                <span class="text-gray-700">Mainstream</span>
+                <span class="font-semibold text-gray-900 ml-auto">116</span>
+                <span class="text-gray-400 text-xs">(24.8%)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#FBDD3F"></span>
+                <span class="text-gray-700">Extended</span>
+                <span class="font-semibold text-gray-900 ml-auto">125</span>
+                <span class="text-gray-400 text-xs">(26.7%)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#D74550"></span>
+                <span class="text-gray-700">End of Support</span>
+                <span class="font-semibold text-gray-900 ml-auto">99</span>
+                <span class="text-gray-400 text-xs">(21.2%)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#128DFF"></span>
+                <span class="text-gray-700">Vendor Managed</span>
+                <span class="font-semibold text-gray-900 ml-auto">49</span>
+                <span class="text-gray-400 text-xs">(10.5%)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background:#B3B3B3"></span>
+                <span class="text-gray-700">Incomplete Data</span>
+                <span class="font-semibold text-gray-900 ml-auto">79</span>
+                <span class="text-gray-400 text-xs">(16.9%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Column C: Slicers ───────────────────────────────── -->
+      <div class="space-y-4">
+        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Filters</h2>
+
+        <!-- AI Natural Language Filter -->
+        <div class="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-200 p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            <span class="text-xs font-semibold text-teal-700 uppercase tracking-wider">Ask AI</span>
+          </div>
+          <div class="relative">
+            <input type="text" placeholder="e.g. Show crown jewels on unsupported Oracle..." class="w-full px-3 py-2 pr-9 text-sm border border-teal-300 rounded-lg bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            <button class="absolute right-2 top-1/2 -translate-y-1/2 text-teal-600 hover:text-teal-800">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+          </div>
+          <p class="text-xs text-teal-600 mt-1.5 italic">AI sets the filters and generates a summary</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+          <!-- Portfolio Filters -->
+          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Portfolio</div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Workspace</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Agriculture</option>
+              <option>Education</option>
+              <option>Finance</option>
+              <option>Health</option>
+              <option>Justice &amp; Attorney General</option>
+              <option>Social Services</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Portfolio</label>
+            <select class="slicer-select"><option>All</option></select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">TIME Quadrant</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Invest</option>
+              <option>Tolerate</option>
+              <option>Modernize</option>
+              <option>Eliminate</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">PAID Action</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Address</option>
+              <option>Plan</option>
+              <option>Delay</option>
+              <option>Ignore</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Operational Status</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Operational</option>
+              <option>In Development</option>
+              <option>Retiring</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Crown Jewel</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </div>
+
+          <div class="border-t border-gray-100 pt-3 mt-2">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Technology</div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">OS Class</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Windows Server</option>
+              <option>Red Hat Enterprise Linux</option>
+              <option>Ubuntu</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">OS Lifecycle Stage</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Mainstream</option>
+              <option>Extended</option>
+              <option>End of Support</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Database Product</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>SQL Server</option>
+              <option>Oracle</option>
+              <option>PostgreSQL</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">DB Lifecycle Stage</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Mainstream</option>
+              <option>Extended</option>
+              <option>End of Support</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Web Server Class</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>IIS</option>
+              <option>Apache</option>
+              <option>Nginx</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Web Lifecycle Stage</label>
+            <select class="slicer-select">
+              <option>All</option>
+              <option>Mainstream</option>
+              <option>Extended</option>
+              <option>End of Support</option>
+            </select>
+          </div>
+
+          <button class="w-full mt-2 px-3 py-2 text-sm font-medium text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors">
+            Clear all slicers
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- ZONE 3: Detail Table                                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-800">Portfolio by Workspace</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Application Name</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Workspace</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Crown Jewel</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Op Status</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">TIME</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">PAID</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tech Health</th>
+              <th class="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Criticality</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Worst Tech Lifecycle</th>
+              <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Tech Debt</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Owned By</th>
+              <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Supported By</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <!-- Row 1 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">WSIS - Womens Shelter Info System</td>
+              <td class="px-4 py-3 text-gray-600">Justice &amp; Attorney General</td>
+              <td class="px-4 py-3 text-center"><span class="text-amber-500">&#9733;</span></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-orange-100 text-orange-700">Modernize</span></td>
+              <td class="px-4 py-3"><span class="chip bg-red-100 text-red-700">Address</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-red-600">32</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">72</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(215,69,80,0.1);color:#D74550">End of Support</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$85,000</td>
+              <td class="px-4 py-3 text-gray-600">—</td>
+              <td class="px-4 py-3 text-gray-600">—</td>
+            </tr>
+            <!-- Row 2 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">ALW (Accessibility Legislation Website)</td>
+              <td class="px-4 py-3 text-gray-600">Social Services</td>
+              <td class="px-4 py-3 text-center"></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-gray-100 text-gray-600">Tolerate</span></td>
+              <td class="px-4 py-3"><span class="chip bg-blue-100 text-blue-700">Plan</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-green-600">78</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">35</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(18,141,255,0.1);color:#128DFF">Vendor Managed</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$12,000</td>
+              <td class="px-4 py-3 text-gray-600">Joshua Hone</td>
+              <td class="px-4 py-3 text-gray-600">Joshua Hone</td>
+            </tr>
+            <!-- Row 3 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">AIMS - Agriculture Info Mgmt System</td>
+              <td class="px-4 py-3 text-gray-600">Agriculture</td>
+              <td class="px-4 py-3 text-center"><span class="text-amber-500">&#9733;</span></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-green-100 text-green-700">Invest</span></td>
+              <td class="px-4 py-3"><span class="chip bg-blue-100 text-blue-700">Plan</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-green-600">81</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">68</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(251,221,63,0.2);color:#A38B00">Extended</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$45,000</td>
+              <td class="px-4 py-3 text-gray-600">Sarah Chen</td>
+              <td class="px-4 py-3 text-gray-600">DPS PC</td>
+            </tr>
+            <!-- Row 4 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">MIDAS - Financial Management System</td>
+              <td class="px-4 py-3 text-gray-600">Finance</td>
+              <td class="px-4 py-3 text-center"><span class="text-amber-500">&#9733;</span></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-green-100 text-green-700">Invest</span></td>
+              <td class="px-4 py-3"><span class="chip bg-red-100 text-red-700">Address</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-amber-600">48</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">92</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(215,69,80,0.1);color:#D74550">End of Support</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$320,000</td>
+              <td class="px-4 py-3 text-gray-600">Mark Rivera</td>
+              <td class="px-4 py-3 text-gray-600">Infra Team</td>
+            </tr>
+            <!-- Row 5 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">EHR - Electronic Health Records</td>
+              <td class="px-4 py-3 text-gray-600">Health</td>
+              <td class="px-4 py-3 text-center"><span class="text-amber-500">&#9733;</span></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-green-100 text-green-700">Invest</span></td>
+              <td class="px-4 py-3"><span class="chip bg-blue-100 text-blue-700">Plan</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-green-600">74</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">88</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(23,180,29,0.1);color:#17B41D">Mainstream</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$18,000</td>
+              <td class="px-4 py-3 text-gray-600">Dr. Lisa Park</td>
+              <td class="px-4 py-3 text-gray-600">Health IT</td>
+            </tr>
+            <!-- Row 6 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">SPMS - Student Performance Mgmt</td>
+              <td class="px-4 py-3 text-gray-600">Education</td>
+              <td class="px-4 py-3 text-center"></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-gray-100 text-gray-600">Tolerate</span></td>
+              <td class="px-4 py-3"><span class="chip bg-yellow-100 text-yellow-700">Delay</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-green-600">71</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">28</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(251,221,63,0.2);color:#A38B00">Extended</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$22,000</td>
+              <td class="px-4 py-3 text-gray-600">James Wu</td>
+              <td class="px-4 py-3 text-gray-600">DPS PC</td>
+            </tr>
+            <!-- Row 7 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">Legacy Payroll v3.2</td>
+              <td class="px-4 py-3 text-gray-600">Finance</td>
+              <td class="px-4 py-3 text-center"></td>
+              <td class="px-4 py-3 text-gray-600">Retiring</td>
+              <td class="px-4 py-3"><span class="chip bg-red-100 text-red-700">Eliminate</span></td>
+              <td class="px-4 py-3"><span class="chip bg-gray-100 text-gray-600">Ignore</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-red-600">18</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">15</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(215,69,80,0.1);color:#D74550">End of Support</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$5,000</td>
+              <td class="px-4 py-3 text-gray-600">—</td>
+              <td class="px-4 py-3 text-gray-600">—</td>
+            </tr>
+            <!-- Row 8 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">CRM - Citizen Relations Management</td>
+              <td class="px-4 py-3 text-gray-600">Social Services</td>
+              <td class="px-4 py-3 text-center"><span class="text-amber-500">&#9733;</span></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-orange-100 text-orange-700">Modernize</span></td>
+              <td class="px-4 py-3"><span class="chip bg-red-100 text-red-700">Address</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-red-600">35</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">81</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(215,69,80,0.1);color:#D74550">End of Support</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$190,000</td>
+              <td class="px-4 py-3 text-gray-600">Ana Petrov</td>
+              <td class="px-4 py-3 text-gray-600">DPS PC</td>
+            </tr>
+            <!-- Row 9 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">GIS Mapping Portal</td>
+              <td class="px-4 py-3 text-gray-600">Agriculture</td>
+              <td class="px-4 py-3 text-center"></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-green-100 text-green-700">Invest</span></td>
+              <td class="px-4 py-3"><span class="chip bg-gray-100 text-gray-600">Ignore</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-green-600">86</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">42</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(23,180,29,0.1);color:#17B41D">Mainstream</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$8,000</td>
+              <td class="px-4 py-3 text-gray-600">Sarah Chen</td>
+              <td class="px-4 py-3 text-gray-600">GIS Team</td>
+            </tr>
+            <!-- Row 10 -->
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">CJIMS - Criminal Justice Info System</td>
+              <td class="px-4 py-3 text-gray-600">Justice &amp; Attorney General</td>
+              <td class="px-4 py-3 text-center"><span class="text-amber-500">&#9733;</span></td>
+              <td class="px-4 py-3 text-gray-600">Operational</td>
+              <td class="px-4 py-3"><span class="chip bg-orange-100 text-orange-700">Modernize</span></td>
+              <td class="px-4 py-3"><span class="chip bg-red-100 text-red-700">Address</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-amber-600">41</span></td>
+              <td class="px-4 py-3 text-center"><span class="font-semibold text-gray-900">95</span></td>
+              <td class="px-4 py-3"><span class="chip" style="background:rgba(215,69,80,0.1);color:#D74550">End of Support</span></td>
+              <td class="px-4 py-3 text-right text-gray-700">$410,000</td>
+              <td class="px-4 py-3 text-gray-600">David Kim</td>
+              <td class="px-4 py-3 text-gray-600">Justice IT</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+        <span class="text-sm text-gray-500">Showing 1–10 of 480 applications</span>
+        <div class="flex items-center gap-2">
+          <select class="slicer-select" style="width:auto">
+            <option>10</option>
+            <option>25</option>
+            <option>50</option>
+            <option>100</option>
+          </select>
+          <span class="text-xs text-gray-500">per page</span>
+          <div class="flex items-center gap-1 ml-4">
+            <button class="px-2 py-1 text-sm text-gray-400 border border-gray-200 rounded" disabled>&laquo;</button>
+            <button class="px-2 py-1 text-sm text-white bg-teal-600 border border-teal-600 rounded">1</button>
+            <button class="px-2 py-1 text-sm text-gray-700 border border-gray-200 rounded hover:bg-gray-50">2</button>
+            <button class="px-2 py-1 text-sm text-gray-700 border border-gray-200 rounded hover:bg-gray-50">3</button>
+            <span class="px-1 text-gray-400">...</span>
+            <button class="px-2 py-1 text-sm text-gray-700 border border-gray-200 rounded hover:bg-gray-50">48</button>
+            <button class="px-2 py-1 text-sm text-gray-700 border border-gray-200 rounded hover:bg-gray-50">&raquo;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="max-w-[1440px] mx-auto mt-8 pt-4 border-t border-gray-200">
+    <p class="text-xs text-gray-400 text-center">GetInSync NextGen — Explorer Tab Mock &middot; Static layout for review &middot; Data is hardcoded sample data</p>
+  </div>
+
+</body>
+</html>

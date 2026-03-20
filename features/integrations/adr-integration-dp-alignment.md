@@ -1,8 +1,8 @@
 # ADR: Integration-to-Deployment-Profile Alignment
 
-**Version:** 1.1
+**Version:** 1.2
 **Date:** March 19, 2026
-**Status:** PROPOSED
+**Status:** ACCEPTED
 **Author:** Stuart Holtby + Claude
 **Relates to:** `features/integrations/architecture.md`, `core/deployment-profile.md`, `core/visual-diagram.md`
 
@@ -14,7 +14,7 @@ During development of the Visual tab (React Flow rewrite, branch `feat/visual-ta
 
 The Visual tab's Level 3 "Blast Radius" view attempted to show integrations radiating from a selected deployment profile, but since `application_integrations` has no `deployment_profile_id` FK, every DP for the same application showed an identical blast radius. This is misleading and architecturally incorrect.
 
-The React Flow branch was abandoned (not merged) to avoid building on a known-incorrect foundation. The existing D3 two-level visual remains on `dev`.
+The React Flow branch was parked (not merged) pending Phase 2 completion. The renderer is correct; the data model underneath Level 3 is what needs fixing first.
 
 ---
 
@@ -206,6 +206,7 @@ Connected App B ──┘
 
 ## Changelog
 
+- **v1.2 — March 19, 2026** — Status promoted to ACCEPTED. Context section updated to reflect branch is parked not abandoned.
 - **v1.1 — March 19, 2026** — Revised decision: React Flow branch parked not abandoned. Phase 1+2 sequencing clarified. Open questions resolved.
 - **v1.0 — March 19, 2026** — Initial ADR.
 

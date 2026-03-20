@@ -914,38 +914,11 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 - Link to affected DPs
 - **v1.3:** Vendor Lifecycle Source Health (see below)
 
-#### 27e.1: Vendor Lifecycle Source Health
+#### 27e.1: Vendor Lifecycle Source Health — PLANNED (Implementation Plan: March 13, 2026)
 
 **Problem:** Tier 3 (Claude extraction) depends on vendor lifecycle URLs in `vendor_lifecycle_sources`. URL audit (March 2026) found only 4/16 URLs are healthy — 8 are broken (wrong page, JS-only, redirected, timeout). Bad URLs waste Tier 3 lookup time and return no data. Platform admins have no visibility into data source health.
 
-**Immediate action (no code — Stuart SQL):**
-- Set `is_active = false` on the 8 broken vendor URLs to prevent wasted Tier 3 attempts
-- Or update `lifecycle_url` to corrected URLs where known
-
-**Schema additions to `vendor_lifecycle_sources`:**
-- `url_status` (text, CHECK: 'healthy' / 'degraded' / 'broken', default 'healthy')
-- `last_verified_at` (timestamptz, nullable)
-- `last_verification_notes` (text, nullable — reason for status)
-
-**Technology Health Dashboard — "Data Source Health" card:**
-- Lifecycle coverage: X% of technology products have lifecycle reference linked
-- Source breakdown: pie/bar showing cache vs endoflife.date vs Claude-extracted origins
-- Vendor source status: X/Y vendor URLs healthy (platform admin only)
-- Link to Settings > Vendor Sources management
-
-**Settings > Technology Catalog — "Vendor Lifecycle Sources" table (platform admin):**
-- Table columns: Vendor | URL | Status badge (healthy/degraded/broken) | Last Verified | Notes
-- "Verify URL" button per row (calls Edge Function to test-fetch, updates status)
-- "Verify All" bulk action
-- Inline edit for `lifecycle_url` corrections
-- Filter by status
-
-**URL verification logic (extend `lifecycle-lookup` or new Edge Function):**
-- HEAD/GET request to URL with 10s timeout
-- Check for: HTTP 200, content-type text/html, response body > 1KB (not empty/redirect page)
-- JS-only pages (no text content) → 'degraded'
-- Non-200, timeout, redirect to different domain → 'broken'
-- Record result in `url_status`, `last_verified_at`, `last_verification_notes`
+**Use case:** Platform admin routinely checks vendor source health, either repairs broken URLs or deactivates them to stop wasted Tier 3 attempts and 10-second timeouts.
 
 **Audit baseline (March 6, 2026):**
 
@@ -956,6 +929,83 @@ GROUP BY dp.id, dp.name, a.name, dp.workspace_id;
 | BAD | 8 | VMware/Broadcom, AWS, Apache, Google, HCL, HP, Nginx, Salesforce |
 
 **Note:** endoflife.date (Tier 2) covers most products from BAD-URL vendors, so the practical impact is limited to niche/version-specific lookups that fall through to Tier 3.
+
+##### Part 1: Schema Additions (Stuart SQL)
+
+**SQL script:** `scripts/vendor-source-health-schema.sql`
+
+Add 3 columns to `vendor_lifecycle_sources`:
+- `url_status` (text, CHECK: 'healthy' / 'degraded' / 'broken' / 'unknown', default 'unknown')
+- `last_verified_at` (timestamptz, nullable)
+- `last_verification_notes` (text, nullable — reason for status)
+
+Default is `'unknown'` (not `'healthy'`) — existing rows have never been verified, so unknown is the honest starting state.
+
+Also: deactivate the 8 known-broken vendor URLs (`is_active = false`) as an immediate fix.
+
+##### Part 2: Edge Function — `vendor-url-verify`
+
+**New standalone Edge Function** (not bolted onto `lifecycle-lookup` — single responsibility).
+
+- **Route:** `POST /functions/v1/vendor-url-verify`
+- **Auth:** JWT + `is_platform_admin()` RPC check via service_role client
+- **Request:** `{ vendor_source_id: uuid }` (single) or `{ verify_all: true }` (bulk)
+- **Logic per URL:**
+  1. Fetch `vendor_lifecycle_sources` row(s) where `is_active = true`
+  2. `HEAD` request with 10s timeout → check HTTP status
+  3. If HEAD blocked, fallback to `GET` with 10s timeout
+  4. Classify: 200 + content > 1KB → `healthy`, 200 + tiny/JS-only → `degraded`, non-200/timeout/redirect → `broken`
+  5. UPDATE `url_status`, `last_verified_at`, `last_verification_notes` via service_role client
+- **Response:** `{ results: [{ vendor_name, url_status, notes }] }`
+- **Files:** `supabase/functions/vendor-url-verify/index.ts`, `types.ts`
+- **Reuses:** `_shared/auth.ts`, `_shared/cors.ts`, `_shared/error-handler.ts`, `_shared/supabase-admin.ts`
+
+##### Part 3: Super Admin — Vendor Lifecycle Sources Page
+
+**Decision:** Vendor sources are platform-level (not namespace-scoped), so management lives in Super Admin Console, not Settings > Technology Catalog.
+
+- **Route:** `/super-admin/vendor-sources`
+- **Sidebar:** Add link in `SuperAdminLayout.tsx` under "Management" section
+- **File:** `src/pages/super-admin/VendorLifecycleSources.tsx`
+
+**UI:**
+- Header: "Vendor Lifecycle Sources" title + "Verify All" button (top right)
+- Table columns: Vendor Name | URL | Strategy | Status Badge | Last Verified | Notes | Active | Actions
+- Status badges: green (healthy), amber (degraded), red (broken), gray (unknown)
+- Actions per row: "Verify" button, Edit (modal), Toggle active
+- Edit modal: `lifecycle_url`, `lifecycle_url_pattern`, `extraction_strategy`, `notes`, `is_active`
+- Pagination: Shared `TablePagination` component
+- Loading/error states: Spinner during verify, toast on success/failure
+
+**Data flow:**
+- Fetch: `supabase.from('vendor_lifecycle_sources').select('*').order('vendor_name')`
+- Verify single: `supabase.functions.invoke('vendor-url-verify', { body: { vendor_source_id } })`
+- Verify all: `supabase.functions.invoke('vendor-url-verify', { body: { verify_all: true } })`
+- Edit: `supabase.from('vendor_lifecycle_sources').update({...}).eq('id', id)`
+
+##### Part 4: Tech Health Dashboard — Data Source Health Card
+
+**Modify:** `src/components/technology-health/TechnologyHealthSummary.tsx`
+
+Compact "Data Source Health" bar below KPI cards — **platform admin only** (hidden for regular users via `usePlatformAdmin()` hook).
+
+**3 inline stats:**
+1. Lifecycle Coverage: X% of technology products have `lifecycle_reference_id` linked
+2. Source Breakdown: "X cache · Y endoflife.date · Z AI-extracted" (from `technology_lifecycle_reference` grouping)
+3. Vendor URL Health: X/Y sources healthy (link to Super Admin page)
+
+##### Implementation Branch
+
+`feat/vendor-source-health` from `dev`
+
+##### Execution Order
+
+1. SQL script (Stuart runs) → schema checkpoint
+2. Edge Function (`vendor-url-verify`) → deploy to Supabase
+3. Super Admin page → code + route
+4. Tech Health Dashboard card → code
+5. Architecture docs → update lifecycle-intelligence.md status, MANIFEST.md, whats-new.md, open-items matrix
+6. Type check + build → verify
 
 ### Phase 27f: Alert Configuration (2 hrs)
 - Namespace-level alert settings
@@ -1307,3 +1357,4 @@ With validated entry, the `vendor_lifecycle_sources` table role changes:
 | v1.6 | 2026-03-08 | Phase 28a+28b COMPLETE. `technology-catalog-search` Edge Function deployed (search + get-cycles). `TechnologyCatalogSearchModal` created with search-first flow + version picker. `TechnologyProductModal` modified with prePopulated prop, auto-match for manufacturer/category, lifecycle auto-creation. `lifecycle-utils.ts` moved to `_shared/`. Bug fix: category query missing namespace_id filter caused cross-namespace category match. |
 | v1.7 | 2026-03-08 | Phase 28c COMPLETE. `LinkTechnologyProductModal` enhanced with "Search catalog & create new" escape hatch. Chained modal flow: LinkTechnologyProductModal → TechnologyCatalogSearchModal → TechnologyProductModal → auto-link. Z-index fix: hide parent modal when sub-modal is open. IT Service/Software Product integration deferred (already have AI Lookup). |
 | v1.8 | 2026-03-09 | **Phase 28d COMPLETE — Phase 28 DONE.** DataQualityBadge (Verified/Unverified) on catalog grid + DP tags. BulkValidateTechnologyProducts modal with scan/link/skip/search workflow + batch manufacturer creation. Manufacturer auto-link: "Create & Link" prompt in TechnologyProductModal for unmatched vendors (creates org with is_manufacturer, website, notes). Lifecycle search: multi-word query splitting across vendor_name/product_name/version (all 3 modals). **Architecture change:** Replaced `technology-catalog-search` Edge Function with direct browser client `src/lib/endoflife-client.ts` — endoflife.date API supports CORS, eliminates JWT auth overhead and 401 errors. Vendor map expanded to ~250 entries. |
+| v1.9 | 2026-03-13 | Phase 27e.1 implementation plan finalized. Expanded spec with implementation decisions: `url_status` default changed from 'healthy' to 'unknown' (honest state for unverified rows). New standalone Edge Function `vendor-url-verify` (not bolted onto lifecycle-lookup). Management UI placed in Super Admin Console at `/super-admin/vendor-sources` (platform-level, not namespace-scoped). Tech Health Dashboard gets Data Source Health bar (platform admin only). 6-part execution plan documented with SQL script, Edge Function, Super Admin page, dashboard card, doc updates, verification steps. |

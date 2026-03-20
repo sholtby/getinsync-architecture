@@ -1,6 +1,6 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.1
+**Version:** 2.2
 **Date:** March 19, 2026
 **Status:** ✅ IMPLEMENTED
 
@@ -23,7 +23,7 @@ The Visual tab on the Application Detail page renders an interactive graph using
 | File | Purpose |
 |------|---------|
 | `src/components/integrations/ConnectionsVisual.tsx` | Main component — ReactFlow canvas, breadcrumbs, layout persistence, navigation |
-| `src/components/visual/graphBuilders.ts` | Dagre layout + node/edge construction for all three levels |
+| `src/components/visual/graphBuilders.ts` | Layout + node/edge construction for all three levels (manual 3-tier for L1, dagre for L2/L3) |
 | `src/components/visual/nodes/AppNode.tsx` | Custom node for applications and external systems |
 | `src/components/visual/nodes/DPNode.tsx` | Custom node for deployment profiles |
 | `src/hooks/useVisualGraphData.ts` | Data fetching hook — all Supabase queries |
@@ -53,7 +53,7 @@ Layout: TB (top-bottom)        Layout: TB (top-bottom)         Layout: LR (left-
 **Bottom tier:** Deployment profiles for the focused app
 **Layout direction:** Top-to-bottom (TB)
 
-Dagre enforces three-tier separation: integration edges flow from connected apps (top) into the focused app (center), and dashed edges flow from the focused app down to DP nodes (bottom).
+Manual three-tier positioning (not dagre — dagre merges ranks in this topology). Nodes are centered horizontally per tier with 140px vertical gap. Integration edges use `sourceHandle: 'bottom'` → `targetHandle: 'top'` for clean vertical routing; DP edges use `sourceHandle: 'bottom'` on the focused app.
 
 - Integration edges from `vw_integration_detail`
 - Edge color indicates criticality: critical (#ef4444), important (#f59e0b), nice_to_have (#94a3b8)
