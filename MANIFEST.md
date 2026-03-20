@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-19 (v1.75)
+Last updated: 2026-03-19 (v1.76)
 
 ---
 
@@ -164,7 +164,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/integrations/servicenow-alignment.md | v1.2 | 🟢 | CSDM mapping, sync strategy — stack-agnostic, no AWS refs found |
 | features/integrations/architecture.md | v1.2 | ☪ | External integrations (stack-agnostic) |
 | features/integrations/itsm-api-research.md | **v1.0** | 🟡 | **ITSM API research — ServiceNow + HaloITSM publish/subscribe patterns. Phase 37 scoping.** |
-| features/integrations/adr-integration-dp-alignment.md | **v1.0** | 🟡 | **ADR: Integration-to-DP alignment. CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
+| features/integrations/adr-integration-dp-alignment.md | **v1.2** | ✅ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
 
 ### Visualization
 
