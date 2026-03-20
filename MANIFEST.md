@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-19 (v1.76)
+Last updated: 2026-03-19 (v1.77)
 
 ---
 
@@ -164,7 +164,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/integrations/servicenow-alignment.md | v1.2 | 🟢 | CSDM mapping, sync strategy — stack-agnostic, no AWS refs found |
 | features/integrations/architecture.md | v1.2 | ☪ | External integrations (stack-agnostic) |
 | features/integrations/itsm-api-research.md | **v1.0** | 🟡 | **ITSM API research — ServiceNow + HaloITSM publish/subscribe patterns. Phase 37 scoping.** |
-| features/integrations/adr-integration-dp-alignment.md | **v1.2** | ✅ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
+
 
 ### Visualization
 
@@ -298,6 +298,13 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | reviews/edge-functions-gap-analysis.md | v1.0 | 🟡 | **Edge Functions gap analysis** — 12 gaps across data residency (4), inbound API (4), MCP strategy (4). 4 HIGH: multi-region secrets, JWKS routing, inbound API design, external auth. |
 | reviews/ai-chat-context-window-review.md | v1.0 | 🟡 | **AI Chat context window & conversation lifecycle review** — 11 gaps across context management (4), conversation lifecycle (3), cross-doc alignment (3), consistency (1). 4 HIGH: no context budget, no conversation persistence, no token counting, RAG vs MCP mismatch. |
+
+### Architecture Decision Records
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
+| adr/adr-integration-dp-alignment.md | v1.2 | ☪ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
 
 ### Change Management
 
@@ -495,7 +502,23 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Recent Changes (v1.74 → v1.75)
+## Recent Changes (v1.76 → v1.77)
+
+### Architecture Decision Records Directory (Mar 19, 2026)
+
+**New section:** "Architecture Decision Records" added to manifest.
+
+**New documents (1):**
+- `adr/adr-dp-infrastructure-boundary.md` — v1.1 ☪. ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow boundary for infrastructure data. Garland import mapping rules generalized to all future customer imports. server_name governance, customer conversation guidance, positioning statement.
+
+**Moved documents (1):**
+- `adr/adr-integration-dp-alignment.md` — moved from `features/integrations/adr-integration-dp-alignment.md`. No content changes.
+
+**Document count:** 99 → 100 (☪ REFERENCE 16 → 17).
+
+---
+
+## Previous Changes (v1.75 → v1.76)
 
 ### Visual Tab React Flow Overhaul (Mar 19, 2026)
 
@@ -732,9 +755,9 @@ The following documents were removed during the architecture audit. They describ
 | 🟢 AS-BUILT | 55 |
 | 🟡 AS-DESIGNED | 12 |
 | 🟠 NEEDS UPDATE | 0 |
-| ☪ REFERENCE | 16 |
+| ☪ REFERENCE | 17 |
 | 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **99** |
+| **Total tracked** | **100** |
 
 ---
 
@@ -772,6 +795,10 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.77 | 2026-03-19 | NEW: `adr/` directory with "Architecture Decision Records" manifest section. NEW: `adr/adr-dp-infrastructure-boundary.md` v1.1 ☪ — GetInSync vs ServiceNow infrastructure boundary, Garland import mapping rules generalized to all customers. MOVED: `adr/adr-integration-dp-alignment.md` from `features/integrations/`. Document count 99→100, ☪ REFERENCE 16→17. |
+| v1.76 | 2026-03-19 | Visual tab React Flow overhaul. `core/visual-diagram.md` v1.0→v2.0: complete rewrite from D3 spec to implemented React Flow + dagre architecture. |
+| v1.75 | 2026-03-19 | GitBook Git Sync setup. `guides/` directory syncs to docs.getinsync.ca. Non-publishable files moved to `marketing/`. Internal links fixed for GitBook. |
+| v1.74 | 2026-03-19 | GitBook Git Sync setup. `guides/` directory now syncs live to docs.getinsync.ca. Moved non-publishable files out of `guides/`: feature-walkthrough.md, .docx files, user-documentation/ → `marketing/`. Fixed internal links in all 8 user-help articles (relative file paths for GitBook). CLAUDE.md: added GitBook Docs Site section with sync rules, link format, do-not list. Updated Feature-to-Doc Map with user help, marketing entries. |
 | v1.65 | 2026-03-12 | rbac-permissions.md v1.1→v1.2: ADR #14 — Namespace role UI simplified to admin toggle (eliminates "Viewer" confusion). Open Question #6 — permission ceiling not enforced, parked for future delegation. InviteUserModal + UserEditModal: org role dropdown replaced with admin toggle checkbox. UsersSettings: namespace role display now reads from reference table display_name. |
 | v1.64 | 2026-03-12 | User docs overhaul. NEW: `guides/whats-new.md` (release changelog). NEW: "User Guides & Documentation" manifest section (11 docs cataloged). `getting-started.md`: added Portfolio to Key Concepts. Session-end checklist v1.15→v1.16: §6h expanded with feature-walkthrough, whats-new, version bump reminder (§6h.6). `package.json` v0.0.0→v1.0.0. ProfileSettings: version display at bottom. CLAUDE.md: Feature Walkthrough + What's New added to doc map. |
 | v1.63 | 2026-03-12 | Session-end checklist v1.14→v1.15: §6h rewrite — "Write It Now" replaces flag-and-defer. Three-tier scope (Minor/Moderate/Major) with explicit writing procedure. Claude writes/updates user guides during session instead of flagging for later. Added §6h.4 (writing procedure), §6h.5 (dependency guard rail). CLAUDE.md: added checklist item #8 (user docs check), added 3 entries to Feature-to-Doc Map (In-App Support, User Help Articles, User Documentation). |
