@@ -639,6 +639,7 @@ Check which existing guide covers the changed area:
 | `deployment-profiles.md` | What deployment profiles are, how to create |
 | `roadmap-initiatives.md` | Creating and managing initiatives |
 | `integrations.md` | Managing application integrations |
+| `ai-assistant.md` | Portfolio AI Assistant chat, data scope, tips |
 
 **Other guides** (`docs-architecture/guides/`):
 

@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-20 (v1.79)
+Last updated: 2026-03-20 (v1.80)
 
 ---
 
@@ -264,6 +264,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | guides/user-help/deployment-profiles.md | v1.0 | 🟢 | Deployment profiles concept and creation |
 | guides/user-help/roadmap-initiatives.md | v1.0 | 🟢 | Creating and managing initiatives |
 | guides/user-help/integrations.md | v1.0 | 🟢 | Managing application integrations |
+| guides/user-help/ai-assistant.md | v1.0 | 🟢 | Portfolio AI Assistant chat, data scope, workspace filtering, tips |
 
 ### Marketing & Product Documentation
 
@@ -834,6 +835,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.80 | 2026-03-20 | **Stage 2B: AI Chat MVP.** NEW: `guides/user-help/ai-assistant.md` v1.0 — Portfolio AI Assistant user guide. Updated `guides/whats-new.md` with AI Assistant entry. Updated session-end-checklist §6h.3 guide table. Document count 102→103. |
 | v1.79 | 2026-03-20 | **Stage 1: Shared Data Layer.** NEW: semantic-layer.yaml v1.0 🟡. pgTAP v1.7 (14 new assertions, sentinels: 99 tables, 38 views, 57 triggers). Schema: 97→99 tables, 36→38 views, 55→57 triggers, 372→380 RLS. New: vw_run_rate_by_lifecycle_status, vw_explorer_detail, ai_chat_conversations, ai_chat_messages. Integration-DP Phase 1+2: source/target DP FKs on application_integrations, vw_integration_detail rebuilt. Document count 101→102, AS-DESIGNED +1. |
 | v1.78 | 2026-03-19 | NEW: `adr/adr-visual-tab-reactflow.md` v1.0 ⏸ — Visual Tab React Flow Rewrite (PARKED). D3 replacement rationale, branch contents, resume conditions. `core/visual-diagram.md` status ✅→⏸ PARKED. Document count 100→101, ☪ REFERENCE 17→18. |
 | v1.77 | 2026-03-19 | NEW: `adr/` directory with "Architecture Decision Records" manifest section. NEW: `adr/adr-dp-infrastructure-boundary.md` v1.1 ☪ — GetInSync vs ServiceNow infrastructure boundary, Garland import mapping rules generalized to all customers. MOVED: `adr/adr-integration-dp-alignment.md` from `features/integrations/`. Document count 99→100, ☪ REFERENCE 16→17. |

@@ -6,6 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## March 20, 2026
 
+- **Portfolio AI Assistant** — New Chat tab with a conversational AI assistant that answers questions about your application portfolio. Ask about app counts, costs, vendor spend, budget status, or drill into any specific application by name. Supports workspace/department filtering ("show me Finance costs"), conversation history, markdown-formatted responses, and copy-to-clipboard. Data scope respects your role-based access.
 - **Explorer Tab** — New top-level navigation tab that combines portfolio and technology data into a single cross-cutting dashboard. See your entire application landscape at a glance with 8 KPI cards, portfolio distribution donut chart, run-rate-by-lifecycle bar chart, and a searchable/sortable detail table. Filter by workspace, lifecycle status, crown jewel, TIME quadrant, and PAID action. Export to CSV.
 
 ## March 19, 2026
