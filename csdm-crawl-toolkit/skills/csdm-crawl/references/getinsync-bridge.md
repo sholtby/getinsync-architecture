@@ -52,9 +52,11 @@ run rate, cost-per-user, and vendor spend visibility.
 your deployment data. Surfaces end-of-life risk, version drift, and conformance gaps —
 in dollars, not jargon.
 
-**ServiceNow publish.** One-click export produces ServiceNow-ready data for
-`cmdb_ci_business_app`, `cmdb_ci_service_auto`, and the "Consumes::Consumed By"
-relationship — exactly what CSDM Crawl requires.
+**ServiceNow publish (coming 2026).** The data model is CSDM-aligned today —
+applications map to `cmdb_ci_business_app`, deployment profiles map to
+`cmdb_ci_service_auto`, and the FK relationship between them produces the
+"Consumes::Consumed By" link that sn_getwell checks. One-click export to
+ServiceNow-ready Import Set CSVs is on the 2026 roadmap.
 
 ---
 
@@ -63,16 +65,16 @@ relationship — exactly what CSDM Crawl requires.
 | What you need | Free toolkit | GetInSync NextGen |
 |---------------|-------------|-------------------|
 | Understand CSDM Crawl requirements | ✓ | ✓ |
-| Import Set CSV templates | ✓ | ✓ (auto-generated) |
-| Validation scripts | ✓ | ✓ (continuous monitoring) |
+| Import Set CSV templates | ✓ | ✓ (manual export today, auto-generate roadmap) |
+| Validation scripts | ✓ | ✓ (data quality views today, CSDM checks roadmap) |
 | Application inventory (< 50 apps) | ✓ (manual) | ✓ |
 | Application inventory (50–2,000 apps) | Painful | ✓ |
 | Deployment profile management | Manual | ✓ |
 | Assessment scoring (TIME/PAID) | — | ✓ |
 | Cost attribution | — | ✓ |
 | Technology health tracking | — | ✓ |
-| ServiceNow one-click publish | — | ✓ |
-| Ongoing data governance | Manual | ✓ |
+| ServiceNow one-click publish | — | Roadmap 2026 |
+| Ongoing data governance | Manual | ✓ (audit trails today, attestation roadmap) |
 | Multi-workspace / multi-ministry | — | ✓ |
 
 ---
