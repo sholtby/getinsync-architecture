@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-20 (v1.80)
+Last updated: 2026-03-23 (v1.81)
 
 ---
 
@@ -164,6 +164,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/integrations/servicenow-alignment.md | v1.2 | 🟢 | CSDM mapping, sync strategy — stack-agnostic, no AWS refs found |
 | features/integrations/architecture.md | v1.2 | ☪ | External integrations (stack-agnostic) |
 | features/integrations/itsm-api-research.md | **v1.0** | 🟡 | **ITSM API research — ServiceNow + HaloITSM publish/subscribe patterns. Phase 37 scoping.** |
+| features/integrations/csdm-crawl-gap-analysis.md | **v1.0** | 🟡 | **CSDM Crawl field-level gap analysis — GIS schema vs ServiceNow Crawl requirements. 28 fields mapped, 9 gaps, Phase 37 prerequisites.** |
 
 
 ### Visualization
@@ -835,6 +836,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.81 | 2026-03-23 | NEW: `features/integrations/csdm-crawl-gap-analysis.md` v1.0 🟡 — CSDM Crawl field-level gap analysis. Cross-referenced 47-item crawl checklist against GIS schema: 28 fields mapped (14 ready, 9 gaps, 5 partial). Critical gaps: no group entity, criticality placement, missing change_control role. Phase 37 prerequisites documented. Document count 103→104. |
 | v1.80 | 2026-03-20 | **Stage 2B: AI Chat MVP.** NEW: `guides/user-help/ai-assistant.md` v1.0 — Portfolio AI Assistant user guide. Updated `guides/whats-new.md` with AI Assistant entry. Updated session-end-checklist §6h.3 guide table. Document count 102→103. |
 | v1.79 | 2026-03-20 | **Stage 1: Shared Data Layer.** NEW: semantic-layer.yaml v1.0 🟡. pgTAP v1.7 (14 new assertions, sentinels: 99 tables, 38 views, 57 triggers). Schema: 97→99 tables, 36→38 views, 55→57 triggers, 372→380 RLS. New: vw_run_rate_by_lifecycle_status, vw_explorer_detail, ai_chat_conversations, ai_chat_messages. Integration-DP Phase 1+2: source/target DP FKs on application_integrations, vw_integration_detail rebuilt. Document count 101→102, AS-DESIGNED +1. |
 | v1.78 | 2026-03-19 | NEW: `adr/adr-visual-tab-reactflow.md` v1.0 ⏸ — Visual Tab React Flow Rewrite (PARKED). D3 replacement rationale, branch contents, resume conditions. `core/visual-diagram.md` status ✅→⏸ PARKED. Document count 100→101, ☪ REFERENCE 17→18. |
