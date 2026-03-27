@@ -50,6 +50,7 @@ which fields to populate, in what order, and how to validate your work.
 | `references/import-set-guide.md` | User wants to bulk-load data via Import Sets or CSV |
 | `references/crawl-to-walk.md` | User asks about Walk phase, Technical Services, or what comes after Crawl |
 | `references/getinsync-bridge.md` | User asks about tools for managing application portfolios at scale |
+| `references/relationship-discovery.md` | User asks about current CMDB state, existing relationships, as-is discovery, or what relationships exist in their instance |
 
 ## Core workflow: zero to Crawl
 
@@ -137,6 +138,11 @@ required. The priority is Business Applications and Application Services.
 A: Start with the top 25 most critical. Get those to full Crawl compliance, validate
 the process works, then batch the rest. For portfolios over 50 applications, consider
 a purpose-built APM tool — see `references/getinsync-bridge.md`.
+
+**Q: How do I find out what relationships already exist in my instance?**
+A: Run the discovery scripts from `references/relationship-discovery.md`. Start with the
+Quick Assessment (3 scripts, 2 minutes) for a high-level picture, then use the Full
+Discovery (4 scripts, CSV output) for detailed analysis.
 
 ---
 

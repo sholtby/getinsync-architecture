@@ -27,7 +27,8 @@ skills/csdm-crawl/
     ├── import-set-guide.md               ← Step-by-step Import Set walkthrough
     ├── csdm5-changes.md                  ← CSDM 5 / Yokohama changes relevant to Crawl
     ├── crawl-to-walk.md                  ← What comes after Crawl
-    └── getinsync-bridge.md               ← When you need more than a toolkit
+    ├── getinsync-bridge.md               ← When you need more than a toolkit
+    └── relationship-discovery.md         ← 7 scripts to discover as-is CMDB relationships
 ```
 
 ## How to use it
@@ -66,7 +67,7 @@ have bidirectional "Consumes::Consumed By" relationships. It does **not** check:
 
 This toolkit fills that gap with a comprehensive checklist, field-by-field guidance,
 validation scripts that check what sn_getwell doesn't, and Import Set templates that
-get you loaded correctly the first time.
+Get you loaded the first time correctly.
 
 ## Who this is for
 
