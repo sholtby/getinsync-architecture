@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GetInSync ↔ CSDM Relationship Alignment</title>
+<style>
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #fff; color: #1a1a1a; padding: 28px; max-width: 1100px; margin: 0 auto; }
+  
+  .header { margin-bottom: 20px; border-bottom: 3px solid #1B4F72; padding-bottom: 10px; }
+  .header h1 { font-size: 24px; color: #1B4F72; font-weight: 700; }
+  .header p { font-size: 12px; color: #666; margin-top: 3px; }
+  
+  .dual-header { display: grid; grid-template-columns: 140px 1fr 40px 1fr; gap: 0; margin-bottom: 0; }
+  .col-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px; text-align: center; color: #fff; border-radius: 6px 6px 0 0; }
+  .col-label-layer { background: transparent; }
+  .col-label-gis { background: #0D7C66; }
+  .col-label-bridge { background: transparent; }
+  .col-label-sn { background: #1B4F72; }
+  
+  .row { display: grid; grid-template-columns: 140px 1fr 40px 1fr; gap: 0; border: 1px solid #ddd; border-top: none; min-height: 100px; }
+  .row:first-of-type { border-top: 1px solid #ddd; }
+  
+  .row-layer { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px 6px; text-align: center; }
+  .row-layer .phase { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #fff; margin-bottom: 2px; }
+  .row-layer .lnum { font-size: 20px; font-weight: 700; color: #fff; }
+  .row-layer .lname { font-size: 9px; color: rgba(255,255,255,0.85); margin-top: 1px; }
+  
+  .l1-bg { background: #1B7A4A; }
+  .l2-bg { background: #2E75B6; }
+  .l3-bg { background: #D4740E; }
+  .l4-bg { background: #7B2D8E; }
+  
+  .row-gis { padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .l1-gis { background: #EEF7F1; }
+  .l2-gis { background: #EDF4FB; }
+  .l3-gis { background: #FEF6EE; }
+  .l4-gis { background: #F9F2FB; }
+  
+  .row-bridge { display: flex; align-items: center; justify-content: center; background: #f8f8f8; }
+  .arrow-map { font-size: 20px; color: #999; }
+  
+  .row-sn { padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .l1-sn { background: #F0F7F1; }
+  .l2-sn { background: #F0F4FA; }
+  .l3-sn { background: #FFF8F0; }
+  .l4-sn { background: #FAF0FC; }
+  
+  .entity { background: #fff; border: 2px solid; border-radius: 5px; padding: 6px 10px; }
+  .entity .tbl { font-size: 8px; font-family: 'Courier New', monospace; color: #888; display: block; }
+  .entity .name { font-size: 12px; font-weight: 600; display: block; }
+  .entity .example { font-size: 9px; color: #999; font-style: italic; }
+  .entity .fields { font-size: 9px; color: #666; margin-top: 3px; display: block; }
+  
+  .e-green { border-color: #1B7A4A; }
+  .e-green .name { color: #1B7A4A; }
+  .e-blue { border-color: #2E75B6; }
+  .e-blue .name { color: #2E75B6; }
+  .e-orange { border-color: #D4740E; }
+  .e-orange .name { color: #D4740E; }
+  .e-purple { border-color: #7B2D8E; }
+  .e-purple .name { color: #7B2D8E; }
+  .e-sn { border-color: #1B4F72; }
+  .e-sn .name { color: #1B4F72; }
+  
+  .rel-line { display: flex; align-items: center; gap: 4px; padding: 2px 0; }
+  .rel-label { font-size: 9px; background: #fff; border: 1px solid #ddd; border-radius: 3px; padding: 1px 6px; color: #555; font-weight: 600; }
+  .rel-arrow-sm { font-size: 12px; color: #bbb; }
+  
+  .status-tag { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 8px; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+  .s-ready { background: #E8F5E9; color: #2E7D32; }
+  .s-partial { background: #FFF3E0; color: #E65100; }
+  .s-gap { background: #FFEBEE; color: #C62828; }
+  .s-future { background: #F3E5F5; color: #6A1B9A; }
+  
+  .gap-note { font-size: 9px; color: #C62828; font-weight: 600; margin-top: 2px; padding: 3px 6px; background: #FFF5F5; border-radius: 3px; border: 1px solid #FFCDD2; }
+  
+  .between { display: grid; grid-template-columns: 140px 1fr 40px 1fr; gap: 0; height: 16px; }
+  .between > div { display: flex; justify-content: center; align-items: center; }
+  .between .ba { font-size: 10px; color: #bbb; }
+  
+  .summary { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .summary-box { padding: 14px; border-radius: 6px; border: 1px solid #e0e0e0; }
+  .summary-box h3 { font-size: 12px; margin-bottom: 8px; }
+  .summary-box ul { font-size: 11px; padding-left: 16px; color: #555; }
+  .summary-box li { margin-bottom: 4px; }
+  .sum-scores { background: #f8f9fa; }
+  .sum-scores h3 { color: #1B4F72; }
+  .sum-gaps { background: #FFF8F8; }
+  .sum-gaps h3 { color: #C62828; }
+  
+  .footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 9px; color: #999; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>GetInSync ↔ CSDM Relationship Alignment</h1>
+  <p>How GetInSync NextGen entities map to ServiceNow CSDM relationship layers — gaps and readiness</p>
+</div>
+
+<!-- Column headers -->
+<div class="dual-header">
+  <div class="col-label col-label-layer"></div>
+  <div class="col-label col-label-gis">GetInSync NextGen</div>
+  <div class="col-label col-label-bridge"></div>
+  <div class="col-label col-label-sn">ServiceNow CSDM</div>
+</div>
+
+<!-- Layer 1: Crawl -->
+<div class="row">
+  <div class="row-layer l1-bg">
+    <div class="phase">Crawl</div>
+    <div class="lnum">1</div>
+    <div class="lname">Portfolio →<br>Operations</div>
+  </div>
+  <div class="row-gis l1-gis">
+    <div class="entity e-green">
+      <span class="tbl">applications</span>
+      <span class="name">Application <span class="status-tag s-ready">Ready</span></span>
+      <span class="fields">name, owner, operational_status, lifecycle_stage_status, csdm_stage</span>
+    </div>
+    <div class="rel-line">
+      <span class="rel-arrow-sm">↓</span>
+      <span class="rel-label">application_id (FK)</span>
+      <span class="status-tag s-ready">Guaranteed</span>
+    </div>
+    <div class="entity e-green">
+      <span class="tbl">deployment_profiles</span>
+      <span class="name">Deployment Profile <span class="status-tag s-ready">Ready</span></span>
+      <span class="fields">name, environment, hosting_type, operational_status, version</span>
+    </div>
+    <div class="gap-note">⚠ Gaps: managed_by_group (no group entity), busines_criticality (portfolio-scoped, not global)</div>
+  </div>
+  <div class="row-bridge"><span class="arrow-map">→</span></div>
+  <div class="row-sn l1-sn">
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_business_app</span>
+      <span class="name">Business Application</span>
+      <span class="fields">name, owned_by, managed_by, managed_by_group, busines_criticality</span>
+    </div>
+    <div class="rel-line">
+      <span class="rel-arrow-sm">↓</span>
+      <span class="rel-label">Consumes::Consumed by</span>
+    </div>
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_service_auto</span>
+      <span class="name">Application Service / Service Instance</span>
+      <span class="fields">name, support_group, change_control, environment, busines_criticality</span>
+    </div>
+  </div>
+</div>
+
+<div class="between">
+  <div></div><div><span class="ba">▼</span></div><div></div><div><span class="ba">▼</span></div>
+</div>
+
+<!-- Layer 2: Walk — Infrastructure -->
+<div class="row">
+  <div class="row-layer l2-bg">
+    <div class="phase">Walk</div>
+    <div class="lnum">2</div>
+    <div class="lname">Operations →<br>Infrastructure</div>
+  </div>
+  <div class="row-gis l2-gis">
+    <div class="entity e-blue">
+      <span class="tbl">dp_technology_products</span>
+      <span class="name">DP Tech Products <span class="status-tag s-partial">Inventory only</span></span>
+      <span class="fields">deployment_profile_id, technology_product_id, edition</span>
+    </div>
+    <div style="font-size:10px; color:#666; margin-top:4px; padding:4px;">
+      GIS tracks technology stack per DP (SQL Server, IIS, etc.) but as inventory tags, not infrastructure CIs. Server-level detail is CMDB territory per the Infrastructure Boundary Rubric.
+    </div>
+  </div>
+  <div class="row-bridge"><span class="arrow-map" style="color:#ccc;">⇢</span></div>
+  <div class="row-sn l2-sn">
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_service_auto</span>
+      <span class="name">Application Service</span>
+    </div>
+    <div class="rel-line">
+      <span class="rel-arrow-sm">↓</span>
+      <span class="rel-label">Depends on::Used by</span>
+    </div>
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_server / _appl / _db_instance</span>
+      <span class="name">Infrastructure CIs</span>
+      <span class="fields">Populated by Discovery / Service Mapping</span>
+    </div>
+  </div>
+</div>
+
+<div class="between">
+  <div></div><div><span class="ba">▼</span></div><div></div><div><span class="ba">▼</span></div>
+</div>
+
+<!-- Layer 3: Data Flows -->
+<div class="row">
+  <div class="row-layer l3-bg">
+    <div class="phase">Walk+</div>
+    <div class="lnum">3</div>
+    <div class="lname">Data<br>Flows</div>
+  </div>
+  <div class="row-gis l3-gis">
+    <div class="entity e-orange">
+      <span class="tbl">application_integrations</span>
+      <span class="name">Integration <span class="status-tag s-partial">Partial</span></span>
+      <span class="fields">source_deployment_profile_id, target_deployment_profile_id, direction, method, format, cadence, sensitivity</span>
+    </div>
+    <div style="font-size:10px; color:#666; margin-top:4px; padding:4px;">
+      DP-level FKs align correctly (App Service ↔ App Service). GIS captures rich metadata (method, format, cadence, sensitivity) that ServiceNow's cmdb_rel_ci does not store.
+    </div>
+    <div class="gap-note">⚠ Export must flatten to cmdb_rel_ci rows — rich metadata lost unless customer uses custom attributes or Digital Integration Mgmt (APM license)</div>
+  </div>
+  <div class="row-bridge"><span class="arrow-map">→</span></div>
+  <div class="row-sn l3-sn">
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_service_auto</span>
+      <span class="name">App Service A</span>
+    </div>
+    <div class="rel-line">
+      <span class="rel-arrow-sm">↓</span>
+      <span class="rel-label">Sends data to::Receives data from</span>
+    </div>
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_service_auto</span>
+      <span class="name">App Service B</span>
+    </div>
+    <div style="font-size:9px; color:#888; margin-top:4px;">
+      Alternative: Digital Integration Management (APM module) or API CI classes (cmdb_ci_api_now) in CSDM 5
+    </div>
+  </div>
+</div>
+
+<div class="between">
+  <div></div><div><span class="ba">▼</span></div><div></div><div><span class="ba">▼</span></div>
+</div>
+
+<!-- Layer 4: Business Services -->
+<div class="row">
+  <div class="row-layer l4-bg">
+    <div class="phase">Run</div>
+    <div class="lnum">4</div>
+    <div class="lname">Business<br>Services</div>
+  </div>
+  <div class="row-gis l4-gis">
+    <div class="entity e-purple">
+      <span class="tbl">it_services + it_service_offerings</span>
+      <span class="name">IT Services <span class="status-tag s-partial">Walk scope</span></span>
+      <span class="fields">IT Service catalog with cost attribution, service_type links</span>
+    </div>
+    <div style="font-size:10px; color:#666; margin-top:4px; padding:4px;">
+      GIS IT Services map to Technical Services / TSOs (Walk), not Business Services (Run). Business Service modeling is future scope.
+    </div>
+  </div>
+  <div class="row-bridge"><span class="arrow-map" style="color:#ccc;">⇢</span></div>
+  <div class="row-sn l4-sn">
+    <div class="entity e-sn">
+      <span class="tbl">cmdb_ci_service (Business)</span>
+      <span class="name">Business Service</span>
+    </div>
+    <div class="rel-line">
+      <span class="rel-arrow-sm">↓</span>
+      <span class="rel-label">Provides::Provided by</span>
+    </div>
+    <div class="entity e-sn">
+      <span class="tbl">svc_offering</span>
+      <span class="name">Business Service Offering</span>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary">
+  <div class="summary-box sum-scores">
+    <h3>Alignment Scorecard</h3>
+    <ul>
+      <li><strong>Layer 1 (Crawl):</strong> Structurally aligned. FK guarantees Consumes relationship. 5 of 8 BA fields ready, 3 of 8 AS fields ready. Three schema gaps to resolve (groups, criticality, change_control role).</li>
+      <li><strong>Layer 2 (Walk):</strong> Boundary is correct. GIS tracks tech inventory; Discovery owns infrastructure CIs. No overlap, no conflict.</li>
+      <li><strong>Layer 3 (Data Flows):</strong> DP-level FKs correctly align to App Service ↔ App Service. GIS is ahead of SN (richer metadata). Export requires flattening.</li>
+      <li><strong>Layer 4 (Run):</strong> GIS IT Services map to Technical Services (Walk), not Business Services (Run). Future scope.</li>
+    </ul>
+  </div>
+  <div class="summary-box sum-gaps">
+    <h3>Phase 37 Prerequisites</h3>
+    <ul>
+      <li><strong>No group entity</strong> — 3 SN fields need groups (managed_by_group, support_group, change_control). GIS tracks individuals only.</li>
+      <li><strong>Business criticality</strong> — SN needs 1–5 on both BA and AS. GIS has 0–100 on portfolio_assignments (portfolio-scoped, not global).</li>
+      <li><strong>change_control role</strong> — Not in deployment_profile_contacts CHECK constraint. Schema change required.</li>
+      <li><strong>Integration metadata loss</strong> — method, format, cadence, sensitivity have no home in cmdb_rel_ci. Accept loss or use custom attributes.</li>
+      <li><strong>CSDM export views</strong> — vw_csdm_business_app, vw_csdm_service_auto needed to transform GIS model → SN payload.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="footer">
+  <span>GetInSync NextGen — Architecture Reference</span>
+  <span>March 2026 — Internal Use</span>
+</div>
+
+</body>
+</html>
