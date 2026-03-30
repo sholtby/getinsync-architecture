@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DP Card Wireframe — Operations Section</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 24px; color: #1a1a1a; }
+  
+  .page-header { max-width: 800px; margin: 0 auto 24px; }
+  .page-header h1 { font-size: 20px; color: #1B4F72; margin-bottom: 4px; }
+  .page-header p { font-size: 12px; color: #888; }
+  
+  .tab-bar { max-width: 800px; margin: 0 auto; display: flex; border-bottom: 2px solid #e0e0e0; }
+  .tab { padding: 10px 20px; font-size: 13px; color: #666; cursor: pointer; position: relative; }
+  .tab.active { color: #1B4F72; font-weight: 600; }
+  .tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #1B4F72; }
+  .tab .badge { background: #e8e8e8; color: #666; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+  
+  .content { max-width: 800px; margin: 20px auto 0; }
+  
+  .dp-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  
+  .dp-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #fafafa; border-bottom: 1px solid #eee; }
+  .dp-header h3 { font-size: 15px; color: #1a1a1a; }
+  .dp-header .env-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .env-prod { background: #E8F5E9; color: #2E7D32; }
+  .env-qa { background: #FFF3E0; color: #E65100; }
+  
+  .dp-section { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+  .dp-section:last-child { border-bottom: none; }
+  .dp-section-label { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .dp-section-label .new-tag { font-size: 9px; background: #E3F2FD; color: #1565C0; padding: 1px 6px; border-radius: 3px; text-transform: none; letter-spacing: 0; font-weight: 600; }
+  
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+  .field { }
+  .field-label { font-size: 11px; color: #888; margin-bottom: 3px; }
+  .field-value { font-size: 13px; color: #1a1a1a; }
+  
+  .contact-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .contact-avatar { width: 28px; height: 28px; border-radius: 50%; background: #E8EAF6; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #3F51B5; font-weight: 600; flex-shrink: 0; }
+  .contact-info { flex: 1; }
+  .contact-name { font-size: 13px; color: #1a1a1a; }
+  .contact-role { font-size: 10px; color: #999; }
+  
+  /* Operations section - the new bit */
+  .ops-section { background: #FAFFFE; }
+  .ops-question { margin-bottom: 12px; }
+  .ops-question:last-child { margin-bottom: 0; }
+  .ops-question-label { font-size: 13px; color: #333; margin-bottom: 4px; font-weight: 500; }
+  .ops-question-hint { font-size: 10px; color: #aaa; margin-bottom: 4px; font-style: italic; }
+  
+  .team-select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; color: #1a1a1a; background: #fff; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+  .team-select:focus { outline: none; border-color: #1B7A4A; box-shadow: 0 0 0 2px rgba(27,122,74,0.15); }
+  .team-select option { padding: 4px; }
+  
+  .ops-mapping { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .ops-mapping-label { font-size: 9px; color: #bbb; }
+  .ops-mapping-target { font-size: 9px; font-family: 'Courier New', monospace; color: #1B4F72; background: #EDF4FB; padding: 1px 5px; border-radius: 3px; }
+  
+  /* Cost section */
+  .cost-row { display: flex; gap: 20px; }
+  .cost-item { }
+  .cost-value { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .cost-label { font-size: 10px; color: #999; }
+  
+  /* Annotations */
+  .annotation { max-width: 800px; margin: 16px auto; padding: 12px 16px; background: #FFF8E1; border: 1px solid #FFE082; border-radius: 6px; font-size: 11px; color: #795548; }
+  .annotation strong { color: #E65100; }
+  
+  .legend { max-width: 800px; margin: 20px auto 0; padding: 14px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; }
+  .legend h3 { font-size: 12px; color: #1B4F72; margin-bottom: 8px; }
+  .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .legend-item { font-size: 11px; color: #555; }
+  .legend-item code { font-size: 10px; background: #EDF4FB; padding: 1px 4px; border-radius: 2px; color: #1B4F72; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Deployment Profile Card — Wireframe</h1>
+  <p>Showing the new "Operations" section with three business-language team questions</p>
+</div>
+
+<!-- Tab bar context -->
+<div class="tab-bar">
+  <div class="tab">General</div>
+  <div class="tab active">Deployments & Costs <span class="badge">2</span></div>
+  <div class="tab">Integrations <span class="badge">4</span></div>
+  <div class="tab">Visual</div>
+</div>
+
+<div class="content">
+
+  <!-- DP Card 1: Production (fully populated) -->
+  <div class="dp-card">
+    <div class="dp-header">
+      <h3>SAP Finance — Production</h3>
+      <span class="env-badge env-prod">PROD</span>
+    </div>
+    
+    <!-- Details section -->
+    <div class="dp-section">
+      <div class="dp-section-label">Deployment Details</div>
+      <div class="field-grid">
+        <div class="field">
+          <div class="field-label">Hosting</div>
+          <div class="field-value">Cloud (Azure)</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Region</div>
+          <div class="field-value">CA-Central</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Version</div>
+          <div class="field-value">4.2.1</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Server</div>
+          <div class="field-value">AZSAPFIN01</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Contacts section (existing) -->
+    <div class="dp-section">
+      <div class="dp-section-label">Contacts</div>
+      <div class="contact-row">
+        <div class="contact-avatar">JS</div>
+        <div class="contact-info">
+          <div class="contact-name">Jane Smith</div>
+          <div class="contact-role">Operational Owner</div>
+        </div>
+      </div>
+      <div class="contact-row">
+        <div class="contact-avatar">BC</div>
+        <div class="contact-info">
+          <div class="contact-name">Bob Chen</div>
+          <div class="contact-role">Technical SME</div>
+        </div>
+      </div>
+      <div class="contact-row">
+        <div class="contact-avatar">MG</div>
+        <div class="contact-info">
+          <div class="contact-name">Maria Garcia</div>
+          <div class="contact-role">Support</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- NEW: Operations section -->
+    <div class="dp-section ops-section">
+      <div class="dp-section-label">
+        Operations
+        <span class="new-tag">NEW</span>
+      </div>
+      
+      <div class="ops-question">
+        <div class="ops-question-label">Who fixes it when it breaks?</div>
+        <select class="team-select">
+          <option value="" disabled>Select a team...</option>
+          <optgroup label="All workspaces">
+            <option>Provincial IT Support</option>
+            <option>Central IT Change Board</option>
+          </optgroup>
+          <optgroup label="Finance">
+            <option selected>Finance IT Team</option>
+            <option>Finance Change Advisory Board</option>
+          </optgroup>
+        </select>
+        <div class="ops-mapping">
+          <span class="ops-mapping-label">Maps to:</span>
+          <span class="ops-mapping-target">support_group</span>
+        </div>
+      </div>
+      
+      <div class="ops-question">
+        <div class="ops-question-label">Who approves changes?</div>
+        <select class="team-select">
+          <option value="" disabled>Select a team...</option>
+          <optgroup label="All workspaces">
+            <option>Provincial IT Support</option>
+            <option selected>Central IT Change Board</option>
+          </optgroup>
+          <optgroup label="Finance">
+            <option>Finance IT Team</option>
+            <option>Finance Change Advisory Board</option>
+          </optgroup>
+        </select>
+        <div class="ops-mapping">
+          <span class="ops-mapping-label">Maps to:</span>
+          <span class="ops-mapping-target">change_control</span>
+        </div>
+      </div>
+      
+      <div class="ops-question">
+        <div class="ops-question-label">Which team manages this day-to-day?</div>
+        <select class="team-select">
+          <option value="" disabled>Select a team...</option>
+          <optgroup label="All workspaces">
+            <option>Provincial IT Support</option>
+            <option>Central IT Change Board</option>
+          </optgroup>
+          <optgroup label="Finance">
+            <option selected>Finance IT Team</option>
+            <option>Finance Change Advisory Board</option>
+          </optgroup>
+        </select>
+        <div class="ops-mapping">
+          <span class="ops-mapping-label">Maps to:</span>
+          <span class="ops-mapping-target">managed_by_group</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Costs section -->
+    <div class="dp-section">
+      <div class="dp-section-label">Costs</div>
+      <div class="cost-row">
+        <div class="cost-item">
+          <div class="cost-value">$24,000</div>
+          <div class="cost-label">Annual Run Rate</div>
+        </div>
+        <div class="cost-item">
+          <div class="cost-value">Per User</div>
+          <div class="cost-label">Cost Model</div>
+        </div>
+        <div class="cost-item">
+          <div class="cost-value">$120</div>
+          <div class="cost-label">Per User / Year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DP Card 2: QA (empty operations - shows empty state) -->
+  <div class="dp-card">
+    <div class="dp-header">
+      <h3>SAP Finance — QA</h3>
+      <span class="env-badge env-qa">QA</span>
+    </div>
+    
+    <div class="dp-section">
+      <div class="dp-section-label">Deployment Details</div>
+      <div class="field-grid">
+        <div class="field">
+          <div class="field-label">Hosting</div>
+          <div class="field-value">Cloud (Azure)</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Region</div>
+          <div class="field-value">CA-Central</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Version</div>
+          <div class="field-value">4.3.0-beta</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Server</div>
+          <div class="field-value">—</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="dp-section">
+      <div class="dp-section-label">Contacts</div>
+      <div class="contact-row">
+        <div class="contact-avatar">BC</div>
+        <div class="contact-info">
+          <div class="contact-name">Bob Chen</div>
+          <div class="contact-role">Technical SME</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Operations - empty state -->
+    <div class="dp-section ops-section">
+      <div class="dp-section-label">
+        Operations
+        <span class="new-tag">NEW</span>
+      </div>
+      
+      <div class="ops-question">
+        <div class="ops-question-label">Who fixes it when it breaks?</div>
+        <select class="team-select" style="color: #999;">
+          <option value="" selected>Select a team...</option>
+          <optgroup label="All workspaces">
+            <option>Provincial IT Support</option>
+            <option>Central IT Change Board</option>
+          </optgroup>
+          <optgroup label="Finance">
+            <option>Finance IT Team</option>
+            <option>Finance Change Advisory Board</option>
+          </optgroup>
+        </select>
+      </div>
+      
+      <div class="ops-question">
+        <div class="ops-question-label">Who approves changes?</div>
+        <select class="team-select" style="color: #999;">
+          <option value="" selected>Select a team...</option>
+        </select>
+      </div>
+      
+      <div class="ops-question">
+        <div class="ops-question-label">Which team manages this day-to-day?</div>
+        <select class="team-select" style="color: #999;">
+          <option value="" selected>Select a team...</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="dp-section">
+      <div class="dp-section-label">Costs</div>
+      <div class="cost-row">
+        <div class="cost-item">
+          <div class="cost-value" style="color: #ccc;">—</div>
+          <div class="cost-label">No costs assigned</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Annotations -->
+<div class="annotation">
+  <strong>Design notes:</strong> The "Maps to:" labels beneath each dropdown are shown here for architecture context.
+  In production, these would be hidden by default and visible only in an admin/advanced mode or tooltip.
+  The 18-year-old test: a summer intern sees "Who fixes it when it breaks?" and picks a team from the dropdown.
+  They never see "support_group" or "cmdb_ci_service_auto."
+</div>
+
+<div class="legend">
+  <h3>How This Resolves the Gap Analysis</h3>
+  <div class="legend-grid">
+    <div class="legend-item"><strong>§4.1 No group entity</strong> → <code>teams</code> table + 3 FK columns on <code>deployment_profiles</code></div>
+    <div class="legend-item"><strong>§4.4 Missing change_control</strong> → <code>change_team_id</code> + <code>change_control</code> role_type added</div>
+    <div class="legend-item"><strong>support_group</strong> → <code>support_team_id</code> → "Who fixes it when it breaks?"</div>
+    <div class="legend-item"><strong>change_control</strong> → <code>change_team_id</code> → "Who approves changes?"</div>
+    <div class="legend-item"><strong>managed_by_group</strong> → <code>managing_team_id</code> → "Which team manages this?"</div>
+    <div class="legend-item"><strong>busines_criticality</strong> → Derived at export from MAX(portfolio_assignments.criticality)</div>
+  </div>
+</div>
+
+</body>
+</html>

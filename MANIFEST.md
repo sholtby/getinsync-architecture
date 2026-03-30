@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-28 (v1.83)
+Last updated: 2026-03-30 (v1.84)
 
 ---
 
@@ -168,6 +168,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | csdm-crawl-toolkit/ | **v1.0** | 🟢 | CSDM Crawl Toolkit — Claude Agent Skill for CSDM Crawl adoption. 11 reference files: checklists, field guides, validation scripts, Import Set templates, relationship discovery. |
 | features/integrations/getinsync-csdm-alignment.html | **v1.0** | 🟡 | **GetInSync ↔ CSDM relationship alignment — 4-layer visual mapping GIS entities to ServiceNow relationship types, gap analysis, Phase 37 prerequisites** |
 | features/integrations/getinsync-csdm-alignment.docx | — | ☪ | Word version of relationship alignment (landscape) |
+| features/integrations/dp-card-wireframe.html | v1.0 | 🟡 | **DP card wireframe — Operations section with 3 plain-English team questions. Architecture reference for CSDM export readiness UI.** |
 
 
 ### Visualization
@@ -312,13 +313,14 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
 | adr/adr-integration-dp-alignment.md | v1.2 | ☪ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
 | adr/adr-visual-tab-reactflow.md | v1.0 | ⏸ | **ADR: Visual Tab React Flow Rewrite (PARKED). D3 replaced with React Flow + dagre. Branch feat/visual-tab-reactflow complete but parked pending integration-DP alignment Phase 1+2.** |
+| adr/adr-csdm-export-readiness.md | v1.0 | 🟡 | **ADR: CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1/§4.2/§4.4: teams entity, 3 FK columns on deployment_profiles (support_team_id, change_team_id, managing_team_id), export-time criticality derivation, change_control role_type. Moves gap scorecard from 14→19 of 28 fields ready.** |
 
 ### Change Management
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | CHANGELOG.md | v1.9 | 🟢 | Architecture change log (current) |
-| **THIS FILE: MANIFEST.md** | **v1.79** | 🟢 | **Architecture manifest — v1.79: Stage 1 shared data layer (semantic layer, 2 new tables, 2 new views, Integration-DP Phase 1+2)** |
+| **THIS FILE: MANIFEST.md** | **v1.84** | 🟢 | **Architecture manifest — v1.84: CSDM Export Readiness ADR, DP card wireframe, document count audit (115 docs)** |
 
 ---
 
@@ -374,6 +376,9 @@ The following documents were removed during the architecture audit. They describ
 | applications | +`architecture_type TEXT DEFAULT 'standalone' REFERENCES architecture_types(code)` | Composite Application v2.0 |
 | deployment_profiles | +`inherits_tech_from UUID REFERENCES deployment_profiles(id) ON DELETE SET NULL` | Composite Application v2.0 / DP v1.9 |
 | *(new table)* | application_relationships (constitutes, depends_on, replaces) | Composite Application v2.0 |
+| *(new table)* | teams (id, namespace_id, workspace_id, name, description, is_active) | ADR: CSDM Export Readiness |
+| deployment_profiles | +support_team_id, +change_team_id, +managing_team_id (FK → teams) | ADR: CSDM Export Readiness |
+| deployment_profile_contacts | ALTER CHECK: add 'change_control' to role_type | ADR: CSDM Export Readiness |
 
 **Deployed since v1.24 (removed from pending):**
 - ✅ vw_run_rate_by_lifecycle_status, vw_explorer_detail — deployed Mar 20 (Stage 1)
@@ -796,12 +801,12 @@ The following documents were removed during the architecture audit. They describ
 
 | Status | Count |
 |--------|-------|
-| 🟢 AS-BUILT | 55 |
-| 🟡 AS-DESIGNED | 12 |
-| 🟠 NEEDS UPDATE | 0 |
-| ☪ REFERENCE | 18 |
-| 🗴 DEPRECATED (removed) | 14 |
-| **Total tracked** | **101** |
+| 🟢 AS-BUILT | 61 |
+| 🟡 AS-DESIGNED | 29 |
+| 🟠 NEEDS UPDATE | 1 |
+| ☪ REFERENCE | 21 |
+| ⏸ PARKED | 3 |
+| **Total tracked** | **115** |
 
 ---
 
@@ -839,6 +844,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.84 | 2026-03-30 | NEW: `adr/adr-csdm-export-readiness.md` v1.0 🟡 — CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1 (no group entity → teams table), §4.2 (criticality → derive at export), §4.4 (change_control role). 3 new FK columns on deployment_profiles. NEW: `features/integrations/dp-card-wireframe.html` v1.0 🟡 — DP card wireframe with Operations section. 3 pending schema changes added. Document count audit corrected (was stale since v1.79): 107→115. AS-DESIGNED 27→29. |
 | v1.83 | 2026-03-28 | NEW: `features/integrations/getinsync-csdm-alignment.html` v1.0 🟡 — 4-layer visual mapping GIS entities to CSDM relationship types. NEW: `.docx` Word version (landscape). Document count 105→107. |
 | v1.82 | 2026-03-27 | Added `csdm-crawl-toolkit/` manifest entry (11 reference files). Wired `relationship-discovery.md` into SKILL.md and README.md. Document count 104→105. |
 | v1.81 | 2026-03-23 | NEW: `features/integrations/csdm-crawl-gap-analysis.md` v1.0 🟡 — CSDM Crawl field-level gap analysis. Cross-referenced 47-item crawl checklist against GIS schema: 28 fields mapped (14 ready, 9 gaps, 5 partial). Critical gaps: no group entity, criticality placement, missing change_control role. Phase 37 prerequisites documented. Document count 103→104. |
