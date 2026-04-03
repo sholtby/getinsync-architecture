@@ -195,7 +195,6 @@ These features have **no dependencies** on the ADR chain and can fill gaps betwe
 | #65 Budget alerts frontend | Open items | 1-2 days | DB layer deployed. Frontend pending. |
 | #66 Assessment tour (Shepherd.js) | Open items | 0.5 day | Shepherd already integrated. |
 | #63 Servers on dashboard | Open items | 0.5 day | Visual tab done. Dashboard remaining. |
-| #61 Tech Health CSV export label fix | Open items | 1 hr | One-liner — "applications" → "deployment profiles". |
 
 ### Tier 2: Designed Features
 

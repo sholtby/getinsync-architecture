@@ -499,13 +499,6 @@ and confirm "schema done."
 These are small, independent tasks to fill time between chunks or at the end of a session. Each can be done in a standalone session with a simple prompt.
 
 ```
-#61 — Tech Health CSV export label fix (~1 hour)
-"The Tech Health CSV export labels rows as 'applications' but exports at
-DP level. Fix the column header and count label to say 'deployment profiles'.
-Branch: fix/tech-health-csv-label"
-```
-
-```
 #57 — Scope indicator (~0.5 day)
 "Add a scope indicator showing 'N of M workspaces' in the tab bar or header.
 Users who don't see all workspaces should know their view is filtered.
