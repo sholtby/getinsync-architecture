@@ -4,6 +4,10 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 3, 2026
+
+- **Tech Health CSV Export Fix** — CSV exports from the Tech Health "By Application" and "Analysis" tabs now use the filename "deployment-profiles" instead of "applications", correctly reflecting that each row represents a deployment profile.
+
 ## March 20, 2026
 
 - **Portfolio AI Assistant** — New Chat tab with a conversational AI assistant that answers questions about your application portfolio. Ask about app counts, costs, vendor spend, budget status, or drill into any specific application by name. Supports workspace/department filtering ("show me Finance costs"), conversation history, markdown-formatted responses, and copy-to-clipboard. Data scope respects your role-based access.
