@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-03 (v1.87)
+Last updated: 2026-04-03 (v1.88)
 
 ---
 
@@ -154,8 +154,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| testing/pgtap-rls-coverage.sql | v1.7 | 🟢 | pgTAP security regression — 437 assertions: RLS, GRANTs (99 tables + 38 views), audit triggers (57), view security, sentinel checks |
-| testing/security-posture-validation.sql | v1.3 | 🟢 | Standalone security validation — PASS/FAIL output for all 92 tables + 29 views (incl. view GRANTs) |
+| testing/pgtap-rls-coverage.sql | v1.8 | 🟢 | pgTAP security regression — 437 assertions: RLS, GRANTs (102 tables + 39 views), audit triggers (60), view security, sentinel checks |
+| testing/security-posture-validation.sql | v1.4 | 🟢 | Standalone security validation — PASS/FAIL output for all 102 tables + 39 views (incl. view GRANTs) |
 
 ### Integration & Alignment
 
@@ -346,17 +346,17 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-03-20)
+## Schema Statistics (as of 2026-04-03)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 99 |
-| **Views** | 38 |
+| **Tables** | 102 |
+| **Views** | 41 |
 | **Functions (RPCs)** | 60 |
-| **RLS Policies** | 380 |
-| **Audit Triggers** | 57 |
-| **Explicit GRANTs** | 99 tables × 2 roles (authenticated + service_role) |
-| **Schema backup** | schema/nextgen-schema-current.sql (2026-03-20) |
+| **RLS Policies** | 389 |
+| **Audit Triggers** | 60 |
+| **Explicit GRANTs** | 102 tables × 2 roles (authenticated + service_role) |
+| **Schema backup** | schema/nextgen-schema-current.sql (2026-04-03 PENDING) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
 | **Production Namespaces** | 17 (all region = 'ca') |
@@ -379,11 +379,12 @@ The following documents were removed during the architecture audit. They describ
 | applications | +`architecture_type TEXT DEFAULT 'standalone' REFERENCES architecture_types(code)` | Composite Application v2.0 |
 | deployment_profiles | +`inherits_tech_from UUID REFERENCES deployment_profiles(id) ON DELETE SET NULL` | Composite Application v2.0 / DP v1.9 |
 | *(new table)* | application_relationships (constitutes, depends_on, replaces) | Composite Application v2.0 |
-| *(new table)* | teams (id, namespace_id, workspace_id, name, description, is_active) | ADR: CSDM Export Readiness |
-| deployment_profiles | +support_team_id, +change_team_id, +managing_team_id (FK → teams) | ADR: CSDM Export Readiness |
-| deployment_profile_contacts | ALTER CHECK: add 'change_control' to role_type | ADR: CSDM Export Readiness |
-
 **Deployed since v1.24 (removed from pending):**
+- ✅ teams table — deployed Apr 3 (CSDM Export Readiness ADR §4.1)
+- ✅ deployment_profiles: +support_team_id, +change_team_id, +managing_team_id — deployed Apr 3 (CSDM Export Readiness ADR §4.2)
+- ✅ deployment_profile_contacts: CHECK updated with change_control — deployed Apr 3 (CSDM Export Readiness ADR §4.3)
+- ✅ deployment_profiles: +contract_reference, +contract_start_date, +contract_end_date, +renewal_notice_days — deployed Apr 3 (Contract-Aware Cost Bundles ADR §4.1)
+- ✅ vw_contract_expiry UNION view — deployed Apr 3 (Contract-Aware Cost Bundles ADR §4.2)
 - ✅ vw_run_rate_by_lifecycle_status, vw_explorer_detail — deployed Mar 20 (Stage 1)
 - ✅ ai_chat_conversations, ai_chat_messages — deployed Mar 20 (Stage 1)
 - ✅ application_integrations: +source_deployment_profile_id, +target_deployment_profile_id — deployed Mar 20 (Integration-DP ADR Phase 1)
@@ -847,6 +848,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |
 | v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
 | v1.85 | 2026-04-03 | NEW: `adr/adr-contract-aware-cost-bundles.md` v1.0 🟡 — Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields for Day 1 contract awareness. UNION `vw_contract_expiry` view. Double-count guardrails. Maturity graduation model. No budget math changes. Document count 115→116. AS-DESIGNED 29→30. |

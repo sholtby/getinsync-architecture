@@ -1,13 +1,14 @@
 -- =============================================================================
 -- GetInSync NextGen — Security Posture Validation (No pgTAP Required)
 -- =============================================================================
--- Version: 1.3 | Date: 2026-03-13
+-- Version: 1.4 | Date: 2026-04-03
 -- Run in Supabase SQL Editor — produces a single results table
 -- No extensions needed. Read-only (no data changes).
 -- =============================================================================
 
 WITH expected_tables AS (
   SELECT unnest(ARRAY[
+    'ai_chat_conversations','ai_chat_messages',
     'alert_preferences','apm_chat_usage','apm_embeddings',
     'application_compliance','application_contacts',
     'application_categories','application_category_assignments',
@@ -36,7 +37,7 @@ WITH expected_tables AS (
     'portfolio_contacts','portfolio_settings','portfolios','program_initiatives',
     'programs','remediation_efforts','sensitivity_types',
     'service_type_categories','service_types','software_product_categories',
-    'software_products','standard_regions','technical_assessments',
+    'software_products','standard_regions','teams','technical_assessments',
     'technology_lifecycle_reference','technology_product_categories',
     'technology_products','technology_standards','user_sessions','users',
     'vendor_lifecycle_sources','workflow_definitions','workflow_instances',
@@ -61,7 +62,7 @@ expected_audit_tables AS (
     'it_services','namespace_users','operational_statuses',
     'organizations','platform_admins','portfolio_assignments',
     'portfolio_contacts','portfolios','program_initiatives','programs',
-    'sensitivity_types','technology_lifecycle_reference','technology_products',
+    'sensitivity_types','teams','technology_lifecycle_reference','technology_products',
     'user_sessions','users','vendor_lifecycle_sources',
     'workspace_contacts','workspace_users'
   ]) AS table_name
@@ -70,7 +71,7 @@ expected_audit_tables AS (
 expected_views AS (
   SELECT unnest(ARRAY[
     'vw_application_infrastructure_report','vw_application_integration_summary',
-    'vw_application_run_rate','vw_budget_alerts','vw_budget_status',
+    'vw_application_run_rate','vw_budget_alerts','vw_budget_status','vw_contract_expiry',
     'vw_budget_transfer_history','vw_dashboard_summary',
     'vw_dashboard_summary_scoped','vw_dashboard_workspace_breakdown',
     'vw_deployment_profile_costs','vw_dp_lifecycle_risk_combined',
@@ -88,6 +89,8 @@ expected_views AS (
     'vw_tag_standards_status',
     'vw_technology_standards_summary','vw_technology_tag_lifecycle_risk',
     'vw_workspace_budget_history',
+    'vw_explorer_detail',
+    'vw_run_rate_by_lifecycle_status',
     'vw_workspace_budget_summary'
   ]) AS view_name
 ),
