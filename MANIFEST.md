@@ -314,6 +314,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | adr/adr-integration-dp-alignment.md | v1.2 | ☪ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
 | adr/adr-visual-tab-reactflow.md | v1.0 | ⏸ | **ADR: Visual Tab React Flow Rewrite (PARKED). D3 replaced with React Flow + dagre. Branch feat/visual-tab-reactflow complete but parked pending integration-DP alignment Phase 1+2.** |
 | adr/adr-csdm-export-readiness.md | v1.0 | 🟡 | **ADR: CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1/§4.2/§4.4: teams entity, 3 FK columns on deployment_profiles (support_team_id, change_team_id, managing_team_id), export-time criticality derivation, change_control role_type. Moves gap scorecard from 14→19 of 28 fields ready.** |
+| adr/adr-contract-aware-cost-bundles.md | v1.0 | 🟡 | **ADR: Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields (reference, dates, renewal notice) for Day 1 contract awareness without IT Service maturity requirement. UNION `vw_contract_expiry` view across IT Services + Cost Bundles. Double-count guardrails. Maturity graduation model: Cost Bundle → IT Service. CSDM `ast_contract` export mapping. No budget math changes.** |
 
 ### Change Management
 
@@ -844,6 +845,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.85 | 2026-04-03 | NEW: `adr/adr-contract-aware-cost-bundles.md` v1.0 🟡 — Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields for Day 1 contract awareness. UNION `vw_contract_expiry` view. Double-count guardrails. Maturity graduation model. No budget math changes. Document count 115→116. AS-DESIGNED 29→30. |
 | v1.84 | 2026-03-30 | NEW: `adr/adr-csdm-export-readiness.md` v1.0 🟡 — CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1 (no group entity → teams table), §4.2 (criticality → derive at export), §4.4 (change_control role). 3 new FK columns on deployment_profiles. NEW: `features/integrations/dp-card-wireframe.html` v1.0 🟡 — DP card wireframe with Operations section. 3 pending schema changes added. Document count audit corrected (was stale since v1.79): 107→115. AS-DESIGNED 27→29. |
 | v1.83 | 2026-03-28 | NEW: `features/integrations/getinsync-csdm-alignment.html` v1.0 🟡 — 4-layer visual mapping GIS entities to CSDM relationship types. NEW: `.docx` Word version (landscape). Document count 105→107. |
 | v1.82 | 2026-03-27 | Added `csdm-crawl-toolkit/` manifest entry (11 reference files). Wired `relationship-discovery.md` into SKILL.md and README.md. Document count 104→105. |
