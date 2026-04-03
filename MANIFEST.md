@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-03-30 (v1.84)
+Last updated: 2026-04-03 (v1.86)
 
 ---
 
@@ -248,6 +248,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | marketing/pricing-model.md | v1.0 | ☪ | Tier structure, licensing |
 | marketing/executive-presentation.md | v1.0 | ☪ | Executive presentation |
 | planning/q1-2026-master-plan.md | v1.4 → **v2.0** | 🟢 | Q1 2026 strategic roadmap — **v2.0 xlsx replaces markdown** |
+| planning/april-2026-level-set.md | v1.0 | ☪ | **April 2026 Level Set.** Sequences 4 ADRs + major features into staged delivery plan. Stages A-D: DP Enhancement → Integration Phase 3 → Visual Tab React Flow → CSDM Export. Independent work tiers (Gamification, Entra ID/SSO, open items). April-May calendar. Success criteria. |
 | marketing/explainer.md | v1.7.1 | ☪ | **Product explainer — merged v1.5 base + v1.7 additions. Tenancy, identity, licensing, cost, CSDM, technology health, risk boundary, data governance, buyer personas** |
 | marketing/positioning-statements.md | v1.0 | ☪ | Positioning statements |
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
@@ -845,6 +846,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
 | v1.85 | 2026-04-03 | NEW: `adr/adr-contract-aware-cost-bundles.md` v1.0 🟡 — Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields for Day 1 contract awareness. UNION `vw_contract_expiry` view. Double-count guardrails. Maturity graduation model. No budget math changes. Document count 115→116. AS-DESIGNED 29→30. |
 | v1.84 | 2026-03-30 | NEW: `adr/adr-csdm-export-readiness.md` v1.0 🟡 — CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1 (no group entity → teams table), §4.2 (criticality → derive at export), §4.4 (change_control role). 3 new FK columns on deployment_profiles. NEW: `features/integrations/dp-card-wireframe.html` v1.0 🟡 — DP card wireframe with Operations section. 3 pending schema changes added. Document count audit corrected (was stale since v1.79): 107→115. AS-DESIGNED 27→29. |
 | v1.83 | 2026-03-28 | NEW: `features/integrations/getinsync-csdm-alignment.html` v1.0 🟡 — 4-layer visual mapping GIS entities to CSDM relationship types. NEW: `.docx` Word version (landscape). Document count 105→107. |
