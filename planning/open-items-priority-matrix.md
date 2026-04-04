@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** March 20, 2026
+**As of:** April 4, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -40,6 +40,8 @@
 | 65 | Feature | Budget Alerts frontend | DB layer deployed (alert_preferences table, vw_budget_alerts view). Frontend pending. ~1-2 days. | -- | Stuart + Claude Code |
 | 66 | Feature | In-App Support S.6 — Assessment tour | Shepherd.js already integrated (S.2 complete). Step-by-step assessment walkthrough. ~0.5 day. | -- | Stuart + Claude Code |
 | 68 | Feature | TypeScript types — update `VwIntegrationDetail` for 4 new DP columns | source/target_deployment_profile_id + names. Consumers: IntegrationDetail components. ~0.5 day. | Stage 1 SQL deployed | Stuart + Claude Code |
+| 70 | Feature | AI Chat: add teams query tool | `teams` table not discoverable by AI Chat. Add `search_teams` tool to `ai-chat/tools.ts` exposing team name, scope, DP assignment counts. Example questions: "what teams support SAP?", "which team manages Finance apps?" ~1 hr. | -- | Stuart + Claude Code |
+| 71 | Feature | Global Search: add teams entity | `teams` table not in `global_search` RPC. Add `team_results` WITH clause searching by team name. Requires SQL script + AppHeader.tsx routing. ~1 hr. | -- | Stuart + Claude Code |
 
 ---
 
