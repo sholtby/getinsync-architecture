@@ -279,21 +279,32 @@ record for integration architecture.
 
 ### 6.1 Deployments & Costs tab — new "Operations" section
 
-Each DP card gains a new section below the existing contacts panel:
+Each DP card gains a new "Operations" section **after** the IT Service dependencies
+(Section 4: "What Services Does It Use?"). This is the last section on the card.
+
+**As-built DP card section order (with this change):**
 
 ```
 ┌─────────────────────────────────────────────────┐
 │ SAP Finance — Production                    [▼] │
 ├─────────────────────────────────────────────────┤
+│                                                 │
+│ ── What Software Is This? ─────────────────── 1 │
+│ [LinkedSoftwareProductsList]                    │
+│                                                 │
+│ ── What Does It Run On? ──────────────────── 2  │
+│ [LinkedTechnologyProductsList]                  │
+│                                                 │
+│ ── Where Does It Run? ───────────────────── 3   │
 │ Environment: PROD    Hosting: SaaS              │
 │ Version: 4.2.1       Region: CA-Central         │
+│ Server: SAPSRV01     DR: Hot Standby            │
+│ Remediation: M       Tech Debt: $15,000         │
 │                                                 │
-│ ── Contacts ──────────────────────────────────── │
-│ Business Owner: Jane Smith                      │
-│ Technical SME:  Bob Chen                        │
-│ Support:        Maria Garcia                    │
+│ ── What Services Does It Use? ──────────── 4    │
+│ [ITServiceDependencyList]                       │
 │                                                 │
-│ ── Operations ────────────────────────────────── │
+│ ── Operations (NEW) ────────────────────── 5    │
 │                                                 │
 │ Who fixes it when it breaks?                    │
 │ ┌─────────────────────────────────────┐         │
@@ -310,10 +321,12 @@ Each DP card gains a new section below the existing contacts panel:
 │ │ Finance IT Team                   ▼ │         │
 │ └─────────────────────────────────────┘         │
 │                                                 │
-│ ── Costs ─────────────────────────────────────── │
-│ Annual: $24,000   Model: Per User               │
 └─────────────────────────────────────────────────┘
 ```
+
+**Note:** There is no "Contacts" section on the DP card today. Individual
+contacts are managed on the Application Detail page (Contacts tab), not
+inline on the DP card. The Operations section stands alone as Section 5.
 
 **Dropdown behavior:**
 - Shows all namespace-level teams + teams scoped to the DP's workspace
@@ -350,8 +363,9 @@ Prevents accidental deletion of in-use teams.
 ### 6.3 Integration-DP Phase 3 coordination
 
 The integration-DP ADR Phase 3 adds a DP selector to the Add Connection modal.
-This work shares the same DP edit screen. Coordinate so that:
-- The "Operations" section (teams) appears ABOVE the integrations/connections section
+This work shares the same application edit screen. Coordinate so that:
+- The "Operations" section (teams) appears as the last section on the DP card
+  (after ITServiceDependencyList — Section 5)
 - The DP selector in Add Connection only appears when the app has multiple DPs
 - Both changes ship in the same release to avoid two rounds of DP card UI changes
 

@@ -223,7 +223,7 @@ The schema is already deployed. Do NOT generate SQL.
 ```
 
 ---
-<<<----left off here
+
 ## Chunk 4 — Frontend: CSDM Teams + Operations UI
 
 **Prerequisites:** Chunk 2 SQL applied and checkpoint passed
@@ -261,7 +261,8 @@ Tasks:
 
 2. Operations section on DP card
    Add an "Operations" section to each DP card on the Deployments & Costs
-   tab, positioned below the existing contacts section. Three dropdowns
+   tab, as the LAST section — after ITServiceDependencyList ("What Services
+   Does It Use?"). There is no contacts section on the DP card. Three dropdowns
    with plain-English labels:
    - "Who fixes it when it breaks?" → support_team_id
    - "Who approves changes?" → change_team_id
@@ -291,7 +292,7 @@ The schema is already deployed. Do NOT generate SQL.
 ```
 
 ---
-
+<<<----left off here
 ## Chunk 5 — Frontend: Integration-DP Phase 3 + Type Updates
 
 **Prerequisites:** Chunks 3 and 4 merged to dev (DP card layout finalized)
