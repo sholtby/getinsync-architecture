@@ -240,12 +240,12 @@ git branch -d feat/my-feature-name
 git push -u origin $(git branch --show-current)
 ```
 
-### Parallel Windows — Conflict Avoidance
+### Parallel Sessions — Git Worktrees
 
-When multiple Claude Code windows run simultaneously:
-- Each window works on a **separate feature branch** touching **non-overlapping files**
-- Stuart assigns features to windows that do not conflict
-- If you discover you need to modify a file another window likely owns, **stop and tell Stuart**
+When running parallel sessions on different branches, use `git worktree` to create separate working directories. Never run `git checkout` to switch branches if other sessions may be active. Each session should operate in its own worktree. Worktrees do not affect Netlify remote deployments.
+
+- Stuart assigns features to sessions that do not conflict (non-overlapping files)
+- If you discover you need to modify a file another session likely owns, **stop and tell Stuart**
 - Before merging to `dev`, always `git pull origin dev` first and resolve any conflicts
 - The architecture repo (`~/getinsync-architecture/`) stays on `main` — no feature branches needed for docs
 
@@ -264,7 +264,7 @@ git branch -r --merged dev | grep -v 'main\|dev\|HEAD'
 
 ## What You Must NOT Do
 
-- Do NOT create or use git worktrees — use feature branches for parallel work instead (see Git Workflow above)
+- When running parallel sessions, use `git worktree` so each session has its own working directory — never `git checkout` to switch branches if other sessions may be active
 - Do NOT modify database schema (Stuart handles that via Supabase SQL Editor)
 - Do NOT create database migrations, tables, columns, or constraints
 - Do NOT use `sudo` for npm installs

@@ -410,6 +410,62 @@ domains:
   # no technology tags — want me to flag those?")
   # ===========================================================================
 
+  # ===========================================================================
+  # DOMAIN: contract_management
+  # ===========================================================================
+  # "When do our contracts expire?"
+  # Contracts live on both IT Services and Cost Bundles. The unified view
+  # vw_contract_expiry merges both sources.
+  # ===========================================================================
+
+  contract_management:
+    description: "Contract expiry tracking across IT Services and Cost Bundles"
+
+    concepts:
+      contract_expiry:
+        question: "What contracts are expiring?"
+        definition: "Unified view of contract end dates from IT Services and Cost Bundles"
+        view: vw_contract_expiry
+        columns:
+          source_name: "Name of the IT Service or Cost Bundle"
+          source_type: "'it_service' or 'cost_bundle'"
+          vendor_name: "From organizations table"
+          contract_reference: "Customer-provided contract reference number"
+          contract_end_date: "Date the contract expires"
+          days_until_expiry: "Integer, negative = already expired"
+          status: "expired / renewal_due / expiring_soon / active"
+          annual_cost: "Annual cost of the contract source"
+        status_definitions:
+          expired: "contract_end_date < today"
+          renewal_due: "Within renewal_notice_days (default 90) of expiry"
+          expiring_soon: "Within 180 days of expiry"
+          active: "More than 180 days until expiry"
+        scope: namespace_id
+        note: "IT Services have no application_id; Cost Bundles have application_id via the DP"
+
+  # ===========================================================================
+  # DOMAIN: team_operations
+  # ===========================================================================
+  # "Who supports this application?"
+  # Teams are lightweight groups assigned to deployment profiles via 3 FK columns.
+  # ===========================================================================
+
+  team_operations:
+    description: "Team assignments for support, change management, and day-to-day operations"
+
+    concepts:
+      team_assignments:
+        question: "Who supports / manages / approves changes for this application?"
+        definition: "Teams assigned to deployment profiles via 3 FK columns"
+        table: deployment_profiles
+        fk_columns:
+          support_team_id: "Who fixes it when it breaks? Maps to sys_user_group at CSDM export"
+          change_team_id: "Who approves changes?"
+          managing_team_id: "Which team manages this day-to-day?"
+        resolved_via: "JOIN teams ON teams.id = dp.support_team_id (etc.)"
+        grain: deployment_profile
+        note: "Teams can be namespace-wide (workspace_id IS NULL) or workspace-scoped"
+
   data_quality:
     description: "Assessment completeness, missing data, data hygiene"
     
@@ -530,12 +586,15 @@ mcp_tools:
     scoped_view: vw_dashboard_summary_scoped
     
   application-detail:
-    domains: [portfolio_health, cost_intelligence]
+    domains: [portfolio_health, cost_intelligence, team_operations]
     resolves:
       - "Tell me about [application name]"
       - "What does [application] cost?"
       - "What's the assessment for [application]?"
-    primary_tables: [applications, deployment_profiles, portfolio_assignments]
+      - "Who supports [application]?"
+      - "Who manages [application]?"
+      - "Which team handles changes for [application]?"
+    primary_tables: [applications, deployment_profiles, portfolio_assignments, teams]
     cost_view: vw_deployment_profile_costs
     
   cost-analysis:
@@ -576,6 +635,16 @@ mcp_tools:
       initiatives: vw_initiative_summary
       programs: vw_program_summary
       
+  contract-expiry:
+    domains: [contract_management]
+    resolves:
+      - "What contracts are expiring?"
+      - "Upcoming renewals?"
+      - "What's expiring in the next 6 months?"
+      - "When does [vendor] contract end?"
+    primary_view: vw_contract_expiry
+    parameters: [days_ahead, status]
+
   data-quality:
     domains: [data_quality]
     resolves:
