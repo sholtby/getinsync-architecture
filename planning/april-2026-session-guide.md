@@ -18,6 +18,11 @@ Each "chunk" below is a self-contained Claude Code session. Copy the prompt bloc
 - If a session runs out of context, start a new window with the continuation prompt provided
 - Parallel sessions are noted where safe — only parallelize when explicitly stated
 
+**AI Chat + Global Search rule:** Neither AI Chat nor Global Search auto-discovers new tables, views, or columns. Both are hardcoded. Every chunk that adds a new entity or queryable view must include tasks to:
+- Add/extend AI Chat tools (`supabase/functions/ai-chat/tools.ts` + `system-prompt.ts`)
+- Add to Global Search RPC (`global_search` function) + navigation handler (`AppHeader.tsx`)
+- Update semantic layer (`docs-architecture/features/ai-chat/semantic-layer.yaml`)
+
 **Estimated total:** 8 chunks across ~15-20 hours of Claude Code time
 
 ---
@@ -204,6 +209,19 @@ Tasks:
    ADR §6.2 for the exact copy and button labels. "Review Cost Bundles"
    button should scroll to / highlight the Cost Bundle section.
 
+5. AI Chat — add contract-expiry tool
+   AI Chat tools are hardcoded in supabase/functions/ai-chat/tools.ts.
+   New views are invisible to AI Chat unless a tool is added. Read
+   tools.ts and system-prompt.ts to understand the pattern, then:
+   - Add a 'contract-expiry' tool to TOOL_DEFINITIONS that queries
+     vw_contract_expiry (filtered by namespace_id)
+   - Add execution logic in executeTool()
+   - Update system-prompt.ts to describe when to use the new tool
+     (e.g., "When asked about contract renewals, expiring contracts,
+     or upcoming renewals, use the contract-expiry tool")
+   - Update docs-architecture/features/ai-chat/semantic-layer.yaml
+     with the new view mapping
+
 After all tasks, update the architecture doc:
 - docs-architecture/features/cost-budget/software-contract.md §7 —
   reference vw_contract_expiry instead of vw_it_service_contract_expiry
@@ -272,6 +290,28 @@ Tasks:
    "Add new team..." option at bottom creates inline.
    Section header tooltip per ADR §6.1.
    See ADR §6.1 for wireframe.
+
+3. Global Search — add teams to search
+   Global Search (Ctrl+K) uses a hardcoded RPC `global_search` that
+   searches 12 entity types. Teams are invisible unless added. Generate
+   a SQL script (I will run it) that:
+   - Adds a `WITH teams_results AS` clause to the global_search RPC
+     searching teams.name and teams.description
+   - Category label: "Teams", icon: "users"
+   - secondary_text: scope (workspace name or "All workspaces")
+   Then update src/components/shared/AppHeader.tsx handleSearchSelect()
+   to route "Teams" results to /settings/teams (or wherever the team
+   management page lives).
+
+4. AI Chat — add teams context
+   AI Chat tools are hardcoded in supabase/functions/ai-chat/tools.ts.
+   Read tools.ts and system-prompt.ts to understand the pattern, then:
+   - Extend the 'application-detail' tool (or create a new tool) so
+     that when asked "who supports this application?" or "who manages
+     this deployment?", the AI can query team assignments on DPs
+     (support_team_id, change_team_id, managing_team_id joined to teams)
+   - Update system-prompt.ts to describe the new capability
+   - Update docs-architecture/features/ai-chat/semantic-layer.yaml
 
 Note: The dropdowns fetch from the teams table — this is a new table, not
 a reference table. Use standard Supabase query pattern with namespace_id
