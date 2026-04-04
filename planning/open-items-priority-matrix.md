@@ -60,6 +60,7 @@
 | 51 | Feature | Surface Technology Health on Application Detail page | Option C: General tab gets summary badge (worst lifecycle status + tag count line). Deployments tab gets per-DP OS/DB/Web columns with LifecycleBadge. Data from vw_application_infrastructure_report filtered by application_id. ~1-2 days. | -- | Stuart + Claude Code |
 | 60 | Refactoring | ChartsView.tsx decomposition (984 lines) | Over 800-line threshold. Grew with filter drawer integration, DP labels, bubble fixes, and getEntryKey() helper. Candidates: extract BubbleChart sub-component, extract filter logic into a hook, extract Priority Backlog table section. ~0.5-1 day. | -- | Stuart + Claude Code |
 | 61 | Bug | Tech Health CSV export labels rows as "applications" but exports at DP level | Screen shows "15 applications" but CSV has 16 rows because Hexagon OnCall has 2 DPs. Fix: change column header and count label in export to say "deployment profiles" not "applications". One-liner. | -- | Stuart + Claude Code |
+| 69 | UX | IT Spend tab UX overhaul | BudgetPage layout, CostAnalysisPanel discoverability (hidden drill-in from Dashboard KPI), Contract Expiry widget placement, overall navigation and information hierarchy. Discuss with Stuart. | -- | Stuart + Claude Code |
 
 ---
 

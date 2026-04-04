@@ -223,7 +223,7 @@ The schema is already deployed. Do NOT generate SQL.
 ```
 
 ---
-
+<<<----left off here
 ## Chunk 4 — Frontend: CSDM Teams + Operations UI
 
 **Prerequisites:** Chunk 2 SQL applied and checkpoint passed

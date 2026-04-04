@@ -1,7 +1,7 @@
 # features/cost-budget/software-contract.md
 Software Product Contracts & Vendor Management
-Last updated: 2026-03-04
-Version: 2.0
+Last updated: 2026-04-03
+Version: 3.0
 
 ---
 
@@ -221,31 +221,28 @@ Effective_Cost = COALESCE(junction.annual_cost, software_products.annual_cost)
 
 ## 7. Contract Expiry Reporting
 
-> **v2.0 Change:** Contract expiry reporting now uses `vw_it_service_contract_expiry` instead of the deprecated `vw_software_contract_expiry`. Contract dates live on IT Services.
+> **v3.0 Change:** Contract expiry reporting now uses `vw_contract_expiry` — a UNION view combining IT Services and Cost Bundles (deployment profiles with `dp_type = 'cost_bundle'`). This replaces `vw_it_service_contract_expiry`. See `adr-contract-aware-cost-bundles.md` for rationale.
 
 ### Dashboard Widget
 
-**"IT Service Contracts Expiring Soon"**
+**"Contract Expiry"** — shows contracts from both IT Services and Cost Bundles.
 
-| Timeframe | Count |
-|-----------|-------|
-| Next 30 days | 2 |
-| 31-90 days | 5 |
-| 91-180 days | 8 |
+The widget table includes a **Source** column (`IT Service` or `Cost Bundle`) to help users identify Cost Bundles that should graduate to IT Services as they mature.
 
-### Detail Report (v2.0)
+### Detail Report (v3.0)
 
 ```sql
 SELECT
-  it_service_name,
+  source_name AS contract_name,
+  source_type,
   vendor_name,
   contract_reference,
   contract_end_date,
   annual_cost,
   days_until_expiry,
-  contract_status
-FROM vw_it_service_contract_expiry
-WHERE contract_status IN ('renewal_due', 'expiring_soon')
+  status
+FROM vw_contract_expiry
+WHERE status IN ('renewal_due', 'expiring_soon')
 ORDER BY contract_end_date;
 ```
 
@@ -266,9 +263,12 @@ When `contract_end_date - renewal_notice_days <= CURRENT_DATE`:
 - Optional email notification (future)
 - Export for procurement team
 
-### DEPRECATED: vw_software_contract_expiry
+### DEPRECATED Views
 
-The junction-based contract expiry view is deprecated. It will be dropped in Phase 5 of the reunification migration.
+| View | Status | Replacement |
+|------|--------|-------------|
+| `vw_software_contract_expiry` | DEPRECATED (Phase 5 drop) | `vw_contract_expiry` |
+| `vw_it_service_contract_expiry` | DEPRECATED (kept for backwards compat) | `vw_contract_expiry` |
 
 ---
 
@@ -314,41 +314,47 @@ The junction-level `allocation_percent` and `allocation_basis` columns are depre
 **Before (v1.0):** `software_cost = SUM(COALESCE(dpsp.annual_cost, sp.annual_cost))`
 **After (v2.0):** `software_cost = 0` (or column removed). All software costs flow through `service_cost` via IT Service allocations.
 
-### vw_it_service_contract_expiry (NEW — Replaces vw_software_contract_expiry)
+### vw_contract_expiry (NEW — UNION of IT Services + Cost Bundles)
+
+> **v3.0 Change:** Replaces `vw_it_service_contract_expiry` with a UNION view that includes Cost Bundle contracts.
 
 ```sql
-CREATE OR REPLACE VIEW vw_it_service_contract_expiry AS
-SELECT
-  its.id AS it_service_id,
-  its.name AS it_service_name,
-  its.owner_workspace_id AS workspace_id,
-  w.namespace_id,
-  o.name AS vendor_name,
-  its.contract_reference,
-  its.contract_start_date,
-  its.contract_end_date,
-  its.renewal_notice_days,
+-- IT Services with contracts
+SELECT 'it_service' AS source_type, its.id AS source_id, its.name AS source_name,
+  its.namespace_id, its.owner_workspace_id AS workspace_id,
+  NULL AS application_id, NULL AS application_name,
+  its.vendor_org_id, o.name AS vendor_name,
+  its.contract_reference, its.contract_start_date, its.contract_end_date,
+  its.renewal_notice_days, its.annual_cost,
   its.contract_end_date - CURRENT_DATE AS days_until_expiry,
-  CASE
-    WHEN its.contract_end_date IS NULL THEN 'no_contract'
-    WHEN its.contract_end_date < CURRENT_DATE THEN 'expired'
-    WHEN its.contract_end_date <= CURRENT_DATE + (its.renewal_notice_days || ' days')::INTERVAL THEN 'renewal_due'
-    WHEN its.contract_end_date <= CURRENT_DATE + INTERVAL '180 days' THEN 'expiring_soon'
-    ELSE 'active'
-  END AS contract_status,
-  its.annual_cost,
-  its.budget_amount
-FROM it_services its
-JOIN workspaces w ON w.id = its.owner_workspace_id
-LEFT JOIN organizations o ON o.id = its.vendor_org_id
-WHERE its.contract_end_date IS NOT NULL;
+  CASE ... END AS status
+FROM it_services its LEFT JOIN organizations o ON o.id = its.vendor_org_id
+WHERE its.contract_end_date IS NOT NULL
+
+UNION ALL
+
+-- Cost Bundles with contracts
+SELECT 'cost_bundle' AS source_type, dp.id AS source_id, dp.name AS source_name,
+  w.namespace_id, dp.workspace_id,
+  dp.application_id, a.name AS application_name,
+  dp.vendor_org_id, o.name AS vendor_name,
+  dp.contract_reference, dp.contract_start_date, dp.contract_end_date,
+  dp.renewal_notice_days, dp.annual_cost,
+  dp.contract_end_date - CURRENT_DATE AS days_until_expiry,
+  CASE ... END AS status
+FROM deployment_profiles dp
+JOIN workspaces w ON w.id = dp.workspace_id
+LEFT JOIN applications a ON a.id = dp.application_id
+LEFT JOIN organizations o ON o.id = dp.vendor_org_id
+WHERE dp.dp_type = 'cost_bundle' AND dp.contract_end_date IS NOT NULL;
 ```
 
 ### DEPRECATED Views
 
 | View | Status | Replacement |
 |------|--------|-------------|
-| `vw_software_contract_expiry` | DEPRECATED | `vw_it_service_contract_expiry` |
+| `vw_software_contract_expiry` | DEPRECATED | `vw_contract_expiry` |
+| `vw_it_service_contract_expiry` | DEPRECATED (kept for backwards compat) | `vw_contract_expiry` |
 | `vw_vendor_spend` | NOT BUILT — cancelled | Vendor spend is via `vw_run_rate_by_vendor` (IT Service + Cost Bundle channels) |
 
 ---
@@ -478,6 +484,7 @@ When syncing to ServiceNow:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v3.0 | 2026-04-03 | **Contract-aware Cost Bundles.** §7: contract expiry reporting now uses `vw_contract_expiry` (UNION of IT Services + Cost Bundles), replacing `vw_it_service_contract_expiry`. §9: new `vw_contract_expiry` view documented. Dashboard widget shows Source column. See `adr-contract-aware-cost-bundles.md`. |
 | v2.0 | 2026-03-04 | **Cost model reunification.** Contracts move from dpsp junction to IT Services. §1: scope updated. §3: vendor on IT Service (was junction). §4: dpsp is inventory-only — cost/contract columns DEPRECATED. §5: cost override → IT Service allocation. §7: contract expiry → vw_it_service_contract_expiry. §8: allocation via IT Services (was stubbed on junction). §9: views updated. §10: UI simplified. §14: v1.x phases superseded by reunification phases. See `adr-cost-model-reunification.md`. |
 | v1.1 | 2026-03-04 | Reconciled with production schema (dump 2026-03-03). §4: deployment status added — updated_at MISSING, chk_dpsp_allocation_percent MISSING, deployed_version column noted. §9: vw_vendor_spend marked NOT BUILT. §14: implementation status column added. |
 | v1.0 | 2026-01-22 | Initial version — junction enhancement, SAM-lite scope, cost override logic |
