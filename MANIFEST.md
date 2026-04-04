@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-03 (v1.88)
+Last updated: 2026-04-04 (v1.89)
 
 ---
 
@@ -118,7 +118,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/cost-budget/budget-management.md | v1.8 | 🟢 | Application and workspace budgets — "IT Spend" dashboard with filter drawer replacing tabs, filter-responsive KPIs (updated Mar 11) |
 | features/cost-budget/budget-alerts.md | v1.0 | 🟢 | Budget health monitoring — Phase 1 DB layer DEPLOYED |
 | features/cost-budget/vendor-cost.md | v2.0 | 🟡 | Vendor attribution — two channels (IT Services + Cost Bundles), dpsp vendor DEPRECATED (updated Mar 4) |
-| features/cost-budget/software-contract.md | v2.0 | 🟡 | Software contracts — contracts live on IT Services, dpsp cost columns DEPRECATED (updated Mar 4) |
+| features/cost-budget/software-contract.md | v3.0 | 🟡 | Software contracts — `vw_contract_expiry` UNION view (IT Services + Cost Bundles), dpsp cost columns DEPRECATED (updated Apr 4) |
 | features/cost-budget/cost-model-validation-2026-03-04.md | — | 🟢 | **Cost model validation report — schema debt, view bugs, frontend audit, refactoring plan** |
 | features/cost-budget/cost-model-primer.md (.docx) | v3.0 | 🟢 | **Cost model primer — end-to-end guide: 2 channels, Quick Calculator, Contract Expiry Widget, IT Service→Software Product linking, data flow, maturity levels (rewritten Mar 5)** |
 | features/cost-budget/adr-cost-model-reunification.md | v1.0 | ☪ | **ADR: IT Services absorb contract role. Software Products become inventory. Reverses v2.5 fork. Schema changes, migration path, budget impact analysis.** |
@@ -848,6 +848,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.89 | 2026-04-04 | **Stage A.2: Contract-Aware Cost Bundles UI.** software-contract.md v2.0→v3.0: §7 contract expiry reporting uses `vw_contract_expiry` UNION view, §9 new view documented. open-items #69: IT Spend tab UX overhaul. Frontend: Contract Details section on Cost Bundle cards, ContractExpiryWidget on IT Spend tab, double-count warnings (Cost Bundle + IT Service). |
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |
 | v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
