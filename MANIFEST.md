@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-04 (v1.89)
+Last updated: 2026-04-04 (v1.90)
 
 ---
 
@@ -148,7 +148,9 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
 | identity-security/secrets-inventory.md | v1.0 | 🟢 | Secrets inventory — 6 Edge Function secrets, rotation procedures, SOC2 CC6.1/CC6.3/CC6.6 |
 | operations/secure-coding-standards.md | v1.0 | 🟢 | **Secure coding standards — OWASP + SOC 2 adapted for React + Supabase. RLS-first model, red flag checklist, 8-item gap roadmap. CC6.1/CC6.3/CC6.7/CC7.1/CC7.2.** |
-| operations/session-end-checklist.md | **v1.18** | 🟢 | **Master session-end compliance checklist — v1.18: §6i SOC2 Evidence Checkpoint (secrets, auth, Edge Functions)** |
+| operations/session-end-checklist.md | **v1.19** | 🟢 | **Master session-end compliance checklist — v1.19: Pruned from 953→497 lines (under 10k token limit). §6h and changelog extracted.** |
+| operations/session-end-checklist-changelog.md | v1.0 | 🟢 | Session-end checklist version history (extracted from main checklist) |
+| operations/session-end-user-docs.md | v1.0 | 🟢 | User documentation procedure for session-end (§6h detail, extracted from main checklist) |
 
 ### Testing
 
@@ -848,6 +850,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.90 | 2026-04-04 | **Session-end checklist pruning.** session-end-checklist.md v1.18→v1.19: Pruned from 953→497 lines (13.7k→~7k tokens) to fit within Claude Code's single-read limit. Extracted: §6h user documentation procedure → `operations/session-end-user-docs.md` v1.0, change log → `operations/session-end-checklist-changelog.md` v1.0. Removed inlined SQL duplicated in test scripts, trimmed duplicated CLAUDE.md content and static SOC2 policy table. Document count 118→120. |
 | v1.89 | 2026-04-04 | **Stage A.2: Contract-Aware Cost Bundles UI.** software-contract.md v2.0→v3.0: §7 contract expiry reporting uses `vw_contract_expiry` UNION view, §9 new view documented. open-items #69: IT Spend tab UX overhaul. Frontend: Contract Details section on Cost Bundle cards, ContractExpiryWidget on IT Spend tab, double-count warnings (Cost Bundle + IT Service). |
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |

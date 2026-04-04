@@ -1,9 +1,9 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.18
-**Date:** March 13, 2026
-**Status:** 🟢 ACTIVE  
-**Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills  
+**Version:** 1.19
+**Date:** April 4, 2026
+**Status:** ACTIVE
+**Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills
 **Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
 
 > **Note:** Do NOT run this full checklist after every mid-session database change. Use the **Mid-Session Schema Checkpoint** (CLAUDE.md) for that. This checklist runs once at session end.
@@ -27,127 +27,61 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 
 | Changed? | Category | Triggers |
 |----------|----------|----------|
-| ☐ | New tables created | → Run Section 2 (Security Posture, incl. §2.3 Namespace Seeding) + Section 6d (Security Regression) |
-| ☐ | Existing tables modified (columns, constraints) | → Run Section 3 (Deep Validation) + Section 6d (Security Regression) |
-| ☐ | RLS policies added or changed | → Run Section 6d (Security Regression) |
-| ☐ | GRANTs added or changed | → Run Section 6d (Security Regression) |
-| ☐ | New views or functions created | → Run Section 6d (Security Regression) |
-| ☐ | Audit triggers added | → Run Section 6d (Security Regression) |
-| ☐ | Role/enum changes, FK changes, namespace changes | → Run Section 3 (Deep Validation) |
-| ☐ | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
-| ☐ | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) + Section 6h (User Documentation) |
-| ☐ | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
-| ☐ | Any database changes at all | → Run Section 2 (Security Posture) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
-| ☐ | Secrets added/rotated, auth changes, Edge Function deploys | → Run Section 6i (SOC2 Evidence Checkpoint) |
-| ☐ | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
-| ☐ | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
+| - | New tables created | → Run Section 2 (Security Posture, incl. §2.3 Namespace Seeding) + Section 6d (Security Regression) |
+| - | Existing tables modified (columns, constraints) | → Run Section 3 (Deep Validation) + Section 6d (Security Regression) |
+| - | RLS policies added or changed | → Run Section 6d (Security Regression) |
+| - | GRANTs added or changed | → Run Section 6d (Security Regression) |
+| - | New views or functions created | → Run Section 6d (Security Regression) |
+| - | Audit triggers added | → Run Section 6d (Security Regression) |
+| - | Role/enum changes, FK changes, namespace changes | → Run Section 3 (Deep Validation) |
+| - | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
+| - | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) + Section 6h (User Documentation) |
+| - | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
+| - | Any database changes at all | → Run Section 2 (Security Posture) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
+| - | Secrets added/rotated, auth changes, Edge Function deploys | → Run Section 6i (SOC2 Evidence Checkpoint) |
+| - | Any work done at all | → Run Section 7 (Handover) + Section 10 (Open Items) |
+| - | No database changes | → Skip to Section 7 (Handover) + Section 10 (Open Items) |
 
 ---
 
 ## Section 2: Security Posture Validation
 
 **When:** Any database changes this session (always run — not just when new tables are created).
-**Skill:** `operations/new-table-checklist.md` (reference for creation workflow)
 
 ### 2.1 — Bulk Safety Net (run every session with DB changes)
 
-Run this single query via `$DATABASE_READONLY_URL`. It returns only violations — empty result = PASS.
+Run `testing/security-posture-validation.sql` via `$DATABASE_READONLY_URL`. It returns only violations — empty result = PASS.
 
-Covers: table GRANTs, RLS enablement, RLS policies, view security_invoker, DEFINER function search_path.
-
-```sql
--- Tables missing GRANT to authenticated
-SELECT 'MISSING_GRANT_AUTH' as violation, t.tablename as object_name
-FROM pg_tables t
-WHERE t.schemaname = 'public'
-AND NOT EXISTS (
-  SELECT 1 FROM information_schema.table_privileges tp
-  WHERE tp.table_schema = 'public' AND tp.table_name = t.tablename
-  AND tp.grantee = 'authenticated' AND tp.privilege_type = 'SELECT'
-)
-
-UNION ALL
-
--- Tables missing GRANT to service_role
-SELECT 'MISSING_GRANT_SVC', t.tablename
-FROM pg_tables t
-WHERE t.schemaname = 'public'
-AND NOT EXISTS (
-  SELECT 1 FROM information_schema.table_privileges tp
-  WHERE tp.table_schema = 'public' AND tp.table_name = t.tablename
-  AND tp.grantee = 'service_role' AND tp.privilege_type = 'SELECT'
-)
-
-UNION ALL
-
--- Tables with RLS disabled
-SELECT 'RLS_DISABLED', tablename
-FROM pg_tables
-WHERE schemaname = 'public' AND NOT rowsecurity
-
-UNION ALL
-
--- Tables with RLS enabled but zero policies
-SELECT 'RLS_NO_POLICIES', t.tablename
-FROM pg_tables t
-WHERE t.schemaname = 'public' AND t.rowsecurity
-AND NOT EXISTS (
-  SELECT 1 FROM pg_policies p
-  WHERE p.schemaname = 'public' AND p.tablename = t.tablename
-)
-
-UNION ALL
-
--- Views missing security_invoker=true (excludes extension views)
-SELECT 'VIEW_NO_SECURITY_INVOKER', c.relname
-FROM pg_class c
-JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE n.nspname = 'public'
-  AND c.relkind = 'v'
-  AND c.relname NOT IN ('pg_all_foreign_keys', 'tap_funky')
-  AND (c.reloptions IS NULL OR NOT c.reloptions::text[] @> ARRAY['security_invoker=true'])
-
-UNION ALL
-
--- SECURITY DEFINER functions missing search_path
-SELECT 'DEFINER_NO_SEARCH_PATH', p.proname
-FROM pg_proc p
-JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE n.nspname = 'public'
-  AND p.prosecdef = true
-  AND (p.proconfig IS NULL OR NOT EXISTS (
-    SELECT 1 FROM unnest(p.proconfig) AS c WHERE c LIKE 'search_path=%'
-  ))
-
-ORDER BY 1, 2;
+```bash
+cd ~/Dev/getinsync-nextgen-ag
+export $(grep DATABASE_READONLY_URL .env | xargs)
+psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/security-posture-validation.sql
 ```
+
+Covers 6 checks: table GRANTs (authenticated + service_role), RLS enablement, RLS policies, view security_invoker, DEFINER function search_path.
 
 **Pass criteria:** Query returns zero rows. Any row = FAIL — investigate immediately.
 
-**Why this runs every session:** Section 6d (security regression) uses sentinel counts that must be updated manually. This bulk query catches violations regardless of sentinel freshness. It also catches accidental drops (e.g., a GRANT removed during debugging, a view created without security_invoker).
+**Why this runs every session:** Section 6d uses sentinel counts that must be updated manually. This bulk query catches violations regardless of sentinel freshness. It also catches accidental drops.
 
 ### 2.2 — Per-Table Checks (only when new tables are created)
 
-When new tables are created this session, also verify these per-table checks that cannot be validated in bulk (because not every table requires them):
+When new tables are created this session, also verify these per-table checks:
 
 | # | Check | Query |
 |---|-------|-------|
 | 1 | Audit trigger exists | `SELECT trigger_name FROM information_schema.triggers WHERE event_object_table = '{table}' AND trigger_name LIKE '%audit%';` |
 | 2 | updated_at trigger exists | `SELECT tgname FROM pg_trigger WHERE tgrelid = 'public.{table}'::regclass AND tgname LIKE 'update_%_updated_at';` |
 
-**When to expect these triggers:**
-- **Audit trigger:** Required on all business entity tables (applications, deployment_profiles, contacts, initiatives, etc.). Not required on reference tables (hosting_types, dr_statuses, etc.), system tables (audit_logs, notifications), or junction tables with no independent business meaning.
-- **updated_at trigger:** Required on tables with an `updated_at` column. Check `SELECT column_name FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'updated_at';` — if the column exists, the trigger should too.
-
-**Pass criteria:** All applicable checks return expected results. Document any intentional exclusions in the session handover.
+- **Audit trigger:** Required on business entity tables. Not required on reference tables, system tables, or junction tables.
+- **updated_at trigger:** Required on tables with an `updated_at` column.
 
 ### 2.3 — Namespace Seeding Validation (only when new namespace-scoped tables are created)
 
-When new tables with a `namespace_id` column are created, verify they have a seeding trigger (if they are reference/config tables). This catches the case where a new namespace-scoped reference table is added but forgotten in the provisioning flow.
+When new tables with a `namespace_id` column are created, verify they have a seeding trigger.
 
 ```sql
 -- Step 1: List all seeding trigger functions on the namespaces table
--- (review this list to confirm all namespace-scoped reference tables are covered)
 SELECT p.proname as seed_function
 FROM pg_trigger t
 JOIN pg_proc p ON t.tgfoid = p.oid
@@ -158,7 +92,6 @@ AND p.proname NOT IN ('audit_log_trigger', 'update_updated_at_column')
 ORDER BY p.proname;
 
 -- Step 2: List all namespace-scoped reference-like tables (has namespace_id + is_active)
--- Cross-reference against the trigger list above to spot gaps
 SELECT c.table_name as namespace_ref_table
 FROM information_schema.columns c
 WHERE c.column_name = 'namespace_id' AND c.table_schema = 'public'
@@ -170,21 +103,9 @@ AND EXISTS (
 ORDER BY c.table_name;
 ```
 
-**How to evaluate:** Compare Step 1 (seeding functions) against Step 2 (namespace-scoped reference tables). Every table in Step 2 should either:
-- Have a corresponding seeding function in Step 1, OR
-- Be listed as a known exception below
+Compare Step 1 against Step 2. Every table in Step 2 should have a seeding function OR be a known exception.
 
-**Known exceptions (no seeding needed):**
-
-| Table | Reason |
-|-------|--------|
-| `contacts` | User-created data, not reference data |
-| `data_centers` | User-created data, not reference data |
-| `organizations` | User-created data, not reference data |
-| `notification_rules` | Future feature — zero rows across all namespaces (as of March 2026) |
-| `workflow_definitions` | Future feature — zero rows across all namespaces (as of March 2026) |
-
-If a new table appears in Step 2 that is NOT in Step 1 and NOT in the exceptions table, it needs a seeding trigger and template data in the template namespace (`00000000-0000-0000-0000-000000000001`).
+**Known exceptions:** `contacts`, `data_centers`, `organizations` (user-created data), `notification_rules`, `workflow_definitions` (future features).
 
 ---
 
@@ -192,8 +113,6 @@ If a new table appears in Step 2 that is NOT in Step 1 and NOT in the exceptions
 
 **When:** Column/constraint changes, role/enum changes, FK changes, or namespace changes.
 **Skill:** `operations/database-change-validation.md`
-
-Section 2.1 covers the common checks (GRANTs, RLS, views, functions). For niche situations, dispatch to the validation skill:
 
 | Condition | Validation Skill Section |
 |-----------|-------------------------|
@@ -204,13 +123,13 @@ Section 2.1 covers the common checks (GRANTs, RLS, views, functions). For niche 
 
 **Pass criteria:** All validation queries return empty result (no violations).
 
-> **Note:** Validation skill Section 1 (GRANTs, RLS, triggers) is now redundant with §2.1 above. Skip it.
+> **Note:** Validation skill Section 1 (GRANTs, RLS, triggers) is redundant with §2.1 above. Skip it.
 
 ---
 
 ## Section 5: Architecture Manifest Update
 
-**When:** Any new architecture documents, skills, or runbooks were created or versioned this session.  
+**When:** Any new architecture documents, skills, or runbooks were created or versioned this session.
 **Document:** `MANIFEST.md` (architecture repo root)
 
 | Check | Action |
@@ -242,8 +161,6 @@ Remind Stuart to:
 
 **When:** Any database changes this session (new tables, columns, constraints, triggers, functions, views).
 
-### pg_dump Command
-
 ```bash
 cd ~/Dev/getinsync-nextgen-ag
 pg_dump --schema-only --no-owner --no-privileges \
@@ -251,148 +168,57 @@ pg_dump --schema-only --no-owner --no-privileges \
   > getinsync-nextgen-schema-YYYY-MM-DD.sql
 ```
 
-**Connection details:**
-- **User:** `postgres.zwwuogquncqvwuzbppiq`
-- **Host:** `aws-1-ca-central-1.pooler.supabase.com`
-- **Port:** `5432`
-- **Database:** `postgres`
-- **Password:** Stuart provides per session — DO NOT store in docs. Roll after use.
+**Password:** Stuart provides per session — DO NOT store in docs. Roll after use.
 
-### Verify Dump
+### Post-Dump Steps
 
-```bash
-ls -la getinsync-nextgen-schema-YYYY-MM-DD.sql
-head -20 getinsync-nextgen-schema-YYYY-MM-DD.sql
-```
-
-Expected: ~500-700KB file, starts with `-- PostgreSQL database dump`.
-
-### Commit to Code Repo
-
-```bash
-git add getinsync-nextgen-schema-YYYY-MM-DD.sql
-git commit -m "Schema backup YYYY-MM-DD: [brief description of changes]"
-git push -u origin $(git branch --show-current)
-```
-
-### Copy to Architecture Repo
-
-```bash
-cp getinsync-nextgen-schema-YYYY-MM-DD.sql ~/getinsync-architecture/schema/nextgen-schema-current.sql
-```
-
-This ensures the architecture repo always has the latest schema. The dated copy stays in the code repo for history.
-
-### Post-Backup
-
-- **Roll database password** in Supabase Dashboard → Settings → Database
-- **Update Claude Code `.env` file** — `~/Dev/getinsync-nextgen-ag/.env` contains the DB password for read-only access. Update it with the new password after rolling.
-- Claude Code/Netlify are NOT affected by password changes (use API keys, not DB password)
+1. Verify: `ls -la` and `head -20` — expect ~500-700KB, starts with `-- PostgreSQL database dump`
+2. Commit to code repo: `git add getinsync-nextgen-schema-YYYY-MM-DD.sql && git commit -m "Schema backup YYYY-MM-DD"`
+3. Copy to architecture repo: `cp getinsync-nextgen-schema-YYYY-MM-DD.sql ~/getinsync-architecture/schema/nextgen-schema-current.sql`
+4. Roll database password in Supabase Dashboard → Settings → Database
+5. Update `~/Dev/getinsync-nextgen-ag/.env` with new password (Claude Code/Netlify use API keys, unaffected)
 
 ---
 
 ## Section 6c: Architecture Repo Sync
 
-**When:** Architecture documents were created or updated this session (from this chat OR Claude Code), OR schema backup was taken.
+**When:** Architecture documents were created or updated this session, OR schema backup was taken.
 
-### Two Repos, Two Commits
-
-| Repo | Path | Branch | Contains |
-|------|------|--------|----------|
-| **Code** | `~/Dev/getinsync-nextgen-ag` | `dev` | Application code, schema backups |
-| **Architecture** | `~/getinsync-architecture` | `main` | Architecture docs, current schema, manifest |
-
-Claude Code accesses architecture docs via the symlink `./docs-architecture/` → `~/getinsync-architecture/`.
-
-### Checklist
-
-| # | Check | Action |
-|---|-------|--------|
-| 1 | New docs produced in this chat? | Stuart copies to `~/getinsync-architecture/` in correct folder |
-| 2 | Claude Code modified `docs-architecture/`? | Verify Claude Code committed and pushed the architecture repo |
-| 3 | Schema backup taken (Section 6b)? | Copy dated schema to `~/getinsync-architecture/schema/nextgen-schema-current.sql` |
-| 4 | Manifest updated (Section 5)? | Ensure `MANIFEST.md` in architecture repo reflects changes |
-| 5 | Architecture repo clean? | Run verification below |
-
-### Verification
+Follow the **Dual-Repo Commits** procedure in CLAUDE.md. Then verify:
 
 ```bash
 cd ~/getinsync-architecture && git status && git log --oneline -3 && cd ~/Dev/getinsync-nextgen-ag
 ```
 
-**Expected:** Clean working tree, latest commit matches this session's work.
+**Pass criteria:** Clean working tree, latest commit matches this session's work.
 
-### When This Chat Produces Documents
-
-This Claude Project chat cannot push to git. When architecture docs are created here:
-
-1. Stuart downloads the file from this chat
-2. Stuart copies it to the correct folder in `~/getinsync-architecture/`
-3. Stuart commits and pushes:
-   ```bash
-   cd ~/getinsync-architecture
-   git add -A
-   git commit -m "docs: [description of new/updated doc]"
-   git push origin main
-   cd ~/Dev/getinsync-nextgen-ag
-   ```
-
-**Pass criteria:** `git status` in `~/getinsync-architecture` shows clean working tree, latest commit matches this session's work.
+**When this chat (not Claude Code) produces documents:** Stuart downloads and copies to `~/getinsync-architecture/`, then commits and pushes manually.
 
 ---
 
 ## Section 6d: Automated Security Regression
 
-**When:** Any database changes this session (tables, columns, RLS, GRANTs, triggers, views).
+**When:** Any database changes this session.
 **Test files:** `testing/pgtap-rls-coverage.sql` and `testing/security-posture-validation.sql`
-**Rule reference:** `operations/development-rules.md` §2.3
 
-Run the security regression suite to verify no regressions across all tables, views, and triggers.
-
-### Default — Claude Code runs both scripts directly
-
-Both scripts are read-only (SELECT queries + pgTAP assertions). Claude Code MUST run both via `$DATABASE_READONLY_URL` as part of every session with database changes:
-
-**Important:** Use `export $(grep DATABASE_READONLY_URL .env | xargs)` to load the env var (not `source .env` which doesn't export).
-
-**Script 1 — Standalone security validation:**
+Run both scripts via `$DATABASE_READONLY_URL`:
 
 ```bash
 cd ~/Dev/getinsync-nextgen-ag
 export $(grep DATABASE_READONLY_URL .env | xargs)
+
+# Script 1 — Standalone security validation
 psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/security-posture-validation.sql
-```
 
-- Expected: All rows show `PASS`, zero `FAIL` rows.
-- Failures sort to top — investigate any before closing session.
-- Verify: `grep -c "FAIL" output` should be 0.
-
-**Script 2 — pgTAP regression suite:**
-
-```bash
-cd ~/Dev/getinsync-nextgen-ag
-export $(grep DATABASE_READONLY_URL .env | xargs)
+# Script 2 — pgTAP regression suite (strip CREATE EXTENSION on line 25)
 sed '25d' ./docs-architecture/testing/pgtap-rls-coverage.sql > /tmp/pgtap-noext.sql
 psql "$DATABASE_READONLY_URL" -f /tmp/pgtap-noext.sql
 ```
 
-- Line 25 (`CREATE EXTENSION`) is stripped because it's DDL that fails on read-only. pgTAP is already installed (v1.2.0).
-- Expected: All assertions show `ok N`, zero `not ok` lines.
-- Verify: `grep -c "not ok" output` should be 0.
-- Sentinel checks (last 3 assertions) confirm table/view/trigger counts match expectations.
-
-### Fallback — Supabase SQL Editor
-
-If psql is unavailable or scripts fail to execute via read-only connection, Stuart pastes scripts into Supabase SQL Editor manually.
-
-### If Sentinel Checks Fail
-
-Sentinel checks detect new tables or views added without updating the test suite. If sentinel count mismatches appear, Claude Code MUST update the sentinel values in both test files before committing — see development-rules.md §2.3 for the update procedure. Claude Code can edit these files directly since they live in the architecture repo (symlinked at `./docs-architecture/`).
-
-| Check | Result |
-|-------|--------|
-| Security posture validation | ☐ All PASS |
-| pgTAP regression suite | ☐ All PASS |
+- Script 1: All rows `PASS`, zero `FAIL`.
+- Script 2: All assertions `ok N`, zero `not ok`. Sentinel checks (last 3) confirm table/view/trigger counts.
+- **If sentinel checks fail:** Update sentinel values in both test files before committing (see `development-rules.md` §2.3).
+- **Fallback:** Supabase SQL Editor if psql unavailable.
 
 **Pass criteria:** Zero failures across both scripts.
 
@@ -400,23 +226,19 @@ Sentinel checks detect new tables or views added without updating the test suite
 
 ## Section 6e: Code Quality Gate
 
-**When:** Any session that modified frontend code (components, hooks, pages, utilities).
+**When:** Any session that modified frontend code.
 
-### 6e.1 — TypeScript Check
+### Checks
 
-```bash
-npx tsc --noEmit
-```
+| # | Check | Command | Pass Criteria |
+|---|-------|---------|---------------|
+| 1 | TypeScript | `npx tsc --noEmit` | Zero errors |
+| 2 | ESLint | `npm run lint` | Zero errors, warnings <= baseline (513) |
+| 3 | Build | `npm run build` | Succeeds |
+| 4 | File size | `wc -l` on modified files | No file > 800 lines without flagging |
+| 5 | Impact scan | `grep` shared changes | All consumers updated |
 
-**Expected:** Zero errors. This is the primary defense against type regressions.
-
-### 6e.2 — ESLint Check
-
-```bash
-npm run lint
-```
-
-**Expected:** Zero errors. Warnings are tracked (baseline: 513 as of Feb 28, 2026) — new sessions must not increase the warning count.
+### ESLint Rule Reference
 
 | Rule | Severity | Baseline | Notes |
 |------|----------|----------|-------|
@@ -430,47 +252,13 @@ npm run lint
 | `@typescript-eslint/no-non-null-assertion` | warn | 86 | Add proper null checks |
 | `react-hooks/exhaustive-deps` | warn | 79 | Fix dependency arrays |
 
-### 6e.3 — Production Build
-
-```bash
-npm run build
-```
-
-**Expected:** Build succeeds. Catches Vite-specific issues that tsc alone misses.
-
-### 6e.4 — File Size Check
-
-If you modified a file this session, check if it's getting too large:
-
-```bash
-wc -l [modified files]
-```
+### File Size Thresholds
 
 | Threshold | Action |
 |-----------|--------|
-| Under 500 lines | ✅ Fine |
-| 500–800 lines | ⚠️ Consider splitting on next touch |
-| Over 800 lines | ❌ Flag for refactoring — add to open items |
-
-### 6e.5 — Impact Scan (repeat of CLAUDE.md cardinal rule)
-
-If you changed a shared type, interface, view, or component:
-
-```bash
-grep -r "ChangedName" src/ --include="*.ts" --include="*.tsx"
-```
-
-Verify all consumers were updated. This prevents the "silent undefined" class of bug.
-
-### Summary
-
-| # | Check | Command | Pass Criteria |
-|---|-------|---------|---------------|
-| 1 | TypeScript | `npx tsc --noEmit` | Zero errors |
-| 2 | ESLint | `npm run lint` | Zero errors, warnings ≤ baseline |
-| 3 | Build | `npm run build` | Succeeds |
-| 4 | File size | `wc -l` on modified files | No file > 800 lines without flagging |
-| 5 | Impact scan | `grep` shared changes | All consumers updated |
+| Under 500 lines | Fine |
+| 500-800 lines | Consider splitting on next touch |
+| Over 800 lines | Flag for refactoring — add to open items |
 
 **Pass criteria:** Checks 1-3 pass. Check 4 flags added to open items if needed. Check 5 confirmed.
 
@@ -478,118 +266,40 @@ Verify all consumers were updated. This prevents the "silent undefined" class of
 
 ## Section 6f: Bulletproof React Spot Check
 
-**When:** Any session that modified frontend code (components, hooks, pages, utilities).
+**When:** Any session that modified frontend code.
 **This is informational only** — report findings but do not block the session or start fixing them.
 
-### What to Scan
-
-Run these checks against files **modified this session only** (not the entire codebase):
+Run against files **modified this session only**:
 
 ```bash
-# 6f.1 — New any types in files you touched?
+# New any types?
 grep -rn ": any" [modified .ts and .tsx files]
 
-# 6f.2 — Direct supabase calls in components (should be in hooks)?
+# Direct supabase calls in components (should be in hooks)?
 grep -rn "supabase\.from\|supabase\.rpc" [modified .tsx files]
 
-# 6f.3 — Components over 300 lines?
+# Components over 300 lines?
 wc -l [modified .tsx files]
 ```
 
-### How to Report
+For each finding, note file:line and whether it is NEW this session or PRE-EXISTING (check git diff).
 
-For each finding, note:
-- **File and line number**
-- **Whether it is NEW this session or PRE-EXISTING** (check git diff to determine)
-
-Pre-existing violations are noted in the report but are not actionable. New violations are flagged for Stuart's awareness.
-
-### What NOT to Do
-
-- Do NOT fix violations unless Stuart explicitly asks
-- Do NOT refactor existing code to match these patterns
-- Do NOT block the session or delay handover for these findings
-- This is a **health check**, not a **refactoring trigger**
-
-### Summary
-
-| # | Check | What to Report |
-|---|-------|---------------|
-| 1 | New `any` types | Count + file:line for new-this-session only |
-| 2 | Direct supabase in components | Count + file:line for new-this-session only |
-| 3 | Oversized components (over 300 lines) | List files + line counts |
-
-**Pass criteria:** Report produced. No blocking — all findings are informational.
+**Do NOT fix violations unless Stuart asks. Do NOT block the session for these findings.**
 
 ---
 
 ## Section 6g: Data Quality Spot Check
 
-**When:** Any session where data was seeded, migrated, or enum/status columns were touched. Also run as a periodic health check.
+**When:** Data seeded, migrated, or enum/status columns touched. Also run as periodic health check.
 **Test file:** `testing/data-quality-validation.sql`
-**Added:** March 3, 2026 — after discovering two silent data bugs: enum casing mismatch (`business_assessment_status = 'Not Started'` vs `'not_started'`) and deployment profile naming violations (`dp.name = app.name`).
-
-### Why This Exists
-
-Schema constraints (CHECK, NOT NULL, FK) validate structure but cannot catch:
-- **Casing mismatches** — `'Not Started'` passes a CHECK for `IN ('not_started', 'Not Started')` but the frontend compares against `'not_started'` only
-- **Naming convention violations** — `dp.name = app.name` is valid text but breaks the prefix-stripping display logic
-- **Placeholder values** — `'UNKNOWN'` or empty strings are valid text but produce broken UI
-
-These bugs are **silent** — no compile error, no runtime error, just wrong data on screen.
-
-### How to Run
-
-#### Option A — Supabase SQL Editor (recommended)
-
-Paste the contents of `testing/data-quality-validation.sql` into Supabase SQL Editor.
-
-- Run all statements sequentially
-- Expected: All checks show `PASS`
-- Any `FAIL` row shows the bad value and affected row count
-
-#### Option B — Via Claude Code read-only connection
 
 ```bash
 psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/data-quality-validation.sql
 ```
 
-#### Option C — Quick Summary Only
+14 checks covering: enum casing (assessment status, remediation effort, PAID actions), DP naming conventions, placeholder detection, operational/lifecycle status values, hosting types, namespace tiers, contact categories, integration status, DP types, role values, initiative/idea/program status. See script for full details.
 
-Run just the `SUMMARY` section at the bottom of the script for a single-glance dashboard. If any row shows `FAIL`, run the individual check for details.
-
-### What It Checks
-
-| # | Check | What It Catches |
-|---|-------|-----------------|
-| 1 | Assessment status values | Casing mismatches: `'Not Started'` vs `'not_started'` |
-| 2 | DP naming convention | Primary DPs where `name = app name` (missing env/region suffix) |
-| 3 | Placeholder detection | Region/environment with `UNKNOWN`, empty string, `N/A`, `TBD` |
-| 4 | Operational status | Invalid values in `deployment_profiles` or `applications` |
-| 5 | Lifecycle status | Invalid values in `applications.lifecycle_status` |
-| 6 | Remediation effort casing | Lowercase `'xs'` instead of `'XS'` across 3 tables |
-| 7 | PAID action casing | Title-case `'Plan'` instead of `'plan'` |
-| 8 | Hosting type values | Invalid hosting types in `deployment_profiles` |
-| 9 | Namespace tier | Legacy tier names (`free`, `pro`, `full`) instead of `trial`/`essentials`/`plus`/`enterprise` |
-| 10 | Contact categories | Invalid values in `contacts.contact_category` |
-| 11 | Initiative/idea/program status | Invalid status values in value creation tables |
-| 12 | Integration status | Invalid status values in `application_integrations` |
-| 13 | DP type | Invalid `dp_type` values |
-| 14 | Role values | Invalid roles in `namespace_users` and `workspace_users` |
-
-### If Checks Fail
-
-1. Identify the bad values from the detailed check output
-2. Write a repair SQL script (UPDATE + WHERE clause targeting bad values)
-3. Run the repair in Supabase SQL Editor
-4. Re-run the validation to confirm all PASS
-5. Add the root cause to Common Pitfalls in `database-change-validation.md`
-
-### Summary
-
-| Check | Result |
-|-------|--------|
-| Data quality (14 checks) | All PASS |
+**If checks fail:** Identify bad values, write repair SQL, run in Supabase SQL Editor, re-validate, add root cause to `database-change-validation.md`.
 
 **Pass criteria:** All 14 checks return PASS. Zero FAIL rows.
 
@@ -597,118 +307,19 @@ Run just the `SUMMARY` section at the bottom of the script for a single-glance d
 
 ## Section 6h: User Documentation — Write It Now
 
-**When:** Any session that added or changed user-facing behavior (new screens, changed workflows, renamed labels, new features, changed permissions).
+**When:** Any session that added or changed user-facing behavior.
+**Full procedure:** `operations/session-end-user-docs.md`
 
-**Philosophy:** If you just shipped the feature, you have full context on how it works *right now*. Deferring doc updates to a future session means that session has to re-explore the feature from scratch — which rarely happens. Write the docs while the context is fresh.
+**Quick checklist:**
+1. Did this session change user-facing behavior? (new screens, changed workflows, renamed labels, new features, changed permissions)
+2. If yes: determine tier (Minor/Moderate/Major) per the procedure doc
+3. Find and update the right guide in `guides/user-help/` or `guides/`
+4. Append a What's New entry to `guides/whats-new.md`
+5. Update `feature-walkthrough.md` if applicable (Moderate/Major changes)
+6. Bump version in `package.json` if user-visible features shipped (CalVer: `YYYY.MM.patch`)
+7. Commit to architecture repo
 
-### 6h.1 — Did This Session Change User-Facing Behavior?
-
-If YES to any of these, user documentation **must** be updated this session:
-- New screen, tab, or page added
-- Existing workflow changed (button moved, steps reordered, new modal)
-- Labels, terminology, or tooltips changed
-- Permission gating changed (who sees what)
-- New feature visible to end users
-- Error messages or empty states changed
-
-If NO to all → skip to Section 7.
-
-### 6h.2 — Determine Scope
-
-Classify each user-facing change into a tier:
-
-| Tier | Change Scope | Example | Action |
-|------|-------------|---------|--------|
-| **Minor** | Label rename, tooltip tweak, icon swap | Changed "Email" to "Work Email" | Add a one-liner to the relevant existing guide |
-| **Moderate** | New section on existing screen, new modal, workflow change | Added photo upload to Profile Settings | Add/update the relevant section in the existing guide (a few paragraphs) |
-| **Major** | Entirely new screen, entirely new workflow | New "Standards" tab | Create a new guide file in `guides/user-help/`, add to guide index below |
-
-### 6h.3 — Find the Right Guide
-
-Check which existing guide covers the changed area:
-
-**User help guides** (`docs-architecture/guides/user-help/`):
-
-| Guide | Covers |
-|-------|--------|
-| `getting-started.md` | Onboarding, key concepts, first 5 minutes, navigation, profile settings |
-| `assessment-guide.md` | Business + technical assessment, scoring, TIME/PAID |
-| `time-framework.md` | TIME quadrant explanation |
-| `paid-framework.md` | PAID quadrant explanation |
-| `tech-health.md` | Technology health dashboard, lifecycle, KPI cards |
-| `deployment-profiles.md` | What deployment profiles are, how to create |
-| `roadmap-initiatives.md` | Creating and managing initiatives |
-| `integrations.md` | Managing application integrations |
-| `ai-assistant.md` | Portfolio AI Assistant chat, data scope, tips |
-
-**Other guides** (`docs-architecture/guides/`):
-
-| Guide | Covers |
-|-------|--------|
-| `feature-walkthrough.md` | Screen-by-screen reference for enterprise architects, CSDM mapping |
-| `whats-new.md` | User-facing release changelog — append entry for every user-visible change |
-| `user-documentation/technology-health-badges.md` | Badge status reference (lifecycle + conformance colors) |
-
-If no existing guide covers the area → create a new guide (Major tier).
-
-### 6h.4 — Write the Update
-
-**For Minor/Moderate changes (update existing guide):**
-1. Read the relevant guide file
-2. Find the section closest to the changed behavior
-3. Update or add content to match what was built
-4. Keep the guide's existing tone and structure
-5. Commit the updated guide to the architecture repo
-
-**For Major changes (new guide):**
-1. Create a new file in `docs-architecture/guides/user-help/`
-2. Follow the structure of existing guides (title, overview, step-by-step, tips)
-3. Add the new guide to the table in §6h.3 above (edit this checklist)
-4. Update `MANIFEST.md` with the new guide
-5. Commit to the architecture repo
-
-**For Moderate/Major changes — also check the feature walkthrough:**
-- If the change affects a screen covered by `guides/feature-walkthrough.md`, update the relevant section of the walkthrough to match.
-
-**Always — What's New entry:**
-- Append a dated entry to `guides/whats-new.md` for every user-visible change, regardless of tier.
-- Format: `- **Feature Name** — One-line description.`
-- Group entries under the current date heading, or create a new date heading if none exists for today.
-
-**Writing guidelines:**
-- Write for end users, not developers — no code, no schema references
-- Use plain language — the audience may not be technical
-- Include what the feature does, how to use it, and any limitations
-- Only document what is confirmed working — do not document features that depend on unfinished setup (note those as "coming soon" if relevant)
-
-### 6h.5 — Guard Rail: Unfinished Dependencies
-
-If a feature depends on external setup that Stuart hasn't completed yet (e.g., a third-party integration, a storage bucket), document the feature but note the dependency clearly:
-- ✅ Document the UI and workflow as built
-- ✅ Note "Requires [X] to be configured — contact your administrator" where applicable
-- ❌ Do NOT skip documentation entirely because of a dependency
-
-### 6h.6 — Version Bump (CalVer)
-
-If this session shipped user-visible features to production, bump `version` in `package.json` using CalVer format `YYYY.MM.patch`:
-- **New month?** → `YYYY.MM.1`
-- **Same month, another release?** → increment patch (e.g. `2026.3.1` → `2026.3.2`)
-- **No user-visible changes?** → no bump
-
-The version is displayed at the bottom of the Profile Settings page (`GetInSync v{version}`).
-
-### Summary
-
-| Check | Result |
-|-------|--------|
-| User-facing behavior changed? | ☐ Yes / ☐ No |
-| Tier determined? | ☐ Minor / ☐ Moderate / ☐ Major / ☐ N/A |
-| Guide written/updated? | ☐ Yes / ☐ N/A |
-| What's New entry appended? | ☐ Yes / ☐ N/A |
-| Feature walkthrough updated (if applicable)? | ☐ Yes / ☐ N/A |
-| Architecture repo committed? | ☐ Yes / ☐ N/A |
-
-**Pass criteria:** All user-facing changes have corresponding documentation written and committed this session. No deferred flags — write it now.
+**Pass criteria:** All user-facing changes have corresponding documentation written and committed this session. No deferred flags.
 
 ---
 
@@ -717,31 +328,24 @@ The version is displayed at the bottom of the Profile Settings page (`GetInSync 
 **When:** Every session — quick scan for SOC2-relevant changes that need documentation.
 **Reference:** `identity-security/soc2-evidence-index.md`, `identity-security/secrets-inventory.md`
 
-### What Triggers This
-
-Any session work that touches SOC2 trust criteria should be captured as evidence. Scan this session for:
-
 | Change This Session | SOC2 Control | Action Required |
 |---------------------|-------------|-----------------|
-| New or rotated API keys / secrets | CC6.1, CC6.3, CC6.6 | Update `secrets-inventory.md` — add/update entry in inventory table + rotation log |
-| New or modified RLS policies | CC6.1 | Already captured by Section 2 + Section 6d — verify evidence-index stats are current |
-| New audit triggers | CC6.6 | Already captured by Section 9 stats alignment — no extra action |
-| New Edge Functions deployed | CC6.3 | Update `secrets-inventory.md` Consumer(s) column if function uses secrets |
-| Auth flow changes (login, signup, OAuth, MFA) | CC6.1 | Update `identity-security/identity-security.md` |
+| New or rotated API keys / secrets | CC6.1, CC6.3, CC6.6 | Update `secrets-inventory.md` |
+| New or modified RLS policies | CC6.1 | Verify evidence-index stats are current |
+| New Edge Functions deployed | CC6.3 | Update `secrets-inventory.md` Consumer(s) column |
+| Auth flow changes | CC6.1 | Update `identity-security/identity-security.md` |
 | New tables with sensitive data | CC6.2, C1.1 | Verify data classification is documented |
-| Infrastructure changes (regions, hosting, backups) | A1.1, A1.2 | Update relevant evidence-index section |
-| New third-party integrations | CC6.7 | Document in vendor management (when policy exists) |
-
-### Quick Checklist
+| Infrastructure changes | A1.1, A1.2 | Update relevant evidence-index section |
+| New third-party integrations | CC6.7 | Document in vendor management |
 
 | Check | Result |
 |-------|--------|
-| Did this session create/rotate/add secrets? | ☐ Yes → Update `secrets-inventory.md` / ☐ No |
-| Did this session change auth or access control? | ☐ Yes → Update `identity-security.md` / ☐ No |
-| Did this session deploy new Edge Functions? | ☐ Yes → Update `secrets-inventory.md` consumers / ☐ No |
-| Did this session close any SOC2 gaps? | ☐ Yes → Update `soc2-evidence-index.md` gap status / ☐ No |
+| Did this session create/rotate/add secrets? | Yes → Update `secrets-inventory.md` / No |
+| Did this session change auth or access control? | Yes → Update `identity-security.md` / No |
+| Did this session deploy new Edge Functions? | Yes → Update `secrets-inventory.md` consumers / No |
+| Did this session close any SOC2 gaps? | Yes → Update `soc2-evidence-index.md` gap status / No |
 
-**Pass criteria:** All SOC2-relevant changes from this session are captured in the appropriate evidence documents. No compliance-relevant work left undocumented.
+**Pass criteria:** All SOC2-relevant changes captured in appropriate evidence documents.
 
 ---
 
@@ -757,7 +361,7 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 | **Database changes** | Tables created/modified, RLS policies, triggers, functions, views |
 | **Frontend changes** | Claude Code commits, components modified |
 | **Files created** | Architecture docs, skills, runbooks |
-| **Validation results** | Pass/fail for each check run from Sections 2–6i |
+| **Validation results** | Pass/fail for each check run from Sections 2-6i |
 | **Repo status** | Both repos committed and pushed? |
 | **Still open** | Bugs, next steps, pending work |
 | **Context for next session** | What the next Claude instance needs to know |
@@ -766,7 +370,7 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 
 ## Section 8: Monthly SOC2 Evidence (If Applicable)
 
-**When:** First session of each month, or when explicitly requested.  
+**When:** First session of each month, or when explicitly requested.
 **Skill:** `identity-security/soc2-evidence-collection.md`
 
 | Check | Action |
@@ -782,20 +386,18 @@ Produce a `session-summary-YYYY-MM-DD.md` covering:
 
 ## Section 9: Cross-Document Stats Alignment
 
-**When:** Any database changes this session (tables, triggers, views, policies, functions).  
+**When:** Any database changes this session.
 **Purpose:** Prevent stat drift across documents that reference database counts.
 
 ### 9.1 — Collect Current Stats
-
-Run this single query to get the source of truth:
 
 ```sql
 SELECT
   (SELECT count(*) FROM pg_tables WHERE schemaname = 'public') as tables,
   (SELECT count(*) FROM pg_policies WHERE schemaname = 'public') as rls_policies,
-  (SELECT count(DISTINCT trigger_name) FROM information_schema.triggers 
+  (SELECT count(DISTINCT trigger_name) FROM information_schema.triggers
    WHERE trigger_schema = 'public' AND trigger_name LIKE 'audit_%') as audit_triggers,
-  (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace 
+  (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public' AND c.relkind = 'v') as views,
   (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
@@ -807,7 +409,7 @@ SELECT
 
 ### 9.2 — Check for Drift
 
-Compare the query results against these documents. If any are stale, flag for update:
+Compare query results against these documents and update if stale:
 
 | Document | Section | What to Check |
 |----------|---------|---------------|
@@ -818,22 +420,7 @@ Compare the query results against these documents. If any are stale, flag for up
 
 ### 9.3 — Auto-Update Drifted Docs
 
-| Scenario | Action |
-|----------|--------|
-| Stats match everywhere | PASS — no action |
-| Stats drifted in any doc | **Update the doc now** with correct counts from the live query. Do not defer. |
-| Schema backup date is stale | Flag in Section 6b |
-
-After updating, commit the architecture repo:
-```bash
-cd ~/getinsync-architecture
-git add -A
-git commit -m "docs: stats alignment"
-git push origin main
-cd ~/Dev/getinsync-nextgen-ag
-```
-
-If running in Claude Project chat (no git access), produce the updated doc sections for Stuart to copy.
+If stats drifted, **update the doc now** — do not defer. After updating, commit the architecture repo.
 
 **Pass criteria:** All documents reference the same table/trigger/policy counts. No drift deferred.
 
@@ -841,16 +428,12 @@ If running in Claude Project chat (no git access), produce the updated doc secti
 
 ## Section 10: Open Items Maintenance
 
-**When:** Every session — this is how the backlog stays alive.  
+**When:** Every session — this is how the backlog stays alive.
 **Document:** `planning/open-items-priority-matrix.md`
 
 ### 10.1 — Harvest New Items
 
-Review the session for anything that was:
-- Discovered but not fixed (bugs, design debt, data quality issues)
-- Deferred deliberately ("parked", "future", "not today")
-- Promised but not delivered (Claude Code changes sent but unconfirmed)
-- Dependencies identified (X blocks Y)
+Review the session for: bugs discovered but not fixed, work deferred, promises undelivered, dependencies identified.
 
 ### 10.2 — Classify New Items
 
@@ -862,28 +445,15 @@ Review the session for anything that was:
 
 ### 10.3 — Close Completed Items
 
-Move items to the "Completed This Session" section with resolution notes. Don't just delete them — the audit trail matters.
+Move to "Completed This Session" with resolution notes. Don't delete — audit trail matters.
 
 ### 10.4 — SOC2 Policy Gap Check
 
-Reference `identity-security/soc2-evidence-index.md` § "Policy Documents Needed":
-
-| Policy | Status | Priority |
-|--------|--------|----------|
-| Information Security Policy | ⬜ Not started | HIGH — before Knowledge |
-| Change Management Policy | ⬜ Not started | HIGH — before Knowledge |
-| Incident Response Plan | ⬜ Not started | HIGH — before Knowledge |
-| Acceptable Use Policy | ⬜ Not started | MED — before first enterprise deal |
-| Data Classification Policy | ⬜ Not started | MED — before first enterprise deal |
-| Business Continuity Plan | ⬜ Not started | MED — before first enterprise deal |
-| Vendor Management Policy | ⬜ Not started | LOW — before SOC2 audit |
-| Data Retention Policy | ⬜ Not started | LOW — already enforced in code |
-
-When any policy is drafted, update both this table AND the evidence index.
+Reference `identity-security/soc2-evidence-index.md` § "Policy Documents Needed" for the current status of required SOC2 policies. When any policy is drafted, update both the evidence index and the open items matrix.
 
 ### 10.5 — Reproduce Updated List
 
-If items were added or completed, produce an updated open items priority matrix (no date suffix — one file, always current) and present it to Stuart for upload to the project.
+If items were added or completed, produce an updated open items priority matrix and present to Stuart.
 
 **Pass criteria:** All new items captured, completed items closed, SOC2 policy gap status current.
 
@@ -891,13 +461,11 @@ If items were added or completed, produce an updated open items priority matrix 
 
 ## Next Session Setup
 
-When producing the handoff document, always include a suggested opening message for the next Claude Code session formatted as:
+When producing the handoff document, always include a suggested opening message:
 
 > **Phase [XX] — [Short Description]**  e.g. "Phase 27c — AI Lookup Edge Function"
 
-This becomes the auto-title for the session in the Claude Code session list and keeps the history scannable.
-
-The opening message should be the **FIRST** thing pasted into the new Claude Code session, before the full handoff prompt.
+This becomes the auto-title for the session in the Claude Code session list. The opening message should be the **FIRST** thing pasted into the new Claude Code session.
 
 ---
 
@@ -907,47 +475,23 @@ The opening message should be the **FIRST** thing pasted into the new Claude Cod
 |----------|-------------|-----------------|
 | `operations/new-table-checklist.md` | Per-table creation checklist | New tables (Section 2) |
 | `operations/database-change-validation.md` | Deep validation (CHECK, roles, FKs, namespaces) | Situational (Section 3) |
+| `operations/session-end-user-docs.md` | Full user documentation procedure | User-facing changes (Section 6h) |
 | `MANIFEST.md` | Master document catalog | New/updated docs (Section 5) |
 | `identity-security/rls-policy-addendum.md` | RLS policy reference | Policy changes (Section 3) |
-| `testing/pgtap-rls-coverage.sql` | pgTAP security regression (408 assertions) | Any DB change (Section 6d) |
-| `testing/security-posture-validation.sql` | Standalone security validation (no extension) | Any DB change (Section 6d) |
-| `testing/data-quality-validation.sql` | Enum casing, naming conventions, placeholder detection (14 checks) | Data seeding/migration (Section 6g) |
+| `testing/pgtap-rls-coverage.sql` | pgTAP security regression | Any DB change (Section 6d) |
+| `testing/security-posture-validation.sql` | Standalone security validation | Any DB change (Section 6d) |
+| `testing/data-quality-validation.sql` | Enum casing, naming conventions (14 checks) | Data seeding/migration (Section 6g) |
 | `identity-security/soc2-evidence-collection.md` | Monthly evidence procedure | Monthly (Section 8) |
-| `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats alignment (Section 9), policy gaps (Section 10.4), SOC2 checkpoint (Section 6i) |
-| `identity-security/secrets-inventory.md` | API key/secret inventory + rotation procedures | SOC2 checkpoint (Section 6i) |
+| `identity-security/soc2-evidence-index.md` | Trust criteria → evidence mapping | Stats (Section 9), policy gaps (Section 10.4), SOC2 (Section 6i) |
+| `identity-security/secrets-inventory.md` | API key/secret inventory + rotation | SOC2 checkpoint (Section 6i) |
 | `identity-security/security-posture-overview.md` | External security overview | Stats alignment (Section 9) |
-| `identity-security/user-registration.md` | Signup/invitation flows | SOC2 CC6.1 evidence |
-| `guides/user-help/*.md` | End-user help articles (8 articles for GitBook) | User doc check (Section 6h) |
-| `planning/open-items-priority-matrix.md` | Prioritized backlog (living doc, overwritten each session) | Open items (Section 10) |
+| `guides/user-help/*.md` | End-user help articles (9 articles for GitBook) | User doc check (Section 6h) |
+| `planning/open-items-priority-matrix.md` | Prioritized backlog (living doc) | Open items (Section 10) |
 
 ---
 
-## Change Log
+*Change log: see `operations/session-end-checklist-changelog.md`*
 
-| Version | Date | Changes |
-|---------|------|---------|
-| v1.0 | 2026-02-10 | Initial document. 8 sections, dispatches to 6 skill documents. Replaces prose in dev rules section 4.3 with executable checklist. |
-| v1.1 | 2026-02-11 | Added Section 6b: Schema Backup with pg_dump command, connection details, verify steps, git commit, and post-backup password roll. Added "Any database changes" trigger to Section 1. |
-| v1.2 | 2026-02-12 | Added Section 9: Cross-Document Stats Alignment — prevents stat drift across manifest, evidence index, security overview, and memory. Added Section 10: Open Items Maintenance — harvests new items, classifies by priority, closes completed items, tracks SOC2 policy gaps, reproduces updated matrix. Updated Section 1 triggers to include "any work done" → Sections 9+10. Updated Document Map with evidence index, security overview, user registration, and open items matrix. |
-| v1.3 | 2026-02-18 | Section 6b Post-Backup: Added reminder to update Claude Code `.env` file after rolling database password. Clarified AG/Netlify not affected. |
-| v1.4 | 2026-02-23 | **Added Section 6c: Architecture Repo Sync** — dual-repo commit verification for `~/getinsync-architecture`. Covers docs produced in this chat (Stuart copies manually) and docs modified by Claude Code (via `./docs-architecture/` symlink). Includes schema backup copy step. Updated Section 1 triggers: architecture docs now trigger 6c, DB changes now trigger 6c. Updated Section 6b: added schema copy to architecture repo step. Updated Section 6 language: AG → Claude Code. Updated Section 7: added repo status row. Updated manifest reference to v1_25. Fixed mojibake throughout (CP1252 encoding artifacts). |
-| v1.5 | 2026-02-23 | **Added Section 6d: Automated Security Regression.** Dispatches to `testing/pgtap-rls-coverage.sql` (391 assertions) or `testing/security-posture-validation.sql` (standalone). Updated Section 1 triggers: all DB change categories now include Section 6d. Updated Section 7: validation results reference updated to Sections 2–6d. Updated Document Map: added both test files, modernized all document paths from versioned filenames to stable repo paths. |
-| v1.6 | 2026-02-28 | **Added Section 6e: Code Quality Gate.** 5 checks: TypeScript (`tsc --noEmit`), ESLint (`npm run lint`), production build, file size threshold, impact scan. ESLint + Prettier installed in codebase (eslint.config.js, .prettierrc). Baseline: 0 errors, 513 warnings. Updated Section 1 triggers: frontend changes now trigger Section 6e. |
-| v1.7 | 2026-03-03 | **Added Section 6f: Bulletproof React Spot Check** (informational, non-blocking). **Added Section 6d Option C** (Claude Code psql). **Section 9.3:** mandatory auto-update, no more deferring drift. Updated Section 1 triggers and Section 7 to include 6f. |
-| v1.8 | 2026-03-03 | **Added Section 6g: Data Quality Spot Check** — 14 checks for enum casing, DP naming conventions, placeholder values, role consistency. New test file `testing/data-quality-validation.sql`. Added data seeding trigger to Section 1. Updated Document Map. Born from two silent bugs: `business_assessment_status` casing mismatch and `dp.name = app.name` naming violation. |
-| v1.18 | 2026-03-13 | **Added §6i: SOC2 Evidence Checkpoint.** Per-session scan for SOC2-relevant changes (secrets, auth, Edge Functions, infrastructure). Maps change types to trust criteria and required doc updates. Quick 4-item checklist. References new `secrets-inventory.md`. Updated Section 1 triggers, Section 7 validation range (2–6i), Document Map. |
-| v1.17 | 2026-03-12 | **Added §2.3: Namespace Seeding Validation.** SQL query checks for namespace-scoped reference tables (has `is_active` + `namespace_id`) missing a seeding trigger on `namespaces`. Runs when new tables are created. Known exceptions documented: `notification_rules`, `workflow_definitions` (future features). Updated Section 1 trigger for new tables to include §2.3. |
-| v1.16 | 2026-03-12 | **§6h scope expansion.** Guide index now includes `feature-walkthrough.md`, `whats-new.md`, and `user-documentation/` badge reference. Added mandatory What's New entry step. Added feature-walkthrough check for Moderate/Major changes. Added §6h.6 version bump reminder. Summary checklist expanded with What's New and walkthrough rows. |
-| v1.15 | 2026-03-12 | **§6h rewrite: "Write It Now" replaces "Flag It".** Section renamed to "User Documentation — Write It Now". Three-tier scope system (Minor/Moderate/Major) determines action level. Claude now writes/updates the actual user guide during the session instead of deferring to a flag in the handover. Added §6h.4 (writing procedure for updates and new guides), §6h.5 (guard rail for unfinished dependencies). Updated summary/pass criteria: no deferred flags, docs must be written and committed this session. |
-| v1.14 | 2026-03-12 | **Added Section 6h: User Documentation Check.** New mandatory section for sessions that change user-facing behavior. Checks existing guides in `guides/user-help/`, flags updates needed or new guides needed. Help articles moved from `features/support/help-articles/` to `guides/user-help/` (harmonized doc locations). Updated Section 1 triggers, Document Map. |
-| v1.13 | 2026-03-05 | **Added "Next Session Setup" section.** Handoff documents must include a suggested opening message formatted as "Phase [XX] — [Short Description]" to auto-title the next Claude Code session for scannable history. |
-| v1.12 | 2026-03-04 | **§6d rewrite: Claude Code runs both test scripts directly.** Replaced Options A/B/C with single "Default" approach: Claude Code runs both `security-posture-validation.sql` and `pgtap-rls-coverage.sql` via `$DATABASE_READONLY_URL` every session with DB changes. pgTAP: strip line 25 (`CREATE EXTENSION`) via `sed`, write to temp file, run with `psql -f`. Added `export` note (source .env doesn't export). Sentinel check failures: Claude Code now updates test files directly instead of deferring to Stuart. Fallback: Supabase SQL Editor. |
-| v1.11 | 2026-03-03 | **Consolidation.** §2.1 expanded: added view security_invoker + DEFINER function search_path checks to bulk safety net (6 checks total). Section 4 removed (all checks now in §2.1). Section 3 narrowed to deep/niche validation only (CHECK constraints, roles, FKs, namespaces). Section 1 triggers simplified. §6d pgTAP count updated 391→408. Deprecated `security-validation-runbook.md` — fully superseded by §2.1 + §6d. |
-| v1.10 | 2026-03-03 | **Section 2 rewrite:** Renamed to "Table Security Posture Validation". §2.1 adds bulk safety-net query (GRANTs, RLS enabled, RLS policies) that runs on ANY database change — not just new tables. Returns only violations. §2.2 retains per-table audit/updated_at trigger checks for new tables only, with guidance on when triggers are expected. Updated Section 1 trigger: "Any database changes" now includes Section 2. Bulk catch-up validation run against all 90 tables: checks 1-4 PASS, checks 5-6 have expected gaps (reference/junction tables). |
-| v1.9 | 2026-03-03 | **Section 9.1:** Fixed functions count query to exclude extension-owned functions (`pg_depend.deptype = 'e'`). Previous query returned ~1,128 (including Supabase/PostGIS built-ins); now returns ~54 (custom functions only). |
-
----
-
-*Document: operations/session-end-checklist.md*  
-*Trigger: End of every productive session, or when Stuart says "run session-end checklist"*  
-*March 2026*
+*Document: operations/session-end-checklist.md*
+*Trigger: End of every productive session, or when Stuart says "run session-end checklist"*
+*April 2026*
