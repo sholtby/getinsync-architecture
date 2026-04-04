@@ -6,6 +6,8 @@ Recent updates to GetInSync NextGen.
 
 ## April 4, 2026
 
+- **Teams Management** — Namespace admins can now manage teams in Settings > Teams. Define support groups, change advisory boards, and management teams with optional workspace scoping. In-use teams are protected from deletion.
+- **Operations Section on Deployment Profiles** — Each deployment profile now includes an Operations section with three team-assignment dropdowns: "Who fixes it when it breaks?", "Who approves changes?", and "Which team manages this day-to-day?" These map to CSDM support groups for ServiceNow export readiness.
 - **Contract Details on Recurring Costs** — Recurring cost entries (cost bundles) now have an expandable Contract Details section where you can record a contract reference, start and end dates, and renewal notice period. Contracts with end dates appear on the Contract Expiry widget.
 - **Contract Expiry Widget** — The IT Spend tab now shows a Contract Expiry table listing all upcoming contract renewals from both IT Services and recurring costs in one view, with status indicators (Active, Expiring Soon, Renewal Due, Expired) and source badges.
 - **Double-Count Awareness** — When adding a recurring cost to an application that already has IT Service costs (or vice versa), a brief prompt helps you check for overlapping cost entries.

@@ -124,12 +124,12 @@ This document sequences all outstanding ADRs, major features, and architectural 
 | A.2.3 | Double-count warning: Add Cost Bundle → check for IT Service allocations | 1 hr |
 | A.2.4 | Double-count prompt: Add IT Service → check for contract-bearing Cost Bundles | 1 hr |
 
-#### A.3 — Frontend Session: CSDM Teams + Operations (~5 hours)
+#### A.3 — Frontend Session: CSDM Teams + Operations (~5 hours) ✅ DEPLOYED 2026-04-04
 
-| # | Work | Estimate |
-|---|---|---|
-| A.3.1 | Team management screen (namespace admin settings — CRUD list) | 2 hrs |
-| A.3.2 | Operations section on DP card (3 team dropdowns with plain-English labels) | 3 hrs |
+| # | Work | Estimate | Status |
+|---|---|---|---|
+| A.3.1 | Team management screen (namespace admin settings — CRUD list) | 2 hrs | ✅ Done |
+| A.3.2 | Operations section on DP card (3 team dropdowns with plain-English labels) | 3 hrs | ✅ Done |
 
 **Note:** A.2 and A.3 can run as **parallel sessions** if files don't overlap. The Cost Bundle card changes (A.2) and the Operations section (A.3) are different parts of the DP card. Verify file ownership before parallelizing.
 

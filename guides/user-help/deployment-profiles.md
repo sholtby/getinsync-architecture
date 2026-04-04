@@ -99,6 +99,34 @@ Deployment profiles also support compliance tracking. By recording where each ap
 
 ---
 
+## Operations — Team Assignments
+
+Each deployment profile has an **Operations** section where you assign the teams responsible for supporting and managing that deployment. This section appears below the IT Services section on the Deployments & Costs tab.
+
+Three questions guide the assignments:
+
+| Question | What It Means |
+|----------|---------------|
+| **Who fixes it when it breaks?** | The support team responsible for incident response |
+| **Who approves changes?** | The change advisory board or team that reviews change requests |
+| **Which team manages this day-to-day?** | The team that handles ongoing operations and maintenance |
+
+Teams are selected from a dropdown that shows your organization's defined teams. If the team you need does not exist, select **"+ Add new team..."** at the bottom of the dropdown to create one inline.
+
+Teams are grouped in the dropdown: namespace-wide teams (labeled "All workspaces") appear first, followed by teams scoped to the current workspace.
+
+### Managing Teams
+
+Namespace administrators can manage teams in **Settings > Teams**. From there you can:
+
+- Create teams with a name, optional description, and workspace scope
+- Edit team names and descriptions
+- Delete teams that are not assigned to any deployment profiles (in-use teams show a usage count and cannot be deleted)
+
+Teams scoped to "All workspaces" are available across your entire organization. Teams scoped to a specific workspace are only visible within that workspace.
+
+---
+
 ## Recurring Costs (Cost Bundles)
 
 Below your deployment profiles on the Deployments & Costs tab, you will find the **Recurring Costs** section. This is where you track annual costs that are not tied to a specific software product or IT service — things like support contracts, consulting agreements, or estimated subscription costs.

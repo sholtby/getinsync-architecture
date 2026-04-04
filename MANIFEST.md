@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-04 (v1.90)
+Last updated: 2026-04-04 (v1.91)
 
 ---
 
@@ -270,7 +270,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | guides/user-help/time-framework.md | v1.0 | 🟢 | TIME quadrant explanation |
 | guides/user-help/paid-framework.md | v1.0 | 🟢 | PAID quadrant explanation |
 | guides/user-help/tech-health.md | v1.0 | 🟢 | Technology health dashboard, lifecycle, KPI cards |
-| guides/user-help/deployment-profiles.md | v1.0 | 🟢 | Deployment profiles concept and creation |
+| guides/user-help/deployment-profiles.md | v1.1 | 🟢 | **Deployment profiles — added Operations section (team assignments), Teams management in Settings** |
 | guides/user-help/roadmap-initiatives.md | v1.0 | 🟢 | Creating and managing initiatives |
 | guides/user-help/integrations.md | v1.0 | 🟢 | Managing application integrations |
 | guides/user-help/ai-assistant.md | v1.0 | 🟢 | Portfolio AI Assistant chat, data scope, workspace filtering, tips |
@@ -317,7 +317,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
 | adr/adr-integration-dp-alignment.md | v1.2 | ☪ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
 | adr/adr-visual-tab-reactflow.md | v1.0 | ⏸ | **ADR: Visual Tab React Flow Rewrite (PARKED). D3 replaced with React Flow + dagre. Branch feat/visual-tab-reactflow complete but parked pending integration-DP alignment Phase 1+2.** |
-| adr/adr-csdm-export-readiness.md | v1.0 | 🟡 | **ADR: CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1/§4.2/§4.4: teams entity, 3 FK columns on deployment_profiles (support_team_id, change_team_id, managing_team_id), export-time criticality derivation, change_control role_type. Moves gap scorecard from 14→19 of 28 fields ready.** |
+| adr/adr-csdm-export-readiness.md | v1.0 | 🟢 | **ADR: CSDM Export Readiness (ACCEPTED). §6 Teams UI DEPLOYED: Teams management CRUD + Operations section on DP card (3 team dropdowns). Schema + frontend complete.** |
 | adr/adr-contract-aware-cost-bundles.md | v1.0 | 🟡 | **ADR: Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields (reference, dates, renewal notice) for Day 1 contract awareness without IT Service maturity requirement. UNION `vw_contract_expiry` view across IT Services + Cost Bundles. Double-count guardrails. Maturity graduation model: Cost Bundle → IT Service. CSDM `ast_contract` export mapping. No budget math changes.** |
 
 ### Change Management
@@ -850,6 +850,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.91 | 2026-04-04 | **Stage A.3: CSDM Teams + Operations UI.** Updated `guides/user-help/deployment-profiles.md` v1.0→v1.1: added Operations section (team assignments) and Teams management in Settings. Updated `guides/whats-new.md`: April 4 entries for Teams Management + Operations section. Updated ADR `adr-csdm-export-readiness.md` status: PROPOSED→ACCEPTED, §6 Teams UI marked DEPLOYED. |
 | v1.90 | 2026-04-04 | **Session-end checklist pruning.** session-end-checklist.md v1.18→v1.19: Pruned from 953→497 lines (13.7k→~7k tokens) to fit within Claude Code's single-read limit. Extracted: §6h user documentation procedure → `operations/session-end-user-docs.md` v1.0, change log → `operations/session-end-checklist-changelog.md` v1.0. Removed inlined SQL duplicated in test scripts, trimmed duplicated CLAUDE.md content and static SOC2 policy table. Document count 118→120. |
 | v1.89 | 2026-04-04 | **Stage A.2: Contract-Aware Cost Bundles UI.** software-contract.md v2.0→v3.0: §7 contract expiry reporting uses `vw_contract_expiry` UNION view, §9 new view documented. open-items #69: IT Spend tab UX overhaul. Frontend: Contract Details section on Cost Bundle cards, ContractExpiryWidget on IT Spend tab, double-count warnings (Cost Bundle + IT Service). |
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
