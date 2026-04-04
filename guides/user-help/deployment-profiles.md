@@ -99,6 +99,29 @@ Deployment profiles also support compliance tracking. By recording where each ap
 
 ---
 
+## Recurring Costs (Cost Bundles)
+
+Below your deployment profiles on the Deployments & Costs tab, you will find the **Recurring Costs** section. This is where you track annual costs that are not tied to a specific software product or IT service — things like support contracts, consulting agreements, or estimated subscription costs.
+
+Each recurring cost entry has an optional **Contract Details** section you can expand to record:
+
+- **Contract Reference** — Your purchase order or agreement number
+- **Start Date** and **End Date** — The contract term
+- **Renewal Notice Days** — How many days before expiry you want to be alerted (defaults to 90)
+
+If you fill in an end date, the contract will appear on the **Contract Expiry** widget on the IT Spend tab, alongside any IT Service contracts. This gives you a single view of all upcoming renewals across your portfolio.
+
+### Double-Count Awareness
+
+GetInSync helps you avoid accidentally counting the same cost twice:
+
+- **Adding a recurring cost** to an application that already receives costs from IT Services will show a brief warning reminding you to check for overlap
+- **Linking an IT Service** to an application that has recurring costs with contract details will prompt you to review those costs, in case the IT Service replaces them
+
+These prompts are informational — they do not prevent you from proceeding. Both cost types can legitimately coexist (for example, an IT Service for hosting plus a separate recurring cost for consulting).
+
+---
+
 ## Next Steps
 
 - [How to Assess an Application](assessment-guide.md) — Score your deployment profiles
