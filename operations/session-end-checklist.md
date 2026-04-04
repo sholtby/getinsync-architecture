@@ -1,6 +1,6 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.19
+**Version:** 1.20
 **Date:** April 4, 2026
 **Status:** ACTIVE
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills
@@ -27,15 +27,15 @@ Before running checks, Claude identifies what was touched. Check all that apply:
 
 | Changed? | Category | Triggers |
 |----------|----------|----------|
-| - | New tables created | → Run Section 2 (Security Posture, incl. §2.3 Namespace Seeding) + Section 6d (Security Regression) |
+| - | New tables created | → Run Section 2 (Security Posture, incl. §2.3 Namespace Seeding) + Section 6d (Security Regression) + Section 6j (AI Chat & Search Discovery) |
 | - | Existing tables modified (columns, constraints) | → Run Section 3 (Deep Validation) + Section 6d (Security Regression) |
 | - | RLS policies added or changed | → Run Section 6d (Security Regression) |
 | - | GRANTs added or changed | → Run Section 6d (Security Regression) |
-| - | New views or functions created | → Run Section 6d (Security Regression) |
+| - | New views or functions created | → Run Section 6d (Security Regression) + Section 6j (AI Chat & Search Discovery) |
 | - | Audit triggers added | → Run Section 6d (Security Regression) |
 | - | Role/enum changes, FK changes, namespace changes | → Run Section 3 (Deep Validation) |
 | - | Architecture documents created or updated | → Run Section 5 (Manifest) + Section 6c (Architecture Repo) |
-| - | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) + Section 6h (User Documentation) |
+| - | Claude Code changes (UI/frontend) | → Run Section 6 (Deploy Reminder) + Section 6e (Code Quality Gate) + Section 6f (Bulletproof React Spot Check) + Section 6g (Data Quality) + Section 6h (User Documentation) + Section 6j (AI Chat & Search Discovery) |
 | - | Data seeded, migrated, or enum/status columns touched | → Run Section 6g (Data Quality) |
 | - | Any database changes at all | → Run Section 2 (Security Posture) + Section 6b (Schema Backup) + Section 6c (Architecture Repo) + Section 6d (Security Regression) + Section 6g (Data Quality) + Section 9 (Stats Alignment) |
 | - | Secrets added/rotated, auth changes, Edge Function deploys | → Run Section 6i (SOC2 Evidence Checkpoint) |
@@ -323,6 +323,71 @@ psql "$DATABASE_READONLY_URL" -f ./docs-architecture/testing/data-quality-valida
 
 ---
 
+## Section 6j: AI Chat & Global Search Discovery Check
+
+**When:** Any session that created new tables, views, or added queryable columns to existing tables.
+**Purpose:** AI Chat and Global Search are both hardcoded — new schema objects are invisible until explicitly registered. This check prevents features from shipping without discoverability.
+
+### What to Check
+
+Neither AI Chat nor Global Search auto-discovers new schema objects. Both must be manually updated:
+
+| System | Registration Files | Discovery Method |
+|--------|-------------------|------------------|
+| **AI Chat** | `supabase/functions/ai-chat/tools.ts` (tool definitions + execution), `supabase/functions/ai-chat/system-prompt.ts` (tool descriptions) | Hardcoded tools that query specific views |
+| **Global Search** | `global_search` RPC in database (entity type list), `src/components/shared/AppHeader.tsx` (navigation routing) | Hardcoded RPC with entity-specific WITH clauses |
+| **Semantic Layer** | `docs-architecture/features/ai-chat/semantic-layer.yaml` | Reference doc — not enforced by code |
+
+### 6j.1 — Identify New Schema Objects
+
+List all tables, views, and significant columns added this session:
+
+```bash
+# Quick check: what did this session add?
+# Compare against tools.ts and global_search to find gaps
+grep -o "from('[^']*')" supabase/functions/ai-chat/tools.ts | sort -u
+# → These are the views AI Chat knows about
+
+# Check global_search entity types
+cd ~/Dev/getinsync-nextgen-ag
+export $(grep DATABASE_READONLY_URL .env | xargs)
+/opt/homebrew/opt/libpq/bin/psql "$DATABASE_READONLY_URL" -c "
+  SELECT pg_get_functiondef(oid)
+  FROM pg_proc
+  WHERE proname = 'global_search'
+  AND pronamespace = 'public'::regnamespace;" | grep -o "AS [a-z_]*_results" | sort
+# → These are the entities Global Search knows about
+```
+
+### 6j.2 — Gap Analysis
+
+For each new table or view created this session, answer:
+
+| New Object | Should AI Chat query it? | Should Global Search include it? | Action |
+|---|---|---|---|
+| *[list each new table/view]* | Yes/No — would users ask natural language questions about this data? | Yes/No — would users search for these entities by name? | Add tool / Add RPC clause / No action needed |
+
+**Guidance:**
+- **New business entity tables** (e.g., `teams`, `contracts`) → likely need both AI Chat + Global Search
+- **New reporting views** (e.g., `vw_contract_expiry`) → likely need AI Chat tool, not Global Search
+- **Junction tables** (e.g., `it_service_software_products`) → usually neither
+- **Reference tables** (e.g., `cost_model_types`) → usually neither
+- **New columns on existing tables** → check if existing AI Chat tools should expose them
+
+### 6j.3 — Action Items
+
+If gaps are found:
+
+1. **AI Chat gap:** Create an open item: "AI Chat: add [tool-name] tool for [view/table]" with the view name, key columns to expose, and example user questions it should answer. Include in the current session if time allows, or add to open items matrix.
+
+2. **Global Search gap:** Create an open item: "Global Search: add [entity] to global_search RPC" with the table name, searchable columns, category label, and icon. Requires SQL script (Stuart runs) + `AppHeader.tsx` navigation update.
+
+3. **Semantic Layer gap:** Update `docs-architecture/features/ai-chat/semantic-layer.yaml` with new view/table mappings. This is documentation-only but keeps the reference current.
+
+**Pass criteria:** All new queryable schema objects have been assessed. Gaps are either resolved in-session or captured as open items with enough detail to implement later.
+
+---
+
 ## Section 6i: SOC2 Evidence Checkpoint
 
 **When:** Every session — quick scan for SOC2-relevant changes that need documentation.
@@ -486,6 +551,10 @@ This becomes the auto-title for the session in the Claude Code session list. The
 | `identity-security/secrets-inventory.md` | API key/secret inventory + rotation | SOC2 checkpoint (Section 6i) |
 | `identity-security/security-posture-overview.md` | External security overview | Stats alignment (Section 9) |
 | `guides/user-help/*.md` | End-user help articles (9 articles for GitBook) | User doc check (Section 6h) |
+| `supabase/functions/ai-chat/tools.ts` | AI Chat tool definitions + execution | AI Chat discovery (Section 6j) |
+| `supabase/functions/ai-chat/system-prompt.ts` | AI Chat tool descriptions for Claude | AI Chat discovery (Section 6j) |
+| `features/ai-chat/semantic-layer.yaml` | Business concept → view mapping reference | AI Chat discovery (Section 6j) |
+| `src/components/shared/AppHeader.tsx` | Global Search navigation routing | Search discovery (Section 6j) |
 | `planning/open-items-priority-matrix.md` | Prioritized backlog (living doc) | Open items (Section 10) |
 
 ---
