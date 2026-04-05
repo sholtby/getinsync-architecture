@@ -22,9 +22,7 @@ Two types exist:
 
 Each integration stores direction, method, format, cadence, sensitivity and tags.  
 External Integrations also reference Suppliers and Contacts.  
-Integrations attach directly to the **BusinessApplication**, not to DeploymentProfiles.
-
-DeploymentProfiles may surface integrations in visualizations later, but they do not store them.
+Integrations attach to the **BusinessApplication** with optional scoping to specific **DeploymentProfiles** via source/target DP foreign keys.
 
 ---
 
@@ -146,11 +144,11 @@ Used to classify data domains or sensitivity.
 ### 4.1 BusinessApplication  
 - Links to InternalIntegrations (as source or target).  
 - Links to ExternalIntegrations via BusinessApplicationExternalIntegration.  
-- DeploymentProfiles do not hold integrations.
+- DeploymentProfiles can be referenced via optional `source_deployment_profile_id` / `target_deployment_profile_id` FKs on `application_integrations`.
 
-### 4.2 DeploymentProfile  
-- No direct relationship.  
-- May surface integration visibility in future lifecycle views only.
+### 4.2 DeploymentProfile
+- Optional relationship via `source_deployment_profile_id` / `target_deployment_profile_id` on `application_integrations`.
+- Used for DP-scoped integration visibility in the Connections list and (future) Visual tab Level 3.
 
 ### 4.3 ITService  
 - No direct relationship.
@@ -291,7 +289,7 @@ Integration Contact Model
 - Should ExternalEntity include more specific subcategories such as SaaS endpoint or public agency?
 - Should integrations support lifecycle states (Planned, Active, Deprecated, Retired)?
 - Should the system block duplicate combinations of BusinessApplication and ExternalIntegration?
-- Future enhancement: allow DeploymentProfiles to reference integrations for lifecycle visualization.
+- **Deployed (Phase 3, April 2026):** Integrations can be scoped to specific Deployment Profiles via `source_deployment_profile_id` and `target_deployment_profile_id` nullable FKs on `application_integrations`. The Add Connection modal shows a DP selector when an app has multiple DPs. The Connections list displays DP names alongside app names when specified. See ADR: `adr/adr-integration-dp-alignment.md`.
 
 ---
 

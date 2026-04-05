@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-04 (v1.91)
+Last updated: 2026-04-04 (v1.92)
 
 ---
 
@@ -164,7 +164,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | features/integrations/servicenow-alignment.md | v1.2 | 🟢 | CSDM mapping, sync strategy — stack-agnostic, no AWS refs found |
-| features/integrations/architecture.md | v1.2 | ☪ | External integrations (stack-agnostic) |
+| features/integrations/architecture.md | v1.3 | 🟢 | Integrations architecture — DP scoping deployed (Phase 3, April 2026) |
 | features/integrations/itsm-api-research.md | **v1.0** | 🟡 | **ITSM API research — ServiceNow + HaloITSM publish/subscribe patterns. Phase 37 scoping.** |
 | features/integrations/csdm-crawl-gap-analysis.md | **v1.0** | 🟡 | **CSDM Crawl field-level gap analysis — GIS schema vs ServiceNow Crawl requirements. 28 fields mapped, 9 gaps, Phase 37 prerequisites.** |
 | csdm-crawl-toolkit/ | **v1.0** | 🟢 | CSDM Crawl Toolkit — Claude Agent Skill for CSDM Crawl adoption. 11 reference files: checklists, field guides, validation scripts, Import Set templates, relationship discovery. |
@@ -315,7 +315,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
-| adr/adr-integration-dp-alignment.md | v1.2 | ☪ | **ADR: Integration-to-DP alignment (ACCEPTED). CSDM gap — integrations must move from app-level to DP-level. Blocks Visual tab L3 + multi-deployment model.** |
+| adr/adr-integration-dp-alignment.md | v1.3 | ☪ | **ADR: Integration-to-DP alignment. Phase 1+2 DEPLOYED (Mar 2026), Phase 3 COMPLETE (Apr 2026). Visual tab L3 deferred to Stage C.** |
 | adr/adr-visual-tab-reactflow.md | v1.0 | ⏸ | **ADR: Visual Tab React Flow Rewrite (PARKED). D3 replaced with React Flow + dagre. Branch feat/visual-tab-reactflow complete but parked pending integration-DP alignment Phase 1+2.** |
 | adr/adr-csdm-export-readiness.md | v1.0 | 🟢 | **ADR: CSDM Export Readiness (ACCEPTED). §6 Teams UI DEPLOYED: Teams management CRUD + Operations section on DP card (3 team dropdowns). Schema + frontend complete.** |
 | adr/adr-contract-aware-cost-bundles.md | v1.0 | 🟡 | **ADR: Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields (reference, dates, renewal notice) for Day 1 contract awareness without IT Service maturity requirement. UNION `vw_contract_expiry` view across IT Services + Cost Bundles. Double-count guardrails. Maturity graduation model: Cost Bundle → IT Service. CSDM `ast_contract` export mapping. No budget math changes.** |
@@ -850,6 +850,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.92 | 2026-04-04 | **Integration-DP Phase 3 COMPLETE.** Updated `features/integrations/architecture.md` v1.2→v1.3 🟢: DP scoping deployed, §2/§4/§7 updated. ADR `adr-integration-dp-alignment.md` v1.2→v1.3: Phase 3 marked COMPLETE. Updated `guides/whats-new.md` + `guides/user-help/integrations.md` with DP selector and list display changes. |
 | v1.91 | 2026-04-04 | **Stage A.3: CSDM Teams + Operations UI.** Updated `guides/user-help/deployment-profiles.md` v1.0→v1.1: added Operations section (team assignments) and Teams management in Settings. Updated `guides/whats-new.md`: April 4 entries for Teams Management + Operations section. Updated ADR `adr-csdm-export-readiness.md` status: PROPOSED→ACCEPTED, §6 Teams UI marked DEPLOYED. |
 | v1.90 | 2026-04-04 | **Session-end checklist pruning.** session-end-checklist.md v1.18→v1.19: Pruned from 953→497 lines (13.7k→~7k tokens) to fit within Claude Code's single-read limit. Extracted: §6h user documentation procedure → `operations/session-end-user-docs.md` v1.0, change log → `operations/session-end-checklist-changelog.md` v1.0. Removed inlined SQL duplicated in test scripts, trimmed duplicated CLAUDE.md content and static SOC2 policy table. Document count 118→120. |
 | v1.89 | 2026-04-04 | **Stage A.2: Contract-Aware Cost Bundles UI.** software-contract.md v2.0→v3.0: §7 contract expiry reporting uses `vw_contract_expiry` UNION view, §9 new view documented. open-items #69: IT Spend tab UX overhaul. Frontend: Contract Details section on Cost Bundle cards, ContractExpiryWidget on IT Spend tab, double-count warnings (Cost Bundle + IT Service). |

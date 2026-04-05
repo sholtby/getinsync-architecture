@@ -6,6 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## April 4, 2026
 
+- **Deployment Profile Scoping for Integrations** — When creating or editing a connection, if the application has multiple deployment profiles, a "Deployment Profile" dropdown now appears so you can specify which instance the integration runs through. Single-deployment apps assign automatically. The connections list now shows the DP name alongside the app name when specified.
 - **Teams Management** — Namespace admins can now manage teams in Settings > Teams. Define support groups, change advisory boards, and management teams with optional workspace scoping. In-use teams are protected from deletion.
 - **Operations Section on Deployment Profiles** — Each deployment profile now includes an Operations section with three team-assignment dropdowns: "Who fixes it when it breaks?", "Who approves changes?", and "Which team manages this day-to-day?" These map to CSDM support groups for ServiceNow export readiness.
 - **Contract Details on Recurring Costs** — Recurring cost entries (cost bundles) now have an expandable Contract Details section where you can record a contract reference, start and end dates, and renewal notice period. Contracts with end dates appear on the Contract Expiry widget.

@@ -1,6 +1,6 @@
 # Dan Warfield UX Review — Claude Code Session Guide
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** April 4, 2026
 **Companion to:** `reviews/dan-warfield-ux-review-findings.md`
 
@@ -119,9 +119,9 @@ The namespace name should be styled as a non-interactive label
 It serves as context, not a control. Use a border-r border-gray-300
 or similar divider.
 
-Find the namespace name: it's already available in the app — check
-how WorkspaceBanner.tsx accesses it (likely from ScopeContext or a
-namespace query).
+Find the namespace name: check how WorkspaceBanner.tsx accesses it —
+it uses the useAuth() hook which exposes namespace?.name (from
+AuthContext, not ScopeContext).
 
 After both tasks:
 - Verify Overview shows no scope bar, just the heading
@@ -177,8 +177,13 @@ Add a pendingExplorerFilters field to ScopeContext:
 - Default: null
 - Setter: setPendingExplorerFilters
 
-In the Explorer component (find the main Explorer page component),
-on mount:
+The actual Explorer filter state is managed in
+src/components/technology-health/TechnologyHealthExplorer.tsx (line 71,
+useState<ExplorerFilters>), NOT in ExplorerPage.tsx (which is just a
+thin wrapper). TechnologyHealthExplorer.tsx is where you must consume
+pendingExplorerFilters.
+
+In TechnologyHealthExplorer, on mount (or in a useEffect):
 - Check if pendingExplorerFilters is non-null
 - If so, merge it into the local filter state
 - Clear pendingExplorerFilters after consuming (so it doesn't
@@ -197,7 +202,7 @@ In OverviewKpiCards.tsx, add onClick handlers to all 5 cards:
 | Applications | setPendingExplorerFilters({}) → setActiveTab('explorer') (no filter — show all) |
 | Fully Assessed | setPendingExplorerFilters({ techAssessmentStatus: 'complete' }) → setActiveTab('explorer') |
 | Crown Jewels | setPendingExplorerFilters({ crownJewel: 'yes' }) → setActiveTab('explorer') |
-| Annual Run Rate | setActiveTab('itspend') (no Explorer filter — navigate to IT Spend tab) |
+| Annual Run Rate | setActiveTab('budget') (no Explorer filter — navigate to IT Spend tab) |
 
 Important: Check the ExplorerFilters interface for exact field names
 and types. The timeQuadrant filter currently takes a single string —
@@ -287,9 +292,12 @@ The script must include, in order:
    Preserve security_invoker = true and all existing GRANTs.
 
 5. Update view-contracts.ts types — output the TypeScript interface
-   changes needed for VwExplorerDetail and VwDashboardSummaryScoped
-   (do NOT modify the file — just output what needs to change so I can
-   verify alignment).
+   changes needed for VwExplorerDetail and VwDashboardSummary (note:
+   VwDashboardSummary is the single interface used for both
+   vw_dashboard_summary and vw_dashboard_summary_scoped — do NOT
+   create a separate VwDashboardSummaryScoped interface). Do NOT
+   modify the file — just output what needs to change so I can
+   verify alignment.
 
 After generating the script:
 - Verify all column references against the current schema
@@ -323,8 +331,8 @@ Run mid-session schema checkpoint.
 Read this before starting:
 - docs-architecture/reviews/dan-warfield-ux-review-findings.md (Point 2)
 - src/components/overview/AssessmentCompletionBar.tsx (current component)
-- src/hooks/useExplorerData.ts (Explorer filters — should already have
-  pendingExplorerFilters support from Chunk 3)
+- src/contexts/ScopeContext.tsx (should already have pendingExplorerFilters
+  from Chunk 3)
 
 Context: The schema now includes:
 - deployment_profiles.assessed_at (already existed)
@@ -346,10 +354,10 @@ Below the existing progress bar, add a staleness summary row.
 Query the stale_tech_count from the dashboard summary view.
 
 If stale_tech_count > 0, show:
-  ⚠️ X assessments older than 90 days
+  Warning: X assessments older than 90 days
 
 Style: amber/warning color, text-sm. If stale_tech_count is 0, show:
-  ✓ All assessments current
+  All assessments current
 
 Style: green/success color, text-sm.
 
@@ -361,14 +369,16 @@ ExplorerFilters — something like:
 
 Task 3 — Set business_assessed_at on save
 
-Find where business scores (b1-b10) are saved to portfolio_assignments.
-Check useDeploymentProfiles.ts or similar hooks — look for the UPDATE
-that writes b1-b10 scores. Add business_assessed_at: new Date().toISOString()
-to that same UPDATE call.
+Business scores (b1-b10) are saved in src/hooks/usePortfolios.ts,
+function saveAssessment() (around line 497). That function already
+updates portfolio_assignments with business scores, business_fit,
+criticality, and business_assessment_status. Add
+business_assessed_at: new Date().toISOString() to that same UPDATE
+call (the paUpdate object around line 500).
 
 Verify: Check how assessed_at is set on deployment_profiles for
-the tech assessment save — mirror that pattern exactly for
-business_assessed_at on portfolio_assignments.
+the tech assessment save (same file, around line 526) — mirror that
+pattern exactly for business_assessed_at on portfolio_assignments.
 
 Task 4 — Explorer: "Last Assessed" column
 
@@ -385,8 +395,12 @@ Task 5 — Update TypeScript types
 Update src/types/view-contracts.ts:
 - VwExplorerDetail: add assessed_at (string | null) and
   business_assessed_at (string | null)
-- VwDashboardSummaryScoped: add oldest_tech_assessment (string | null)
+- VwDashboardSummary: add oldest_tech_assessment (string | null)
   and stale_tech_count (number)
+
+Note: VwDashboardSummary is the single interface used for both
+vw_dashboard_summary and vw_dashboard_summary_scoped. Do NOT
+create a separate VwDashboardSummaryScoped interface.
 
 Grep for all consumers to verify no type errors.
 
@@ -482,3 +496,14 @@ These items from Dan's review are **narrative/strategic**, not code tasks:
 | Version | Date | Changes |
 |---|---|---|
 | v1.0 | 2026-04-04 | Initial session guide — 5 chunks from Dan Warfield UX review findings |
+| v1.1 | 2026-04-04 | Codebase audit corrections — 7 fixes across Chunks 2-5 (see below) |
+
+### v1.1 Corrections Applied
+
+1. **Chunk 2:** Namespace name source — changed from "likely from ScopeContext" to explicit `useAuth()` hook reference
+2. **Chunk 3:** IT Spend tab ID — changed `setActiveTab('itspend')` to `setActiveTab('budget')` (actual tab ID)
+3. **Chunk 3:** Explorer filter location — added that filter state lives in `TechnologyHealthExplorer.tsx`, not `ExplorerPage.tsx`
+4. **Chunk 4:** Interface name — changed `VwDashboardSummaryScoped` to `VwDashboardSummary` (single shared interface)
+5. **Chunk 5:** b1-b10 save location — changed from "check useDeploymentProfiles.ts" to explicit `usePortfolios.ts` → `saveAssessment()` with line numbers
+6. **Chunk 5:** Interface name — changed `VwDashboardSummaryScoped` to `VwDashboardSummary` with note about shared interface
+7. **Chunk 5:** Read list — changed `useExplorerData.ts` to `ScopeContext.tsx` for pendingExplorerFilters reference

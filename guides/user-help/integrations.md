@@ -68,11 +68,12 @@ Each integration captures:
 3. Click **Add Connection**
 4. Select **Internal**
 5. Pick the other application from your portfolio
-6. Set the direction (is your application sending, receiving, or both?)
-7. Fill in method, frequency, data format, and sensitivity
-8. Save
+6. If either application has multiple deployment profiles, you can optionally select which deployment profile the integration runs through. If the application has only one deployment profile, it is assigned automatically.
+7. Set the direction (is your application sending, receiving, or both?)
+8. Fill in method, frequency, data format, and sensitivity
+9. Save
 
-The integration appears on both applications' integration tabs automatically.
+The integration appears on both applications' integration tabs automatically. When a deployment profile is specified, it appears alongside the application name in the connections list.
 
 ### External Integration
 
@@ -81,8 +82,9 @@ The integration appears on both applications' integration tabs automatically.
 3. Click **Add Connection**
 4. Select **External**
 5. Describe the external entity (name, organization)
-6. Set the direction, method, frequency, and other properties
-7. Save
+6. If your application has multiple deployment profiles, you can optionally select which deployment profile this integration runs through.
+7. Set the direction, method, frequency, and other properties
+8. Save
 
 ---
 

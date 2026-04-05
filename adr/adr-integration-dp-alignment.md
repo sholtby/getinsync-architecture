@@ -108,7 +108,7 @@ ALTER TABLE application_integrations
 2. Update `VwIntegrationDetail` TypeScript interface
 3. Update all consumers of this view (grep for `vw_integration_detail`)
 
-### Phase 3: UI Updates
+### Phase 3: UI Updates — COMPLETE (2026-04-04)
 
 1. **Add Connection modal:** Optional DP selector (dropdown of DPs for the source/target app)
 2. **Connections list tab:** Show DP name alongside app name when DP is specified
@@ -176,7 +176,7 @@ Connected App B ──┘
 1. Park `feat/visual-tab-reactflow` — do not merge yet. Resume after Phase 2 is complete. The React Flow renderer is correct; the data model underneath Level 3 is what needs fixing first. The D3 version has the same data gap — Level 3 blast radius was always misleading for multi-DP apps regardless of renderer.
 2. Keep existing D3 two-level visual on `dev` (server_name added via `feat/dp-server-name-visual`)
 3. Add to open items priority matrix as HIGH priority architecture item
-4. Schedule Phase 1 + Phase 2 as a single unit of work (schema migration + view + type updates). Estimate: 1 day. Phase 3 (UI + React Flow rebuild) follows immediately after.
+4. Phase 1 + Phase 2 delivered as a single unit (schema + view + types, March 2026). Phase 3 (UI — DP selector + list display) delivered April 2026. React Flow rebuild (Visual tab Level 3) deferred to Stage C.
 
 **Deferred:**
 - React Flow visual tab rebuild (after Phase 2 is complete)

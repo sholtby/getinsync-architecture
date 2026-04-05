@@ -332,7 +332,7 @@ The schema is already deployed. Do NOT generate SQL.
 ```
 
 ---
-<<<----left off here
+
 ## Chunk 5 — Frontend: Integration-DP Phase 3 + Type Updates
 
 **Prerequisites:** Chunks 3 and 4 merged to dev (DP card layout finalized)
@@ -381,6 +381,7 @@ Tasks:
 ```
 
 ---
+<<<----left off here
 
 ## Chunk 6 — DB: Integration-DP Phase 4 — Data Migration
 
