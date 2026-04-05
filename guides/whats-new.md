@@ -7,6 +7,7 @@ Recent updates to GetInSync NextGen.
 ## April 5, 2026
 
 - **Visual Tab Upgrade — DP-Scoped Blast Radius** — The Visual diagram on the Application Detail page has been rebuilt with React Flow for smoother pan/zoom and cleaner layout. Level 3 "Blast Radius" now shows only the integrations that flow through the selected deployment profile, not all app-level integrations. Level 2 DP nodes display an integration count so you can see at a glance which profiles handle the most connections. Double-click any deployment profile to drill into its blast radius.
+- **Visual Tab — ArchiMate-Informed Design** — The Visual diagram now uses enterprise architecture visual conventions: distinct node shapes for applications (rounded), external systems (dashed border), and deployment profiles (square with colored environment bar). Integration edges use solid lines for one-way data flow and dashed lines for bidirectional connections. Hovering any application shows the business owner, business score, and criticality. Level 3 blast radius now includes IT service dependency nodes below the deployment profile, showing which infrastructure services each deployment depends on.
 
 ## April 4, 2026
 
