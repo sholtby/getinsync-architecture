@@ -1,8 +1,8 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.2
-**Date:** March 19, 2026
-**Status:** ⏸ PARKED — branch feat/visual-tab-reactflow parked pending integration-dp-alignment Phase 1+2
+**Version:** 2.3
+**Date:** April 5, 2026
+**Status:** ✅ SHIPPED
 
 ---
 
@@ -78,6 +78,7 @@ Manual three-tier positioning (not dagre — dagre merges ranks in this topology
 - Excludes `dp_type = 'cost_bundle'` profiles
 - Dashed edges connect app to each DP
 - DPs ordered: is_primary DESC, then name ASC
+- Each DP node shows integration count (number of integrations scoped to that DP)
 
 **Click actions:**
 - Click app node → back to Level 1
@@ -87,10 +88,10 @@ Manual three-tier positioning (not dagre — dagre merges ranks in this topology
 ### Level 3 — Blast Radius
 
 **Center:** Selected deployment profile
-**Surrounding:** All connected apps + external systems (same integration data as Level 1)
+**Surrounding:** Connected apps + external systems filtered to integrations scoped to this DP
 **Layout direction:** Left-to-right (LR)
 
-Shows the "blast radius" — what other systems are affected if this DP goes down.
+Shows the "blast radius" — what other systems are affected if this specific DP goes down. Only integrations where `source_deployment_profile_id` or `target_deployment_profile_id` matches the selected DP are shown (not all app-level integrations).
 
 **Click actions:**
 - Click connected app → navigate to that app's page

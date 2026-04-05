@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-04 (v1.92)
+Last updated: 2026-04-05 (v1.93)
 
 ---
 
@@ -177,7 +177,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/visual-diagram.md | v2.2 | ⏸ | **Visual tab — PARKED. React Flow rewrite on feat/visual-tab-reactflow, pending integration-DP alignment Phase 1+2 (see ADR).** |
+| core/visual-diagram.md | v2.3 | ✅ | **Visual tab — React Flow + dagre. Three-level drill-down with DP-scoped blast radius.** |
 
 ### Technology Health & Risk
 
@@ -316,7 +316,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 |----------|---------|--------|-------------|
 | adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
 | adr/adr-integration-dp-alignment.md | v1.3 | ☪ | **ADR: Integration-to-DP alignment. Phase 1+2 DEPLOYED (Mar 2026), Phase 3 COMPLETE (Apr 2026). Visual tab L3 deferred to Stage C.** |
-| adr/adr-visual-tab-reactflow.md | v1.0 | ⏸ | **ADR: Visual Tab React Flow Rewrite (PARKED). D3 replaced with React Flow + dagre. Branch feat/visual-tab-reactflow complete but parked pending integration-DP alignment Phase 1+2.** |
+| adr/adr-visual-tab-reactflow.md | v1.1 | ✅ | **ADR: Visual Tab React Flow Rewrite (COMPLETE). D3 replaced with React Flow + dagre. Level 3 blast radius wired to DP-scoped data.** |
 | adr/adr-csdm-export-readiness.md | v1.0 | 🟢 | **ADR: CSDM Export Readiness (ACCEPTED). §6 Teams UI DEPLOYED: Teams management CRUD + Operations section on DP card (3 team dropdowns). Schema + frontend complete.** |
 | adr/adr-contract-aware-cost-bundles.md | v1.0 | 🟡 | **ADR: Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields (reference, dates, renewal notice) for Day 1 contract awareness without IT Service maturity requirement. UNION `vw_contract_expiry` view across IT Services + Cost Bundles. Double-count guardrails. Maturity graduation model: Cost Bundle → IT Service. CSDM `ast_contract` export mapping. No budget math changes.** |
 
@@ -857,6 +857,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |
 | v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
+| v1.93 | 2026-04-05 | Visual Tab React Flow resumed. `core/visual-diagram.md` v2.2→v2.3 ⏸→✅ SHIPPED: Level 3 blast radius wired to DP-scoped data, integration count on Level 2 DP nodes. `adr/adr-visual-tab-reactflow.md` v1.0→v1.1 ⏸→✅ COMPLETE: all known gaps resolved. |
 | v1.85 | 2026-04-03 | NEW: `adr/adr-contract-aware-cost-bundles.md` v1.0 🟡 — Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields for Day 1 contract awareness. UNION `vw_contract_expiry` view. Double-count guardrails. Maturity graduation model. No budget math changes. Document count 115→116. AS-DESIGNED 29→30. |
 | v1.84 | 2026-03-30 | NEW: `adr/adr-csdm-export-readiness.md` v1.0 🟡 — CSDM Export Readiness (PROPOSED). Resolves gap analysis §4.1 (no group entity → teams table), §4.2 (criticality → derive at export), §4.4 (change_control role). 3 new FK columns on deployment_profiles. NEW: `features/integrations/dp-card-wireframe.html` v1.0 🟡 — DP card wireframe with Operations section. 3 pending schema changes added. Document count audit corrected (was stale since v1.79): 107→115. AS-DESIGNED 27→29. |
 | v1.83 | 2026-03-28 | NEW: `features/integrations/getinsync-csdm-alignment.html` v1.0 🟡 — 4-layer visual mapping GIS entities to CSDM relationship types. NEW: `.docx` Word version (landscape). Document count 105→107. |

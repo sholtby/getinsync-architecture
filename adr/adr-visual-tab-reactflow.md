@@ -1,8 +1,8 @@
 # ADR: Visual Tab — React Flow Rewrite
 
-**Version:** 1.0
-**Date:** March 19, 2026
-**Status:** PARKED
+**Version:** 1.1
+**Date:** April 5, 2026
+**Status:** COMPLETE
 **Author:** Stuart Holtby + Claude
 **Relates to:** `core/visual-diagram.md`, `adr/adr-integration-dp-alignment.md`
 **Branch:** `feat/visual-tab-reactflow`
@@ -87,12 +87,14 @@ See `adr/adr-integration-dp-alignment.md` for the full problem statement and res
 
 ---
 
-## Known Gaps on Branch at Time of Parking
+## Known Gaps (Resolved)
 
-- Level 1 layout direction needs to be TB not LR (three-tier: connected apps top, focused app center, DPs bottom)
-- Double-click on DP for Level 3 (currently single-click)
-- Hover tooltip on app nodes lost from D3 version
-- Level 3 blast radius data inaccurate until integration ADR Phase 1+2 complete
+All gaps identified at parking have been resolved:
+
+- ~~Level 1 layout direction needs to be TB not LR~~ — Fixed: manual three-tier positioning (commit ef753e1)
+- ~~Double-click on DP for Level 3 (currently single-click)~~ — Fixed (commit 7c8976f)
+- ~~Hover tooltip on app nodes lost from D3 version~~ — Fixed (commit 7c8976f)
+- ~~Level 3 blast radius data inaccurate~~ — Fixed: Level 3 now filters integrations by `source_deployment_profile_id` / `target_deployment_profile_id` matching the selected DP
 
 ---
 
@@ -108,4 +110,5 @@ See `adr/adr-integration-dp-alignment.md` for the full problem statement and res
 
 ## Changelog
 
+- **v1.1 — April 5, 2026** — Rebased onto dev. Level 3 blast radius wired to DP-scoped integration data. Integration count added to Level 2 DP nodes. All known gaps resolved. Status → COMPLETE.
 - **v1.0 — March 19, 2026** — Initial ADR. Branch parked.
