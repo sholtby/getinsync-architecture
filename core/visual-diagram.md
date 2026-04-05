@@ -1,6 +1,6 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.3
+**Version:** 2.4
 **Date:** April 5, 2026
 **Status:** ✅ SHIPPED
 
@@ -16,7 +16,7 @@ The Visual tab on the Application Detail page renders an interactive graph using
 |---------|---------|
 | `@xyflow/react` | Graph rendering, pan/zoom, node dragging |
 | `@dagrejs/dagre` | Automatic directed-graph layout (LR or TB) |
-| Custom nodes | `AppNode` (apps/externals), `DPNode` (deployment profiles) |
+| Custom nodes | `AppNode`, `DPNode`, `TierLabelNode`, `LegendNode` |
 
 ### Key Files
 
@@ -26,6 +26,8 @@ The Visual tab on the Application Detail page renders an interactive graph using
 | `src/components/visual/graphBuilders.ts` | Layout + node/edge construction for all three levels (manual 3-tier for L1, dagre for L2/L3) |
 | `src/components/visual/nodes/AppNode.tsx` | Custom node for applications and external systems |
 | `src/components/visual/nodes/DPNode.tsx` | Custom node for deployment profiles |
+| `src/components/visual/nodes/TierLabelNode.tsx` | Non-interactive tier label with dashed rule |
+| `src/components/visual/nodes/LegendNode.tsx` | Non-interactive legend (level-aware) |
 | `src/hooks/useVisualGraphData.ts` | Data fetching hook — all Supabase queries |
 
 ---
@@ -56,10 +58,11 @@ Layout: TB (top-bottom)        Layout: TB (top-bottom)         Layout: LR (left-
 Manual three-tier positioning (not dagre — dagre merges ranks in this topology). Nodes are centered horizontally per tier with 140px vertical gap. Integration edges use `sourceHandle: 'bottom'` → `targetHandle: 'top'` for clean vertical routing; DP edges use `sourceHandle: 'bottom'` on the focused app.
 
 - Integration edges from `vw_integration_detail`
-- Edge color indicates criticality: critical (#ef4444), important (#f59e0b), nice_to_have (#94a3b8)
+- Edge color: amber (#BA7517) for all data flow edges
 - Edge style: dashed for deprecated/retired integrations
-- Edge labels show integration_type
-- App-to-DP edges: dashed gray (#94a3b8), 1px
+- Edge labels show integration_type (11px)
+- App-to-DP edges: dashed gray (#94a3b8), 1px, no arrowhead (structural)
+- Tier labels: "Connected applications" and "Focused application" above their respective tiers
 - MiniMap shown on Level 1 only
 
 **Click actions:**
@@ -75,10 +78,12 @@ Manual three-tier positioning (not dagre — dagre merges ranks in this topology
 **Below:** All deployment profiles for this application
 **Layout direction:** Top-to-bottom (TB)
 
+- Includes connected apps/externals with integration edges (amber #BA7517)
 - Excludes `dp_type = 'cost_bundle'` profiles
-- Dashed edges connect app to each DP
+- Dashed structural edges connect app to each DP
 - DPs ordered: is_primary DESC, then name ASC
-- Each DP node shows integration count (number of integrations scoped to that DP)
+- Each DP node shows enriched view: tech health bar, integration count amber pill, "1°" badge
+- Tier labels: "Connected applications", "Focused application", "Deployment profiles"
 
 **Click actions:**
 - Click app node → back to Level 1
@@ -93,6 +98,10 @@ Manual three-tier positioning (not dagre — dagre merges ranks in this topology
 
 Shows the "blast radius" — what other systems are affected if this specific DP goes down. Only integrations where `source_deployment_profile_id` or `target_deployment_profile_id` matches the selected DP are shown (not all app-level integrations).
 
+- Subtitle: "Showing N integrations for this deployment only"
+- DP rendered as hero card with integration summary (sends/receives/bidirectional counts)
+- Directional edge coloring: outbound amber (#BA7517), inbound blue (#185FA5), bidirectional amber with arrows both ends
+
 **Click actions:**
 - Click connected app → navigate to that app's page
 
@@ -102,41 +111,65 @@ Shows the "blast radius" — what other systems are affected if this specific DP
 
 ### AppNode (`src/components/visual/nodes/AppNode.tsx`)
 
-Renders applications and external systems with consistent styling.
+Renders applications and external systems with ArchiMate-informed shape semantics.
 
-**Icons (locked per type):**
-- Applications: `Monitor` (lucide-react)
-- External systems: `Globe` (lucide-react)
+**Shape semantics (corner radius):**
+- Internal applications: `border-radius: 8px` (rounded — application layer)
+- External systems: `border-radius: 2px` with dashed 1.5px border (outside boundary)
+- No icon for external systems — the dashed border is the sole differentiator
+- Internal applications show `Monitor` icon (lucide-react)
 
-**Visual indicators:**
-- TIME quadrant color stripe on left border: Invest (#10b981), Modernize (#f59e0b), Tolerate (#6b7280), Eliminate (#ef4444)
+**TIME quadrant coloring:** Uses authoritative hex colors from `scoring.ts`:
+- Focused app: 2px solid border in TIME color, light wash background, scale-110
+- Connected apps with TIME: 1px border in TIME color, light wash background
+- Tolerate text override: #9da3af
 - Crown jewel star icon when criticality >= 50
-- Focused app has teal border; others have gray
 - Shows workspace name below app name
 
-**Hover tooltip:** Non-focused app nodes show a tooltip on hover with app name, workspace name, TIME quadrant, and criticality score. Tooltip is an absolutely-positioned div inside the node component (not a portal).
+**Hover tooltip:** Non-focused app nodes show a tooltip on hover with app name, workspace name, TIME quadrant, and criticality score.
 
 **Handles:** All four sides (Left, Right, Top, Bottom) for flexible edge routing.
 
 ### DPNode (`src/components/visual/nodes/DPNode.tsx`)
 
-Renders deployment profiles with hosting-aware icons.
+Renders deployment profiles with ArchiMate-informed shape (nearly square, `border-radius: 3px`).
+
+**Left-edge environment bar (4px wide, full height):**
+- PROD: teal/green (#10b981)
+- TEST: amber (#f59e0b)
+- DEV: blue (#3b82f6)
+- DR/default: gray (#6b7280)
 
 **Icons (by hosting_type):**
 - `SaaS` → `Cloud`
 - `Hybrid` → `GitMerge`
 - Default/On-Prem → `Server`
 
-**Visual indicators:**
-- PRIMARY badge (indigo) for is_primary DPs
-- Environment color dot (from `getEnvironmentColor()`)
-- Hosting type badge
-- Server name (truncated)
-- Tech health percentage with color coding (green >=70, amber >=40, red <40)
+**Level-aware rendering (via `viewLevel` in node data):**
+- **Level 1 (compact):** Name, "1°" teal badge, environment · hosting, server name, tech health %
+- **Level 2 (enriched):** Min-width 240px, tech health progress bar (8px, colored fill), integration count amber pill
+- **Level 3 (hero card):** Min-width 300px, crown jewel star, server_name, tech health bar, divider, integration summary (sends/receives/bidirectional)
 
-**Hover hint:** Shows "Double-click to explore" text below the node on hover.
+**Hover hint:** Shows "Double-click to explore" text below the node on hover (L1/L2).
 
 **Handles:** All four sides.
+
+### TierLabelNode (`src/components/visual/nodes/TierLabelNode.tsx`)
+
+Non-interactive layout element that labels horizontal tiers. Implemented as a React Flow node (survives zoom/pan/export).
+
+- `draggable: false, selectable: false, focusable: false`
+- 11px uppercase text (#6b7280) with dashed horizontal rule (0.5px dashed #d1d5db)
+- L1: "Connected applications", "Focused application"
+- L2: "Connected applications", "Focused application", "Deployment profiles"
+- L3: none
+
+### LegendNode (`src/components/visual/nodes/LegendNode.tsx`)
+
+Compact horizontal legend rendered as a non-interactive React Flow node at the bottom of the canvas.
+
+- L1/L2: External dashed rect, internal solid rect, dashed gray line "Structural", solid amber arrow "Data flow"
+- L3: Amber arrow "Sends data", blue arrow "Receives data"
 
 ---
 
@@ -144,14 +177,16 @@ Renders deployment profiles with hosting-aware icons.
 
 All edges use `type: 'smoothstep'` with `pathOptions: { borderRadius: 0 }` for orthogonal right-angle routing.
 
-| Edge Type | Color | Style | Marker |
-|-----------|-------|-------|--------|
-| Integration (critical) | #ef4444 | solid, 2px | ArrowClosed |
-| Integration (important) | #f59e0b | solid, 2px | ArrowClosed |
-| Integration (nice_to_have) | #94a3b8 | solid, 2px | ArrowClosed |
-| Integration (deprecated/retired) | per criticality | dashed (6 3) | ArrowClosed |
-| App-to-DP (Level 2) | #94a3b8 | dashed (6 3), 1px | none |
-| DP-to-App (Level 3) | per criticality | solid/dashed, 2px | ArrowClosed |
+**Two visually distinct edge types:**
+
+| Edge Type | Color | Style | Marker | Label |
+|-----------|-------|-------|--------|-------|
+| Data flow (L1/L2) | #BA7517 amber | solid, 1.5px | ArrowClosed | integration_type (11px) |
+| Data flow (deprecated) | #BA7517 amber | dashed (6 3), 1.5px | ArrowClosed | integration_type |
+| Structural (app→DP) | #94a3b8 gray | dashed (6 4), 1px | none | none |
+| L3 outbound (sends) | #BA7517 amber | solid, 1.5px | ArrowClosed (away) | integration_type |
+| L3 inbound (receives) | #185FA5 blue | solid, 1.5px | ArrowClosed (toward DP) | integration_type |
+| L3 bidirectional | #BA7517 amber | solid, 1.5px | ArrowClosed (both ends) | integration_type |
 
 **Edge tooltips:** Hovering over an integration edge shows a tooltip with integration name, type, frequency, and data classification.
 
@@ -290,10 +325,33 @@ Each segment is clickable to navigate back. "Reset Layout" button is right-align
 
 ---
 
+## ArchiMate-Informed Design Language
+
+The visual vocabulary borrows from ArchiMate conventions to be recognizable to enterprise architects while remaining readable for non-technical users.
+
+**Shape semantics (corner radius):**
+- Applications: rounded (8px) — ArchiMate application layer
+- External systems: nearly square (2px) + dashed border — ArchiMate external entity convention
+- Deployment profiles: nearly square (3px) — ArchiMate technology layer
+
+**Environment signaling:** DP nodes use a 4px left-edge color bar for instant environment recognition (PROD=teal, TEST=amber, DEV=blue, DR/default=gray).
+
+**Edge differentiation:**
+- Data flow (integration): solid amber with directional arrowhead
+- Structural (composition): dashed gray with no arrowhead
+- Level 3 adds directional coloring: outbound=amber, inbound=blue, bidirectional=amber with dual arrows
+
+**Tier labels:** Non-interactive React Flow nodes labeling each horizontal tier. Survive zoom/pan/screenshots/export.
+
+**Legend:** Compact horizontal React Flow node at canvas bottom showing edge and node type key, adapting to the current level.
+
+Design source: ArchiMate-informed visual polish prompt (April 2026).
+
+---
+
 ## Future Enhancements (Not Yet Built)
 
 - **Level 2 tech stack nodes:** Software products, IT services, hosting, cloud provider, DR status as nodes under each DP
 - **Level 3 service/product visual:** Blast radius centered on a service or product (all DPs using it)
 - **Inter-DP edges:** Show relationships between DPs (requires `inherits_tech_from` or similar)
-- **Legend bar:** Visual legend for edge colors, node types, TIME quadrant colors
 - **Export:** PNG/SVG export of current view

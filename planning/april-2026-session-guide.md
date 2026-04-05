@@ -381,7 +381,7 @@ Tasks:
 ```
 
 ---
-<<<----left off here
+
 
 ## Chunk 6 — DB: Integration-DP Phase 4 — Data Migration
 
@@ -482,7 +482,7 @@ Step 5: Update architecture docs:
   - docs-architecture/adr/adr-visual-tab-reactflow.md — status
     PARKED → COMPLETE, add changelog entry
 ```
-
+<<<----left off here
 ---
 
 ## Chunk 8 — Gamification Phase 1 (Independent)
