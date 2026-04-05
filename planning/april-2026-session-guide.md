@@ -482,10 +482,10 @@ Step 5: Update architecture docs:
   - docs-architecture/adr/adr-visual-tab-reactflow.md — status
     PARKED → COMPLETE, add changelog entry
 ```
-<<<----left off here
+
 ---
 
-## Chunk 8 — Gamification Phase 1 (Independent)
+## Chunk 8 — Gamification Phase 1 (Independent) <<<----left off here, not started
 
 **Prerequisites:** None (independent of Stages A-C)
 **Architecture:** `features/gamification/architecture.md` v1.2
