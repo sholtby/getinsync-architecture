@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** April 4, 2026
+**As of:** April 5, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -64,6 +64,7 @@
 | 61 | Bug | Tech Health CSV export labels rows as "applications" but exports at DP level | Screen shows "15 applications" but CSV has 16 rows because Hexagon OnCall has 2 DPs. Fix: change column header and count label in export to say "deployment profiles" not "applications". One-liner. | -- | Stuart + Claude Code |
 | 69 | UX | IT Spend tab UX overhaul | BudgetPage layout, CostAnalysisPanel discoverability (hidden drill-in from Dashboard KPI), Contract Expiry widget placement, overall navigation and information hierarchy. Discuss with Stuart. | -- | Stuart + Claude Code |
 | 72 | Bug | ConnectionsVisual.tsx sensitivity value mismatch | `isSensitive` check (line 481) tests for `pii/pci/phi` but `sensitivity_types` ref table has `low/moderate/high/confidential`. Lock icon in ApplicationConnections tests `high/confidential`. The Visual tab check may never match. Pre-existing — not a regression. ~15 min fix. | -- | Stuart + Claude Code |
+| 73 | Documentation | Visual tab user help article | No user help article in `guides/user-help/` covers the Visual diagram tab (three-level drill-down, blast radius, layout persistence). ~1 hr to write. | -- | Stuart + Claude Code |
 
 ---
 
@@ -86,6 +87,13 @@ These features have complete architecture documents but no code implementation. 
 | **ITSM Integration (Phase 37)** | features/integrations/itsm-api-research.md | 15-20 days | FUTURE | ServiceNow + HaloITSM publish/subscribe. Q3+. |
 
 ---
+
+## Completed Apr 5
+
+| Item | Resolution |
+|------|------------|
+| Visual Tab React Flow resume (Chunk 7) | ✅ COMPLETE. Rebased `feat/visual-tab-reactflow` onto dev. Level 3 blast radius wired to DP-scoped integrations (filters by source/target_deployment_profile_id). Integration count added to Level 2 DP nodes. All known ADR gaps resolved. Version 2026.4.3 deployed. |
+| Integration-DP Phase 4 data migration (Chunk 6) | ✅ NO-OP. All 23 existing integrations already had DPs assigned from Phase 1-3 UI work. Migration script validated but nothing to migrate. |
 
 ## Completed Mar 20
 
