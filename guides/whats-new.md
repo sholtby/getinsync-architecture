@@ -4,6 +4,10 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 5, 2026
+
+- **Visual Tab Upgrade — DP-Scoped Blast Radius** — The Visual diagram on the Application Detail page has been rebuilt with React Flow for smoother pan/zoom and cleaner layout. Level 3 "Blast Radius" now shows only the integrations that flow through the selected deployment profile, not all app-level integrations. Level 2 DP nodes display an integration count so you can see at a glance which profiles handle the most connections. Double-click any deployment profile to drill into its blast radius.
+
 ## April 4, 2026
 
 - **Deployment Profile Scoping for Integrations** — When creating or editing a connection, if the application has multiple deployment profiles, a "Deployment Profile" dropdown now appears so you can specify which instance the integration runs through. Single-deployment apps assign automatically. The connections list now shows the DP name alongside the app name when specified.
