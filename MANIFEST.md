@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-05 (v1.93)
+Last updated: 2026-04-06 (v1.96)
 
 ---
 
@@ -252,6 +252,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | planning/q1-2026-master-plan.md | v1.4 → **v2.0** | 🟢 | Q1 2026 strategic roadmap — **v2.0 xlsx replaces markdown** |
 | planning/april-2026-level-set.md | v1.0 | ☪ | **April 2026 Level Set.** Sequences 4 ADRs + major features into staged delivery plan. Stages A-D: DP Enhancement → Integration Phase 3 → Visual Tab React Flow → CSDM Export. Independent work tiers (Gamification, Entra ID/SSO, open items). April-May calendar. Success criteria. |
 | planning/april-2026-session-guide.md | v1.0 | ☪ | **April 2026 Session Guide.** Companion to Level Set. 8 copy-paste-ready Claude Code session prompts with prerequisites, continuation templates, gap-filler tasks, and session lifecycle reminders. |
+| planning/csdm-auto-wiring-session-guide.md | v1.0 | ☪ | **CSDM Auto-Wiring Session Guide.** 4-chunk session guide: auto-assign IT Service links when tech products added to DPs, Visual tab Level 4 drill-down into IT Services to show technology products, remove tech count pills. |
+| planning/cor-demo-data-session-guide.md | v1.0 | 🟢 | **COR Demo Data Reset Session Guide.** 5-chunk guide for Phase 1 DELETE + Phase 2 INSERT of COR namespace demo data. Includes browser verification tests. |
 | marketing/explainer.md | v1.7.1 | ☪ | **Product explainer — merged v1.5 base + v1.7 additions. Tenancy, identity, licensing, cost, CSDM, technology health, risk boundary, data governance, buyer personas** |
 | marketing/positioning-statements.md | v1.0 | ☪ | Positioning statements |
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
@@ -857,6 +859,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |
 | v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
+| v1.96 | 2026-04-06 | **COR Demo Data Reset + CSDM Auto-Wiring Spec.** Phase 1 DELETE + Phase 2 INSERT applied (30 apps, 42 DPs, 12 IT services). Police assessments seeded (8 apps, full TIME/PAID). Data fixes: duplicate DPs from trigger, SaaS→Azure Cloud Hosting incorrect links, IT Service service_type_id NULL. NEW: `planning/csdm-auto-wiring-session-guide.md` v1.0 — 4-chunk session guide for auto-wiring + Visual Level 4 drill-down. NEW: `schema/cor-demo-data-police-assessments.sql` — reusable assessment seed script. Document count 117→119. |
 | v1.95 | 2026-04-05 | **CSDM Demo Data Consistency.** `catalogs/it-service.md` v2.0→v2.1: technology composition display. `catalogs/technology-catalog.md` v1.0→v1.1: IT Service usage display. `catalogs/software-product.md` v3.0→v3.1: `is_org_wide` flag + org-wide badge. `core/visual-diagram.md` v2.4→v2.5: ServiceNode tech count pill. `guides/whats-new.md`: April 5 CSDM entry. NEW SQL script: `schema/csdm-demo-data-consistency.sql` — junction table population, vendor orgs, manufacturer assignment. |
 | v1.94 | 2026-04-05 | **ArchiMate-informed visual polish.** `core/visual-diagram.md` v2.3→v2.4: Shape semantics (corner radius convention), edge differentiation (amber data flow / gray structural / L3 directional blue/amber), left-edge environment bar on DPs, tier label nodes, legend node, L2 DP enrichment (tech health bar, integration count pill), L3 hero card with direction summary. New files: `TierLabelNode.tsx`, `LegendNode.tsx`. |
 | v1.93 | 2026-04-05 | Visual Tab React Flow resumed. `core/visual-diagram.md` v2.2→v2.3 ⏸→✅ SHIPPED: Level 3 blast radius wired to DP-scoped data, integration count on Level 2 DP nodes. `adr/adr-visual-tab-reactflow.md` v1.0→v1.1 ⏸→✅ COMPLETE: all known gaps resolved. |
