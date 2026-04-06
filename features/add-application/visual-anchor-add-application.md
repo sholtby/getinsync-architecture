@@ -1,10 +1,11 @@
 # Visual Anchor — Add Application Wizard
 
-**Version:** 1.0  
-**Date:** April 6, 2026  
-**Status:** 🟡 AS-DESIGNED (PARKED — concept captured, not scheduled)  
-**Depends on:** COR demo data reset (complete first)  
+**Version:** 1.1
+**Date:** April 6, 2026
+**Status:** 🟡 AS-DESIGNED (PARKED — concept captured, not scheduled)
+**Depends on:** COR demo data reset (complete first)
 **Schema impact:** None — pure frontend
+**Review:** `features/add-application/visual-anchor-review.md` (v1.0 review, all findings resolved in v1.1)
 
 ---
 
@@ -163,15 +164,34 @@ Can add multiple. Each one lights up a node in the anchor.
 
 **Graduated scope:** Simple form captures the connection (which app, direction, method) — enough to draw the line on the anchor and the Visual tab. Advanced fields (data tags, sensitivity classification, frequency, DP-level scoping, criticality) are only available in Advanced mode. This matches the maturity model: Day 1 = "we talk to Workday." Day 90 = "we send PII to Workday via daily SFTP batch using their Production API endpoint."
 
-### 4.3 Auto-Created Records
+### 4.3 Auto-Created Records — Incremental Save
 
-When the user saves from Simple form, the system creates:
+The wizard saves incrementally as the user progresses through steps. Each "Next" click persists the current step's data immediately. If the user abandons mid-wizard, they have a partially complete app visible in the app list that they can finish later via Edit. No rollback or transaction is needed.
 
-1. `applications` row (name, description, lifecycle_status, workspace_id)
-2. `deployment_profiles` row (is_primary=true, name=app name, hosting_type, environment, region, cloud_provider)
-3. `portfolio_assignments` row if a default portfolio exists for the workspace
-4. If cost entered: cost bundle DP (is_cost_bundle=true) with contract fields
-5. If integrations added: `application_integrations` rows with source/target DP IDs (using the primary DPs of both apps)
+**Step 1 "Next" — Create Application:**
+
+1. INSERT `applications` row (name, description, lifecycle_status, workspace_id)
+2. The `create_default_deployment_profile` DB trigger fires automatically and creates a primary DP named `"{app name} — Region-PROD"`
+3. Query for the trigger-created DP: `SELECT id FROM deployment_profiles WHERE application_id = $1 AND is_primary = true`. Retry up to 3 times with 100ms delay if not found (replaces the fragile `setTimeout(100)` pattern used elsewhere)
+
+**Step 2 "Next" — Configure Deployment:**
+
+4. UPDATE the trigger-created primary DP with user values: `hosting_type`, `environment`, `region`, `cloud_provider`, `server_name`. Do NOT insert a new DP — the trigger already created one.
+
+**Step 3 "Next" — Cost (if not skipped):**
+
+5. If **Path A** (annual cost): INSERT a cost bundle DP — a `deployment_profiles` row with `dp_type = 'cost_bundle'`, `is_primary = false`, plus cost fields: `annual_licensing_cost`, `vendor_org_id`, `contract_reference`, `contract_end_date`, `renewal_notice_days`
+6. If **Path B** (IT Services): Switches to Advanced form — no insert at this step
+
+**Step 3 "Next" — Portfolio Assignment (automatic):**
+
+7. If the user has a portfolio selected in the persistent scope bar, auto-create a `portfolio_assignments` row linking the application's primary DP to that portfolio. If the scope bar is at workspace-level (no portfolio selected), skip this — the user can assign later. The `deployment_profile_id` must be provided (not NULL) — RLS silently rejects NULL values in the `IN` subquery check.
+
+**Step 4 "Save" — Integrations (if not skipped):**
+
+8. INSERT `application_integrations` rows with `source_application_id`, `target_application_id`, `direction`, `integration_method`. Use the primary DPs of both apps for `source_deployment_profile_id` and `target_deployment_profile_id`.
+
+**Error handling:** Each step shows a toast on failure. The user can retry the failed step without losing prior steps. Partial apps are valid — they appear in the app list and can be completed via Edit.
 
 ### 4.4 Labels — The 18-Year-Old Test
 
@@ -185,7 +205,7 @@ No CSDM jargon in Simple form. Labels use plain questions:
 | Hosting Type | "Where does it run?" |
 | Environment | "Which environment?" |
 | Integration | "What connects to it?" |
-| Portfolio Assignment | *(auto-assigned if default portfolio exists)* |
+| Portfolio Assignment | *(auto-assigned to scope bar portfolio, if one is selected)* |
 
 ---
 
@@ -210,6 +230,16 @@ Switching Simple → Advanced preserves all data entered so far. The wizard expa
 
 Switching Advanced → Simple is allowed only if the app has no Advanced-level data (IT Services, multiple DPs, tech products). If it does, the option is grayed out with tooltip: "This application uses advanced features. Use the full editor."
 
+### 5.4 RLS Role Requirement — Design Decision to Confirm
+
+Current RLS INSERT policies on `applications`, `deployment_profiles`, and `portfolio_assignments` require **namespace admin or platform admin** role. Workspace editors cannot create applications.
+
+**Path A (preferred for now):** Business owners who need to create apps get namespace admin role during onboarding. This matches the QuickBooks model — the business owner IS the admin. The wizard works correctly for namespace admins today. No RLS change needed.
+
+**Path B (future):** If namespace admin carries permissions that business owners shouldn't have (delete workspaces, change scoring weights), add a middle-tier role or widen INSERT policies to include editors. This would be a small RLS policy change per table.
+
+This is an onboarding/role design question, not a code blocker. Confirm during implementation which path applies.
+
 ---
 
 ## 6. Implementation Plan
@@ -228,10 +258,11 @@ Switching Advanced → Simple is allowed only if the app has no Advanced-level d
 ```typescript
 interface VisualAnchorProps {
   appName?: string;
-  workspace?: string;
+  workspaceName?: string;
   lifecycleStatus?: string;
+  currentStep?: number; // 1-4, highlights the active tier with subtle pulse/border emphasis
   deploymentProfile?: {
-    hostingType?: string;
+    hostingType?: HostingType; // from src/types/index.ts
     environment?: string;
     region?: string;
     serverName?: string;
@@ -243,18 +274,29 @@ interface VisualAnchorProps {
     direction: 'upstream' | 'downstream' | 'bidirectional';
     method?: string;
   }>;
-  costPath?: 'bundle' | 'it_services' | null;
+  costPath?: 'bundle' | 'it_services' | 'skipped' | null; // null = not yet reached; 'skipped' = user chose "I'll add this later"
+  costBundle?: { name?: string; annualCost?: number; vendorName?: string }; // lights up cost badge node when Path A chosen
   onNodeClick?: (section: 'app' | 'dp' | 'cost' | 'integrations') => void;
 }
 ```
 
 **Rules:**
 - Component receives form state as props — no database queries
-- Uses `@xyflow/react` with `interactionMode="none"` (read-only, no drag/zoom — keep it simple)
+- Uses `@xyflow/react` in read-only mode with individual flags (no `interactionMode` prop — that doesn't exist):
+  ```tsx
+  nodesDraggable={false}
+  nodesConnectable={false}
+  elementsSelectable={false}
+  panOnDrag={false}
+  zoomOnScroll={false}
+  zoomOnPinch={false}
+  zoomOnDoubleClick={false}
+  preventScrolling={false}
+  ```
 - Ghost nodes render when prop is undefined/null; lit nodes render when prop has data
 - CSS transitions for ghost → lit (0.3s fade + slight scale)
 
-### Phase 2: Simple Form Wizard (S-M effort)
+### Phase 2: Simple Form Wizard (M effort)
 
 **New files:**
 - `src/components/applications/add-wizard/AddApplicationWizard.tsx` — Wizard shell with step state
@@ -263,14 +305,13 @@ interface VisualAnchorProps {
 - `src/components/applications/add-wizard/StepCostIt.tsx`
 - `src/components/applications/add-wizard/StepConnectIt.tsx`
 - `src/components/applications/add-wizard/wizard-types.ts` — Form state interface
+- `src/components/applications/add-wizard/wizard-actions.ts` — Incremental save logic (see §4.3)
 
 **Modified files:**
-- `src/components/applications/ApplicationList.tsx` — "Add Application" button opens wizard instead of current modal
-- Route: new route `/applications/add` or modal overlay (TBD based on current routing pattern)
+- `src/components/applications/ApplicationList.tsx` — "Add Application" button navigates to new wizard route `/applications/add` (there is no existing "add application modal" — the current add flow is a full-page route via `ApplicationPage` with no `id` param)
+- Router config — add `/applications/add` route pointing to `AddApplicationWizard`
 
-**Auto-create logic** (in `wizard-types.ts` or a dedicated `wizard-actions.ts`):
-- On save, call Supabase inserts in order: application → deployment_profile → portfolio_assignment → cost bundle DP (if cost entered) → integrations
-- All inserts in a single transaction if possible (Supabase JS `rpc` call), or sequential with error handling
+**Save strategy:** Incremental save — each "Next" click persists the current step immediately (see §4.3). No transaction wrapper needed. Supabase JS does not support multi-statement transactions, and partial state is acceptable (user can finish via Edit).
 
 ### Phase 3: Advanced Form Wiring (S effort)
 
@@ -280,12 +321,14 @@ interface VisualAnchorProps {
 - "I need more options" link in Simple mode
 - Step indicators in Advanced mode
 
-### Phase 4: Edit Mode Integration (S effort)
+### Phase 4: Edit Mode Integration (S-M effort)
 
 - Edit Application opens with Visual Anchor in right panel (always visible)
 - Existing tab content shifts to left panel
 - Anchor reads from saved data (database queries), not form state
 - Anchor updates live as user edits fields
+
+**Total effort: M + M + S + S-M = approximately L overall** (significant feature, multi-sprint).
 
 ---
 
@@ -299,7 +342,41 @@ interface VisualAnchorProps {
 
 ---
 
-## 8. Success Criteria
+## 8. Implementation Details
+
+### 8.1 Form Validation
+
+- Validate on "Next" click. Block forward navigation if required fields are empty.
+- Allow backward navigation always (no validation gate on "Back").
+- Inline field errors displayed below each input (red text, field border highlight).
+- Steps can only be visited in order on first pass. After completing all steps, the user can click any step indicator to revisit.
+
+### 8.2 Duplicate Application Name Check
+
+On blur of the Application Name field in Step 1, query `applications` for existing names in the same workspace. If a match is found, show a warning banner: "An application named '{name}' already exists in this workspace." This is a warning, not a block — duplicates may be intentional for different deployment profiles.
+
+### 8.3 Unsaved Changes Warning
+
+Implement `beforeunload` and React Router navigation blocking using the same `onDirtyChange` pattern from `ApplicationForm.tsx`. With incremental save, this only applies to the **current unsaved step** — prior steps are already persisted.
+
+### 8.4 Accessibility
+
+- Ghost nodes: `aria-label` text (e.g., "Step 2: deployment profile, not yet completed")
+- Lit nodes: `aria-label` announces their data (e.g., "Deployment profile: Production, SaaS, Canada")
+- Node click-to-navigate: keyboard support via Enter/Space on focusable node wrappers
+- Step changes: announced via `aria-live="polite"` region (e.g., "Step 2 of 4: Where does it run?")
+- Focus management: when clicking a node to jump to a form step, focus moves to the first field in that step
+
+### 8.5 Mobile / Responsive
+
+- Below 900px: anchor panel hidden (existing rule from §3.6). Wizard form goes full-width.
+- Step indicator: compressed to numbered dots on narrow viewports (no step labels)
+- Next/Back buttons: full-width, minimum 44px touch target height
+- Form fields: full-width, no side-by-side layout below 600px
+
+---
+
+## 9. Success Criteria
 
 1. **Business owner can add Workday in 60 seconds:** Name → SaaS → $95,000 → Save. Three clicks after typing the name. The anchor shows an app node connected to a cost badge.
 
@@ -311,7 +388,7 @@ interface VisualAnchorProps {
 
 ---
 
-## 9. Design Reference
+## 10. Design Reference
 
 An interactive HTML mockup demonstrating the progressive reveal is available at:
 
@@ -325,4 +402,5 @@ This mockup shows all 4 steps with the anchor diagram building in real-time. Use
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.1 | 2026-04-06 | Review corrections: §4.3 rewritten for DP auto-create trigger (UPDATE not INSERT), incremental save strategy, scope bar portfolio detection, `dp_type='cost_bundle'` terminology fix, React Flow read-only flags corrected, props interface expanded (`currentStep`, `costBundle`, `workspaceName`), effort re-sized (Phase 2 S-M->M, Phase 4 S->S-M, total ~L), add application route clarified (no modal exists), new §5.4 RLS role design decision, new §8 Implementation Details (validation, a11y, mobile, duplicate check, unsaved changes). |
 | v1.0 | 2026-04-06 | Initial concept capture. Visual anchor + Simple/Advanced forms. PARKED status — concept only, not scheduled. |
