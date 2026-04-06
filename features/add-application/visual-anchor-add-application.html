@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Application — Visual Anchor Concept</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap');
+
+  :root {
+    --teal: #0d9488;
+    --teal-light: #ccfbf1;
+    --teal-50: #f0fdfa;
+    --amber: #f59e0b;
+    --amber-light: #fef3c7;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --invest: #10b981;
+    --modernize: #f59e0b;
+    --tolerate: #9ca3af;
+    --eliminate: #ef4444;
+    --blue: #3b82f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    color: var(--gray-800);
+    background: #fff;
+    line-height: 1.5;
+  }
+
+  .page { max-width: 1200px; margin: 0 auto; padding: 48px 32px; }
+
+  /* Header */
+  .doc-header {
+    border-bottom: 3px solid var(--teal);
+    padding-bottom: 24px;
+    margin-bottom: 40px;
+  }
+  .doc-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+  }
+  .doc-header .subtitle {
+    font-size: 15px;
+    color: var(--gray-500);
+  }
+  .doc-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--gray-400);
+  }
+  .doc-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+  .section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 6px;
+  }
+  .section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+  .section p, .section li {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.65;
+  }
+  .section ul { padding-left: 20px; margin-top: 8px; }
+  .section li { margin-bottom: 4px; }
+
+  .callout {
+    background: var(--teal-50);
+    border-left: 4px solid var(--teal);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--gray-700);
+  }
+  .callout strong { color: var(--teal); }
+
+  /* The big concept visual */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 24px 0;
+    min-height: 520px;
+    background: var(--gray-50);
+  }
+
+  /* Left: Form panel */
+  .form-panel {
+    background: #fff;
+    padding: 28px 24px;
+    border-right: 1px solid var(--gray-200);
+    display: flex;
+    flex-direction: column;
+  }
+  .form-panel .step-indicator {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .step-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    transition: all 0.3s;
+  }
+  .step-dot.active { background: var(--teal); transform: scale(1.2); }
+  .step-dot.done { background: var(--teal-light); border: 2px solid var(--teal); }
+
+  .form-panel h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+  }
+  .form-panel .step-desc {
+    font-size: 13px;
+    color: var(--gray-400);
+    margin-bottom: 20px;
+  }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--gray-800);
+    background: #fff;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+  }
+  .field input.filled {
+    border-color: var(--teal);
+    background: var(--teal-50);
+  }
+
+  .btn-row { margin-top: auto; display: flex; gap: 8px; }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--teal); color: #fff; flex: 1; }
+  .btn-primary:hover { background: #0f766e; }
+  .btn-ghost { background: transparent; color: var(--gray-500); border: 1px solid var(--gray-200); }
+  .btn-text {
+    background: none; border: none; color: var(--gray-400);
+    font-size: 13px; cursor: pointer; padding: 10px 0;
+  }
+
+  /* Right: Visual anchor */
+  .anchor-panel {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .anchor-panel .anchor-label {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 11px;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* SVG diagram nodes */
+  .diagram-area {
+    width: 100%;
+    height: 400px;
+    position: relative;
+  }
+
+  /* Diagram nodes as HTML for clarity */
+  .d-node {
+    position: absolute;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.5s ease;
+    font-size: 12px;
+  }
+  .d-node.app {
+    width: 160px; height: 64px;
+    border: 2px solid var(--teal);
+    background: #fff;
+    left: 50%; top: 40%;
+    transform: translate(-50%, -50%);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(13,148,136,0.15);
+  }
+  .d-node.app .name {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--gray-900);
+  }
+  .d-node.app .workspace {
+    font-size: 11px;
+    color: var(--gray-400);
+  }
+
+  .d-node.dp {
+    width: 130px; height: 52px;
+    border: 1.5px dashed var(--gray-300);
+    background: var(--gray-50);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--gray-400);
+  }
+  .d-node.dp.lit {
+    border: 2px solid var(--amber);
+    background: var(--amber-light);
+    border-style: solid;
+    color: var(--gray-700);
+  }
+  .d-node.dp .env-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 4px 4px 0 0;
+    background: var(--gray-200);
+  }
+  .d-node.dp.lit .env-bar { background: var(--invest); }
+
+  .d-node.svc {
+    width: 110px; height: 44px;
+    border: 1.5px dashed var(--gray-200);
+    background: #fff;
+    border-radius: 6px;
+    font-size: 10px;
+    color: var(--gray-300);
+  }
+  .d-node.svc.lit {
+    border: 1.5px solid var(--blue);
+    color: var(--gray-600);
+    background: #eff6ff;
+  }
+
+  .ghost-text {
+    font-size: 11px;
+    color: var(--gray-300);
+    font-style: italic;
+  }
+
+  .d-connector {
+    position: absolute;
+    border-left: 2px dotted var(--gray-200);
+    transition: all 0.5s;
+  }
+  .d-connector.lit {
+    border-left-color: var(--gray-400);
+    border-left-style: solid;
+  }
+
+  /* Step content panels */
+  .step-content { display: none; flex-direction: column; flex: 1; }
+  .step-content.active { display: flex; }
+
+  /* Interactive state */
+  .controls {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 24px;
+  }
+  .controls button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-200);
+    background: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--gray-500);
+    transition: all 0.2s;
+  }
+  .controls button.active {
+    background: var(--teal);
+    color: #fff;
+    border-color: var(--teal);
+  }
+  .controls button:hover:not(.active) {
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* Two-form comparison */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 24px 0;
+  }
+  .comp-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 24px;
+    background: #fff;
+  }
+  .comp-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+  }
+  .comp-card .persona {
+    font-size: 12px;
+    color: var(--teal);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .comp-card .field-list {
+    list-style: none;
+    padding: 0;
+  }
+  .comp-card .field-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .comp-card .field-list li:last-child { border: none; }
+  .req { color: var(--teal); font-weight: 700; font-size: 11px; }
+  .opt { color: var(--gray-300); font-size: 11px; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-day1 { background: var(--teal-light); color: var(--teal); }
+  .tag-day90 { background: var(--amber-light); color: #b45309; }
+
+  .divider {
+    height: 1px;
+    background: var(--gray-200);
+    margin: 48px 0;
+  }
+
+  /* Footer */
+  .doc-footer {
+    font-size: 12px;
+    color: var(--gray-400);
+    text-align: center;
+    padding-top: 24px;
+    border-top: 1px solid var(--gray-100);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <h1>Visual Anchor — Add Application Concept</h1>
+    <div class="subtitle">Progressive architecture diagram that builds as the user completes each step</div>
+    <div class="doc-meta">
+      <span>Status: PARKED (concept captured)</span>
+      <span>Impact: Frontend only — no schema changes</span>
+      <span>April 2026</span>
+    </div>
+  </div>
+
+  <!-- The Idea -->
+  <div class="section">
+    <h2>The QuickBooks Principle</h2>
+    <p>QuickBooks doesn't ask you to "create an accounts payable transaction." It shows you a check and you fill it in. The visual <em>is</em> the form. You always know what you're doing because the metaphor tells you.</p>
+    <div class="callout">
+      <strong>Design rule:</strong> The right panel always shows where the data the user is entering fits in the architecture. The diagram builds itself as they go — empty placeholders become real nodes. By the time they finish, they've built a complete architecture picture without knowing that's what they did.
+    </div>
+  </div>
+
+  <!-- Interactive Concept -->
+  <div class="section">
+    <h2>Progressive Reveal — Step by Step</h2>
+    <p>Click each step to see how the form and visual anchor change together.</p>
+
+    <div class="concept-grid" id="conceptGrid">
+      <!-- Left: Form -->
+      <div class="form-panel">
+        <div class="step-indicator">
+          <div class="step-dot active" id="dot1"></div>
+          <div class="step-dot" id="dot2"></div>
+          <div class="step-dot" id="dot3"></div>
+          <div class="step-dot" id="dot4"></div>
+        </div>
+
+        <!-- Step 1: Name it -->
+        <div class="step-content active" id="step1">
+          <h3>What's the application?</h3>
+          <p class="step-desc">Name it, describe it, assign an owner.</p>
+          <div class="field">
+            <label>Application Name *</label>
+            <input type="text" value="Hexagon OnCall CAD/RMS" class="filled" readonly>
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <input type="text" value="Computer-aided dispatch and records" readonly>
+          </div>
+          <div class="field">
+            <label>Business Owner</label>
+            <input type="text" value="Lt. Maria Santos" readonly>
+          </div>
+          <div class="field">
+            <label>Lifecycle Status</label>
+            <select disabled><option>Mainstream</option></select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="goStep(2)">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Where does it run? -->
+        <div class="step-content" id="step2">
+          <h3>Where does it run?</h3>
+          <p class="step-desc">Add one or more deployment profiles.</p>
+          <div class="field">
+            <label>Environment</label>
+            <select disabled><option>Production</option></select>
+          </div>
+          <div class="field">
+            <label>Hosting Type</label>
+            <select disabled><option>On-Premise</option></select>
+          </div>
+          <div class="field">
+            <label>Region</label>
+            <select disabled><option>🇨🇦 Canada</option></select>
+          </div>
+          <div class="field">
+            <label>Server Name</label>
+            <input type="text" value="HEX-PROD-02" readonly>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+            <button class="btn btn-primary" onclick="goStep(3)">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: What does it cost? -->
+        <div class="step-content" id="step3">
+          <h3>What does it cost?</h3>
+          <p class="step-desc">Simple cost or shared services — pick your path.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <div style="flex:1;padding:12px;border:2px solid var(--gray-200);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;">
+              <div style="font-weight:700;color:var(--gray-700);margin-bottom:2px;">💵 Simple Cost</div>
+              <div style="color:var(--gray-400);">I know the annual cost</div>
+            </div>
+            <div style="flex:1;padding:12px;border:2px solid var(--teal);border-radius:8px;text-align:center;cursor:pointer;font-size:12px;background:var(--teal-50);">
+              <div style="font-weight:700;color:var(--teal);margin-bottom:2px;">🔗 IT Services</div>
+              <div style="color:var(--gray-500);">Link to shared services</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Services Used</label>
+            <input type="text" value="SQL Server DB, Windows Hosting, Backup..." readonly style="font-size:12px;">
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+            <button class="btn btn-primary" onclick="goStep(4)">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Connections -->
+        <div class="step-content" id="step4">
+          <h3>What connects to it?</h3>
+          <p class="step-desc">Link integrations with other apps.</p>
+          <div style="padding:12px;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:12px;font-size:13px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;">← Active Directory</span>
+              <span style="font-size:11px;color:var(--gray-400);">SSO · Real-time</span>
+            </div>
+          </div>
+          <div style="padding:12px;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:12px;font-size:13px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;">↔ CAD System</span>
+              <span style="font-size:11px;color:var(--gray-400);">API · Real-time</span>
+            </div>
+          </div>
+          <div style="padding:12px;border:1px dashed var(--gray-200);border-radius:8px;margin-bottom:12px;font-size:13px;color:var(--gray-400);text-align:center;cursor:pointer;">
+            + Add Integration
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+            <button class="btn btn-primary">Save Application</button>
+          </div>
+          <button class="btn-text" style="text-align:center;margin-top:4px;">Skip — I'll add these later</button>
+        </div>
+      </div>
+
+      <!-- Right: Visual Anchor -->
+      <div class="anchor-panel">
+        <div class="anchor-label">Architecture Preview</div>
+        <svg id="anchorSvg" width="100%" height="420" viewBox="0 0 440 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- Connectors (drawn first, behind nodes) -->
+          <!-- App → DP connector -->
+          <line id="c-app-dp" x1="220" y1="148" x2="220" y2="195" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="6,4"/>
+
+          <!-- DP → Services connectors -->
+          <line id="c-dp-s1" x1="180" y1="252" x2="110" y2="300" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0"/>
+          <line id="c-dp-s2" x1="220" y1="252" x2="220" y2="300" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0"/>
+          <line id="c-dp-s3" x1="260" y1="252" x2="330" y2="300" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0"/>
+
+          <!-- Integration connector (top) -->
+          <line id="c-int1" x1="130" y1="70" x2="180" y2="105" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0"/>
+          <line id="c-int2" x1="310" y1="70" x2="260" y2="105" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4" opacity="0"/>
+
+          <!-- Integration nodes (top) -->
+          <g id="n-int1" opacity="0">
+            <rect x="30" y="44" width="130" height="44" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <text x="95" y="70" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="DM Sans, sans-serif">Active Directory</text>
+          </g>
+          <g id="n-int1-lit" opacity="0">
+            <rect x="30" y="44" width="130" height="44" rx="8" fill="#fff" stroke="#f59e0b" stroke-width="2"/>
+            <text x="95" y="63" text-anchor="middle" font-size="11" fill="#374151" font-weight="600" font-family="DM Sans, sans-serif">Active Directory</text>
+            <text x="95" y="78" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="DM Sans, sans-serif">← Receiving · SSO</text>
+          </g>
+
+          <g id="n-int2" opacity="0">
+            <rect x="280" y="44" width="130" height="44" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <text x="345" y="70" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="DM Sans, sans-serif">CAD System</text>
+          </g>
+          <g id="n-int2-lit" opacity="0">
+            <rect x="280" y="44" width="130" height="44" rx="8" fill="#fff" stroke="#f59e0b" stroke-width="2"/>
+            <text x="345" y="63" text-anchor="middle" font-size="11" fill="#374151" font-weight="600" font-family="DM Sans, sans-serif">CAD System</text>
+            <text x="345" y="78" text-anchor="middle" font-size="9" fill="#9ca3af" font-family="DM Sans, sans-serif">↔ Bidirectional · API</text>
+          </g>
+
+          <!-- STEP 1 — App node (always visible, evolves) -->
+          <!-- Ghost state -->
+          <g id="n-app-ghost">
+            <rect x="140" y="110" width="160" height="56" rx="10" fill="#fff" stroke="#d1d5db" stroke-width="2" stroke-dasharray="6,3"/>
+            <text x="220" y="135" text-anchor="middle" font-size="12" fill="#d1d5db" font-style="italic" font-family="DM Sans, sans-serif">Your application</text>
+            <text x="220" y="150" text-anchor="middle" font-size="10" fill="#d1d5db" font-family="DM Sans, sans-serif">appears here</text>
+          </g>
+          <!-- Lit state -->
+          <g id="n-app-lit" opacity="0">
+            <rect x="140" y="105" width="160" height="60" rx="10" fill="#fff" stroke="#0d9488" stroke-width="2.5"/>
+            <rect x="140" y="105" width="160" height="60" rx="10" fill="rgba(13,148,136,0.04)"/>
+            <text x="220" y="130" text-anchor="middle" font-size="13" fill="#111827" font-weight="700" font-family="DM Sans, sans-serif">Hexagon OnCall</text>
+            <text x="220" y="146" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="DM Sans, sans-serif">Police Department</text>
+            <text x="220" y="160" text-anchor="middle" font-size="9" fill="#0d9488" font-weight="600" font-family="DM Sans, sans-serif">MAINSTREAM</text>
+          </g>
+
+          <!-- STEP 2 — DP node -->
+          <g id="n-dp-ghost" opacity="0">
+            <rect x="155" y="200" width="130" height="48" rx="6" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <text x="220" y="222" text-anchor="middle" font-size="10" fill="#d1d5db" font-style="italic" font-family="DM Sans, sans-serif">deployment profile</text>
+            <text x="220" y="236" text-anchor="middle" font-size="10" fill="#d1d5db" font-family="DM Sans, sans-serif">added here</text>
+          </g>
+          <g id="n-dp-lit" opacity="0">
+            <rect x="145" y="198" width="150" height="54" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <rect x="145" y="198" width="150" height="5" rx="3" fill="#10b981"/>
+            <text x="220" y="220" text-anchor="middle" font-size="11" fill="#374151" font-weight="600" font-family="DM Sans, sans-serif">PROD · On-Prem</text>
+            <text x="220" y="234" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="DM Sans, sans-serif">HEX-PROD-02 · 🇨🇦</text>
+            <text x="270" y="211" text-anchor="middle" font-size="8" fill="#10b981" font-weight="700" font-family="DM Sans, sans-serif">Primary</text>
+          </g>
+
+          <!-- STEP 3 — IT Service nodes -->
+          <g id="n-svc-ghost" opacity="0">
+            <rect x="60" y="304" width="100" height="38" rx="6" fill="#fff" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="110" y="327" text-anchor="middle" font-size="9" fill="#d1d5db" font-family="DM Sans, sans-serif">IT Service</text>
+            <rect x="170" y="304" width="100" height="38" rx="6" fill="#fff" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="220" y="327" text-anchor="middle" font-size="9" fill="#d1d5db" font-family="DM Sans, sans-serif">IT Service</text>
+            <rect x="280" y="304" width="100" height="38" rx="6" fill="#fff" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="330" y="327" text-anchor="middle" font-size="9" fill="#d1d5db" font-family="DM Sans, sans-serif">IT Service</text>
+          </g>
+          <g id="n-svc-lit" opacity="0">
+            <rect x="50" y="302" width="110" height="42" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="105" y="320" text-anchor="middle" font-size="10" fill="#374151" font-weight="600" font-family="DM Sans, sans-serif">SQL Server DB</text>
+            <text x="105" y="334" text-anchor="middle" font-size="8" fill="#6b7280" font-family="DM Sans, sans-serif">Database</text>
+
+            <rect x="165" y="302" width="110" height="42" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="220" y="320" text-anchor="middle" font-size="10" fill="#374151" font-weight="600" font-family="DM Sans, sans-serif">Win Hosting</text>
+            <text x="220" y="334" text-anchor="middle" font-size="8" fill="#6b7280" font-family="DM Sans, sans-serif">Compute</text>
+
+            <rect x="280" y="302" width="110" height="42" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="335" y="320" text-anchor="middle" font-size="10" fill="#374151" font-weight="600" font-family="DM Sans, sans-serif">Backup</text>
+            <text x="335" y="334" text-anchor="middle" font-size="8" fill="#6b7280" font-family="DM Sans, sans-serif">Storage</text>
+          </g>
+
+          <!-- Tier labels -->
+          <text id="lbl-integrations" x="10" y="70" font-size="9" fill="#d1d5db" font-weight="600" text-transform="uppercase" letter-spacing="1" font-family="DM Sans, sans-serif" opacity="0">INTEGRATIONS</text>
+          <text id="lbl-app" x="10" y="135" font-size="9" fill="#d1d5db" font-weight="600" letter-spacing="1" font-family="DM Sans, sans-serif" opacity="0">APPLICATION</text>
+          <text id="lbl-dp" x="10" y="225" font-size="9" fill="#d1d5db" font-weight="600" letter-spacing="1" font-family="DM Sans, sans-serif" opacity="0">DEPLOYMENT</text>
+          <text id="lbl-svc" x="10" y="325" font-size="9" fill="#d1d5db" font-weight="600" letter-spacing="1" font-family="DM Sans, sans-serif" opacity="0">SERVICES</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="controls">
+      <button class="active" onclick="goStep(1)">1. Name It</button>
+      <button onclick="goStep(2)">2. Deploy It</button>
+      <button onclick="goStep(3)">3. Cost It</button>
+      <button onclick="goStep(4)">4. Connect It</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Two Forms -->
+  <div class="section">
+    <h2>Two Forms, One Wizard</h2>
+    <p>The user self-selects their complexity level. Simple is the default. Advanced is what exists today, accessed via "I need more options" or by choosing the IT Service cost path.</p>
+
+    <div class="comparison">
+      <div class="comp-card">
+        <span class="tag tag-day1">Day 1 Maturity</span>
+        <h4 style="margin-top:8px;">Simple Form (default)</h4>
+        <div class="persona">Business Owner / App Manager</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">
+          "I know the app name, who owns it, and roughly what we pay."
+        </p>
+        <ul class="field-list">
+          <li><span class="req">REQ</span> Application Name</li>
+          <li><span class="req">REQ</span> Workspace</li>
+          <li><span class="req">REQ</span> Hosting Type <span style="font-size:11px;color:var(--gray-400);">(SaaS / On-Prem / Cloud / Hybrid)</span></li>
+          <li><span class="opt">OPT</span> Description</li>
+          <li><span class="opt">OPT</span> Business Owner</li>
+          <li><span class="opt">OPT</span> Annual Cost (cost bundle)</li>
+          <li><span class="opt">OPT</span> Vendor</li>
+          <li><span class="opt">OPT</span> Contract End Date</li>
+        </ul>
+        <p style="font-size:12px;color:var(--gray-400);margin-top:12px;">
+          Auto-creates: 1 DP (Primary), 1 Cost Bundle if cost entered.<br>
+          DP name = App name. Zero CSDM jargon exposed.
+        </p>
+      </div>
+
+      <div class="comp-card">
+        <span class="tag tag-day90">Day 90 Maturity</span>
+        <h4 style="margin-top:8px;">Advanced Form (opt-in)</h4>
+        <div class="persona">IT Architect / ITSM Lead</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">
+          "I need to map deployment profiles, IT services, and tech composition."
+        </p>
+        <ul class="field-list">
+          <li><span class="req">REQ</span> Everything from Simple, plus:</li>
+          <li><span class="opt">OPT</span> Multiple Deployment Profiles</li>
+          <li><span class="opt">OPT</span> Environment / Region / Cloud Provider</li>
+          <li><span class="opt">OPT</span> Server Name / DR Status</li>
+          <li><span class="opt">OPT</span> Technology Products (OS, DB, middleware)</li>
+          <li><span class="opt">OPT</span> Software Products linked</li>
+          <li><span class="opt">OPT</span> IT Service allocations</li>
+          <li><span class="opt">OPT</span> Integrations</li>
+          <li><span class="opt">OPT</span> Tech Debt Notes / Remediation Effort</li>
+          <li><span class="opt">OPT</span> Operations teams</li>
+        </ul>
+        <p style="font-size:12px;color:var(--gray-400);margin-top:12px;">
+          This is essentially today's Edit Application tabs, surfaced as a guided wizard with the visual anchor.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Behavior Notes -->
+  <div class="section">
+    <h2>Behavior Rules</h2>
+
+    <h3>Visual Anchor</h3>
+    <ul>
+      <li>Visible in the right panel during Add/Edit — <strong>collapsible</strong> via toggle handle on left edge</li>
+      <li>Default open for new users (teaching tool). Collapse state persisted in localStorage so power users stay collapsed</li>
+      <li>Hidden by default on viewports below 900px</li>
+      <li>Ghost placeholders (dashed, gray) show what *could* be filled in — teaches the model without forcing it</li>
+      <li>Nodes light up with real data as fields are completed — the "aha moment"</li>
+      <li>Matches the ArchiMate-informed design system: rounded corners for apps, tight corners for DPs, color = health/status</li>
+      <li>Clickable — user can tap a node to jump to that section of the form</li>
+    </ul>
+
+    <h3>Simple → Advanced Graduation</h3>
+    <ul>
+      <li>Simple form is always the default for "Add Application"</li>
+      <li>"I need more options" link at bottom of Simple form opens Advanced</li>
+      <li>Choosing "IT Services" cost path auto-switches to Advanced (you can't wire IT Services in Simple mode)</li>
+      <li>Edit Application opens in the mode that matches the app's current complexity — if it has IT Services, open Advanced</li>
+      <li>No data loss switching between modes — Advanced is a superset</li>
+      <li>Integrations are graduated: Simple captures the connection (app, direction, method). Advanced adds data tags, sensitivity, frequency, DP-level scoping, criticality</li>
+    </ul>
+
+    <h3>The 18-Year-Old Test</h3>
+    <ul>
+      <li>Simple form: no terms like "Deployment Profile," "Cost Bundle," "IT Service," or "CSDM"</li>
+      <li>Simple form labels: "Where does it run?" not "Hosting Type." "What does it cost?" not "Annual Run Rate."</li>
+      <li>Advanced form can use precise terminology — the user opted in</li>
+    </ul>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Implementation Notes -->
+  <div class="section">
+    <h2>Implementation Notes</h2>
+
+    <div class="callout">
+      <strong>Schema impact: None.</strong> This is a pure frontend change. The Simple form auto-creates the same underlying records (application + DP + cost bundle) that the current UI creates manually. The visual anchor reads from the same data the Edit tabs already display. No new tables, columns, or RLS policies needed.
+    </div>
+
+    <h3>Dependencies</h3>
+    <ul>
+      <li>Demo data reset (COR) should complete first — the visual anchor needs fully wired apps to look compelling</li>
+      <li>React Flow (already in codebase for Visual tab) can power the anchor diagram</li>
+      <li>The anchor is a simplified, non-interactive version of the Visual tab Level 2 layout</li>
+    </ul>
+
+    <h3>Estimated Effort</h3>
+    <ul>
+      <li>Visual anchor component: M (reuses React Flow + existing design tokens)</li>
+      <li>Simple form wizard: S-M (subset of existing fields, auto-create logic)</li>
+      <li>Wiring anchor to form state: S (React state → node visibility)</li>
+      <li>Total: ~1 sprint if prioritized, or can be split across releases</li>
+    </ul>
+  </div>
+
+  <div class="doc-footer">
+    GetInSync NextGen — Architecture Document — visual-anchor-add-application.html
+  </div>
+
+</div>
+
+<script>
+  let currentStep = 1;
+
+  function goStep(n) {
+    currentStep = n;
+
+    // Update form panels
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    document.getElementById('step' + n).classList.add('active');
+
+    // Update step dots
+    for (let i = 1; i <= 4; i++) {
+      const dot = document.getElementById('dot' + i);
+      dot.className = 'step-dot';
+      if (i < n) dot.classList.add('done');
+      if (i === n) dot.classList.add('active');
+    }
+
+    // Update controls
+    document.querySelectorAll('.controls button').forEach((btn, i) => {
+      btn.classList.toggle('active', i === n - 1);
+    });
+
+    // Update diagram
+    updateDiagram(n);
+  }
+
+  function updateDiagram(step) {
+    const svg = document.getElementById('anchorSvg');
+
+    // Helper
+    const show = (id, val) => { const el = document.getElementById(id); if(el) el.setAttribute('opacity', val ? '1' : '0'); };
+    const strokeColor = (id, color, dash) => {
+      const el = document.getElementById(id);
+      if(el) {
+        el.setAttribute('stroke', color);
+        if(dash !== undefined) el.setAttribute('stroke-dasharray', dash);
+        el.setAttribute('opacity', '1');
+      }
+    };
+
+    // Reset all
+    ['n-app-ghost','n-app-lit','n-dp-ghost','n-dp-lit','n-svc-ghost','n-svc-lit',
+     'n-int1','n-int1-lit','n-int2','n-int2-lit',
+     'lbl-integrations','lbl-app','lbl-dp','lbl-svc'].forEach(id => show(id, false));
+    ['c-dp-s1','c-dp-s2','c-dp-s3','c-int1','c-int2'].forEach(id => show(id, false));
+
+    // Connector app→dp reset
+    strokeColor('c-app-dp', '#e5e7eb', '6,4');
+
+    // All ghost nodes + labels visible from the start (full skeleton)
+    show('lbl-app', true);
+    show('lbl-dp', true);
+    show('lbl-svc', true);
+    show('lbl-integrations', true);
+
+    if (step >= 1) {
+      // Step 1: App node lights up, everything else stays ghost
+      show('n-app-lit', true);
+      document.getElementById('lbl-app').setAttribute('fill', '#0d9488');
+      show('n-dp-ghost', true);
+      show('n-svc-ghost', true);
+      show('n-int1', true);
+      show('n-int2', true);
+    }
+
+    if (step >= 2) {
+      // Step 2: DP lights up
+      show('n-dp-ghost', false);
+      show('n-dp-lit', true);
+      document.getElementById('lbl-dp').setAttribute('fill', '#b45309');
+      strokeColor('c-app-dp', '#6b7280', '4,4');
+    }
+
+    if (step >= 3) {
+      // Step 3: Services light up
+      show('n-svc-ghost', false);
+      show('n-svc-lit', true);
+      document.getElementById('lbl-svc').setAttribute('fill', '#3b82f6');
+      ['c-dp-s1','c-dp-s2','c-dp-s3'].forEach(id => {
+        strokeColor(id, '#3b82f6', '4,4');
+      });
+    }
+
+    if (step >= 4) {
+      // Step 4: Integrations light up
+      show('n-int1', false);
+      show('n-int2', false);
+      show('n-int1-lit', true);
+      show('n-int2-lit', true);
+      document.getElementById('lbl-integrations').setAttribute('fill', '#f59e0b');
+      strokeColor('c-int1', '#f59e0b', '');
+      strokeColor('c-int2', '#f59e0b', '');
+    }
+  }
+
+  // Initialize
+  updateDiagram(1);
+</script>
+</body>
+</html>
