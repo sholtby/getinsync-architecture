@@ -101,12 +101,12 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| catalogs/software-product.md | v3.0 | 🟡 | Software Product Catalog — now inventory-only, ProductContract merged into IT Service (updated Mar 4) |
-| catalogs/it-service.md | v2.0 | 🟡 | IT Services — shared infrastructure + software contracts. Contract lifecycle fields, `it_service_software_products` junction (updated Mar 4) |
+| catalogs/software-product.md | v3.1 | 🟡 | Software Product Catalog — now inventory-only, ProductContract merged into IT Service. `is_org_wide` flag for org-wide licenses (updated Apr 5) |
+| catalogs/it-service.md | v2.1 | 🟡 | IT Services — shared infrastructure + software contracts. Technology composition display ("Built on:" chips). Contract lifecycle fields (updated Apr 5) |
 | catalogs/business-application.md | v1.2 | 🟢 | Business Application entity — IdP refs generalized (Entra as example, not only) |
 | catalogs/business-application-identification.md | v1.0 | ☪ | Criteria for business apps vs tech services |
 | catalogs/csdm-application-attributes.md | v1.0 | ☪ | CSDM mandatory fields alignment |
-| catalogs/technology-catalog.md | v1.0 | 🟢 | Technology product catalog structure |
+| catalogs/technology-catalog.md | v1.1 | 🟢 | Technology product catalog structure. IT Service usage display ("Powers:" chips) (updated Apr 5) |
 | catalogs/business-capability.md | v1.0 | 🟡 | Business Capabilities (Phase 1, build) + Business Services (Phase 2, design only). Seed taxonomy: 13 generic + 12 government L1s. |
 
 ### Cost & Budget Management
@@ -857,6 +857,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |
 | v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
+| v1.95 | 2026-04-05 | **CSDM Demo Data Consistency.** `catalogs/it-service.md` v2.0→v2.1: technology composition display. `catalogs/technology-catalog.md` v1.0→v1.1: IT Service usage display. `catalogs/software-product.md` v3.0→v3.1: `is_org_wide` flag + org-wide badge. `core/visual-diagram.md` v2.4→v2.5: ServiceNode tech count pill. `guides/whats-new.md`: April 5 CSDM entry. NEW SQL script: `schema/csdm-demo-data-consistency.sql` — junction table population, vendor orgs, manufacturer assignment. |
 | v1.94 | 2026-04-05 | **ArchiMate-informed visual polish.** `core/visual-diagram.md` v2.3→v2.4: Shape semantics (corner radius convention), edge differentiation (amber data flow / gray structural / L3 directional blue/amber), left-edge environment bar on DPs, tier label nodes, legend node, L2 DP enrichment (tech health bar, integration count pill), L3 hero card with direction summary. New files: `TierLabelNode.tsx`, `LegendNode.tsx`. |
 | v1.93 | 2026-04-05 | Visual Tab React Flow resumed. `core/visual-diagram.md` v2.2→v2.3 ⏸→✅ SHIPPED: Level 3 blast radius wired to DP-scoped data, integration count on Level 2 DP nodes. `adr/adr-visual-tab-reactflow.md` v1.0→v1.1 ⏸→✅ COMPLETE: all known gaps resolved. |
 | v1.85 | 2026-04-03 | NEW: `adr/adr-contract-aware-cost-bundles.md` v1.0 🟡 — Contract-Aware Cost Bundles (PROPOSED). Enriches Cost Bundles with contract fields for Day 1 contract awareness. UNION `vw_contract_expiry` view. Double-count guardrails. Maturity graduation model. No budget math changes. Document count 115→116. AS-DESIGNED 29→30. |

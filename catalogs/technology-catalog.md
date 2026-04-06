@@ -1,6 +1,6 @@
 # catalogs/technology-catalog.md
 GetInSync Technology Catalog Architecture
-Last updated: 2026-01-16
+Last updated: 2026-04-05
 
 ---
 
@@ -354,10 +354,25 @@ Update `deployment_profile_software_products` links:
 
 ---
 
+## 11. IT Service Usage Display
+
+The Technology Catalog UI shows which IT Services use each technology product. Below each technology product row, purple "Powers:" chips display the IT Service names fetched from the `it_service_technology_products` junction table.
+
+**Data source:** `it_service_technology_products` joined to `it_services` for display names.
+
+**UI behavior:**
+- Chips render inline below the technology product name
+- Chip color: purple background
+- Label prefix: "Powers:"
+- Only shown when the technology product is linked to at least one IT Service
+
+---
+
 ## Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.1 | 2026-04-05 | Added §11 IT Service Usage Display — purple "Powers:" chips showing which IT Services use each technology product. |
 | v1.0 | 2026-01-16 | Initial version. Software/Technology catalog separation. |
 
 ---

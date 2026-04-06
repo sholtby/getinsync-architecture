@@ -150,6 +150,11 @@ Renders deployment profiles with ArchiMate-informed shape (nearly square, `borde
 - **Level 2 (enriched):** Min-width 240px, tech health progress bar (8px, colored fill), integration count amber pill
 - **Level 3 (hero card):** Min-width 300px, crown jewel star, server_name, tech health bar, divider, integration summary (sends/receives/bidirectional)
 
+**ServiceNode technology count pill:**
+- IT Service nodes (ServiceNode) display a teal pill with a `Cpu` icon showing the count of technology products that compose the service
+- Data source: count of rows in `it_service_technology_products` for the service, fetched in `useVisualGraphData.ts`
+- Only shown when count > 0
+
 **Hover hint:** Shows "Double-click to explore" text below the node on hover (L1/L2).
 
 **Handles:** All four sides.

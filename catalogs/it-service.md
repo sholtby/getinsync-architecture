@@ -1,7 +1,7 @@
 # catalogs/it-service.md
 GetInSync IT Services NextGen Architecture and ServiceNow Alignment
-Last updated: 2026-03-04
-Version: 2.0
+Last updated: 2026-04-05
+Version: 2.1
 
 ---
 
@@ -276,10 +276,25 @@ IT Service as Infrastructure Provider + Software Contract (v2.0)
 - Real-time capacity monitoring.
 - Incident/Change management integration.
 
-## 9. Change Log
+## 9. Technology Composition Display
+
+The IT Service Catalog UI shows the technology products that compose each service. Below each IT Service row, teal "Built on:" chips display the technology product names fetched from the `it_service_technology_products` junction table.
+
+**Data source:** `it_service_technology_products` joined to `technology_products` for display names.
+
+**UI behavior:**
+- Chips render inline below the service name
+- Chip color: teal background
+- Label prefix: "Built on:"
+- Only shown when the service has linked technology products
+
+---
+
+## 10. Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.1 | 2026-04-05 | Added §9 Technology Composition Display — teal "Built on:" chips showing technology products per IT Service via `it_service_technology_products`. |
 | v2.0 | 2026-03-04 | **Cost Model Reunification:** IT Services now serve as the commercial agreement for Software Products. Added 4 contract lifecycle fields (`contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`). Added `vendor_org_id` field. Added `it_service_software_products` junction table. Added `vw_it_service_contract_expiry` view. Updated ERD and relationship to SoftwareProduct. See `adr-cost-model-reunification.md`. |
 | v1.3 | 2025-12-12 | Added IsInternalOnly field to ITService entity (was referenced in visibility rules but missing from field list). Standardized join table name to DeploymentProfileITService (was inconsistently called DeploymentProfileITServiceAllocation). |
 | v1.2 | 2025-12-08 | Previous version with missing IsInternalOnly field. |

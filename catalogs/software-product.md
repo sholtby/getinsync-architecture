@@ -1,8 +1,8 @@
 # catalogs/software-product.md
 GetInSync Architecture Specification
 
-Last updated: 2026-03-04
-Version: 3.0
+Last updated: 2026-04-05
+Version: 3.1
 
 ## 1. Purpose
 
@@ -196,20 +196,32 @@ Inventory + IT Service Cost Model (Secure by Default)
 - For each dpsp with cost data: create an IT Service, set cost + vendor + contract fields, create `deployment_profile_it_services` allocation.
 - See `adr-cost-model-reunification.md` §5 for the full migration path.
 
-## 8. Open Questions
+## 8. Organization-Wide Licenses
+
+The `software_products` table includes an `is_org_wide` boolean field (default `false`). When set to `true`, the product is considered an organization-wide license — it applies to the entire namespace rather than to specific deployment profiles.
+
+**UI behavior:**
+- Products flagged `is_org_wide = true` display an amber "Org-wide" badge in the Software Catalog list
+- Organization-wide products do not require deployment profile associations — they are inherently namespace-scoped
+- Use case: enterprise-wide licenses such as Microsoft 365, Google Workspace, or antivirus suites that cover all users regardless of application
+
+---
+
+## 9. Open Questions
 
 - **Write Permissions:** Can a Publisher "push" a product into a Consumer's local list? (No, pull only).
 - **Versioning:** If Publisher updates O365, do Consumers see it immediately? (Yes, it's a reference).
 
-## 9. Out of Scope
+## 10. Out of Scope
 
 - Namespace-level data ownership (SoftwareProduct is Workspace-owned).
 - Cross-Namespace sharing.
 
-## 10. Change Log
+## 11. Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v3.1 | 2026-04-05 | Added §8 Organization-Wide Licenses — `is_org_wide` boolean, amber "Org-wide" badge, no DP association required. |
 | v3.0 | 2026-03-04 | **Cost Model Reunification:** Software Products are now inventory-only — no cost fields. ProductContract merged into IT Service. Cost flows through `ITService → dpis → DeploymentProfile`. Added `it_service_software_products` junction for IT Service → Software Product link. Updated ERD, relationships, and chargeback pattern. See `adr-cost-model-reunification.md`. |
 | v2.1 | 2025-12-12 | Added explicit contract allocation rules (within-workspace only, sum validation). Added DeploymentProfileContract entity documentation. Clarified terminology consistency with "Federated Catalog" model. |
 | v2.0 | 2025-12-08 | Previous version. |
