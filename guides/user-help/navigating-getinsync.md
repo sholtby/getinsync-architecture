@@ -98,7 +98,9 @@ Use the filter drawer (click Filters) to slice the data by workspace, lifecycle 
 
 ## Scope bar
 
-The workspace and portfolio selectors in the header control what data you see across all pages. When set to a specific workspace, every page filters to that workspace's data. When set to "All Workspaces" (available to namespace administrators), you see the aggregated view across your entire organization.
+The scope bar appears in the header on all pages except Overview. It shows your namespace name followed by the workspace and portfolio selectors, which control what data you see. When set to a specific workspace, every page filters to that workspace's data. When set to "All Workspaces" (available to namespace administrators), you see the aggregated view across your entire organization.
+
+The scope bar is hidden on the Overview tab because Overview always shows namespace-level data across all workspaces — the "All of My Workspaces" heading confirms this.
 
 ## Quick access
 

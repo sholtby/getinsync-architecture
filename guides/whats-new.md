@@ -6,6 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## April 7, 2026
 
+- **Scope Bar Clarity** — The scope bar (workspace and portfolio selectors) is now hidden on the Overview tab, which always shows namespace-level data. Previously it appeared dimmed, which confused first-time users into thinking it should filter the Overview. On all other tabs, the scope bar now displays your namespace name as a label before the workspace selector, providing clear organizational context.
 - **UX Polish — Filter Icon & KPI Card Order** — Filter buttons across the app now use the sliders icon (matching SaaS convention used by Notion, Linear, Figma) instead of the funnel icon. Overview KPI cards reordered to lead with "At Risk" so the most actionable metric is first.
 - **IT Service Catalog Cleanup** — Network Infrastructure and Cybersecurity Operations are now classified as overhead services with no per-app dependency links. Their costs ($250K and $200K) remain in the catalog but no longer appear on individual app dependency lists. ITSM Platform has been converted to a business application ("ServiceNow ITSM") in the IT workspace with an $85K SaaS cost bundle. Microsoft 365 Enterprise and Collaboration & Conferencing have been reclassified from Managed Service to Platform > Runtime/PaaS.
 - **IT Service Catalog — Wider Name Column** — The Name column in the IT Service Catalog has been widened so service names like "Enterprise Backup & Recovery" fit on 1-2 lines instead of wrapping to 3.
