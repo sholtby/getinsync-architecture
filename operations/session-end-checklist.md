@@ -161,22 +161,53 @@ Remind Stuart to:
 
 **When:** Any database changes this session (new tables, columns, constraints, triggers, functions, views).
 
+### Option A — Using DATABASE_READONLY_URL (preferred, no password exchange needed)
+
+```bash
+cd ~/Dev/getinsync-nextgen-ag
+export $(grep DATABASE_READONLY_URL .env | xargs)
+pg_dump --schema-only --no-owner --no-privileges "$DATABASE_READONLY_URL" \
+  > getinsync-nextgen-schema-$(date +%Y-%m-%d).sql
+```
+
+> **Note:** `DATABASE_READONLY_URL` in `.env` already has credentials. If the read-only role lacks `pg_dump` permissions, use Option B.
+
+### Option B — Using direct connection (requires Stuart to provide password)
+
 ```bash
 cd ~/Dev/getinsync-nextgen-ag
 pg_dump --schema-only --no-owner --no-privileges \
   "postgresql://postgres.zwwuogquncqvwuzbppiq:DB_PASSWORD@aws-1-ca-central-1.pooler.supabase.com:5432/postgres" \
-  > getinsync-nextgen-schema-YYYY-MM-DD.sql
+  > getinsync-nextgen-schema-$(date +%Y-%m-%d).sql
 ```
 
 **Password:** Stuart provides per session — DO NOT store in docs. Roll after use.
 
 ### Post-Dump Steps
 
-1. Verify: `ls -la` and `head -20` — expect ~500-700KB, starts with `-- PostgreSQL database dump`
-2. Commit to code repo: `git add getinsync-nextgen-schema-YYYY-MM-DD.sql && git commit -m "Schema backup YYYY-MM-DD"`
-3. Copy to architecture repo: `cp getinsync-nextgen-schema-YYYY-MM-DD.sql ~/getinsync-architecture/schema/nextgen-schema-current.sql`
-4. Roll database password in Supabase Dashboard → Settings → Database
-5. Update `~/Dev/getinsync-nextgen-ag/.env` with new password (Claude Code/Netlify use API keys, unaffected)
+1. Verify: `ls -la` and `head -20` — expect ~800-900KB, starts with `-- PostgreSQL database dump`
+2. Commit to code repo: `git add getinsync-nextgen-schema-$(date +%Y-%m-%d).sql && git commit -m "chore: schema backup $(date +%Y-%m-%d)"`
+3. **CRITICAL — Copy to architecture repo (this step has been missed before, causing stale schema refs):**
+   ```bash
+   cp getinsync-nextgen-schema-$(date +%Y-%m-%d).sql ~/getinsync-architecture/schema/nextgen-schema-current.sql
+   cd ~/getinsync-architecture
+   git add schema/nextgen-schema-current.sql
+   git commit -m "chore: schema backup $(date +%Y-%m-%d)"
+   git push origin main
+   cd ~/Dev/getinsync-nextgen-ag
+   ```
+4. *(Option B only)* Roll database password in Supabase Dashboard → Settings → Database
+5. *(Option B only)* Update `~/Dev/getinsync-nextgen-ag/.env` with new password
+
+### Validation — Verify Both Files Match
+
+After completing the dump and copy, verify the two files are identical:
+
+```bash
+diff getinsync-nextgen-schema-$(date +%Y-%m-%d).sql docs-architecture/schema/nextgen-schema-current.sql
+```
+
+If `diff` produces output, the copy step failed — re-run step 3.
 
 ---
 
