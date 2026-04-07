@@ -32,7 +32,7 @@ Also add a remove button (trash icon) on each consumer row to delete the link, w
 | + Add Consumer | Opens app/DP picker → inserts `deployment_profile_it_services` row with `source = 'manual'` |
 | Remove consumer (manual link) | Confirm → delete row |
 | Remove consumer (auto link) | Cost-aware confirm dialog (same as Chunk 2 auto-unwire) → delete row |
-| Duplicate check | If DP already linked to this service, show "Already linked" and skip |
+| Duplicate check | If DP already linked to this service, show "Already linked" toast and skip. DB unique constraint `deployment_profile_it_services_unique` on `(deployment_profile_id, it_service_id)` is the backstop. |
 
 **Scope rules:**
 - Only show apps/DPs from the same namespace
@@ -60,7 +60,7 @@ Also add a remove button (trash icon) on each consumer row to delete the link, w
 
 **Validation rules:**
 - Application Name must match an existing app in the namespace (fuzzy match with suggestions for close misses)
-- Deployment Profile must belong to that application (if blank, use primary DP)
+- Deployment Profile must belong to that application (if blank, use `is_primary = true` DP; if primary DP is SaaS, error the row)
 - IT Service must match an existing service in the namespace
 - Skip duplicates (DP already linked to service)
 - Flag rows that can't be resolved → user reviews and fixes or skips
@@ -68,9 +68,9 @@ Also add a remove button (trash icon) on each consumer row to delete the link, w
 **Upload flow:**
 1. Download template (.xlsx with headers + example row)
 2. Fill out and upload
-3. Preview screen: green = matched, yellow = fuzzy match (confirm), red = not found (skip or create)
-4. Confirm → bulk insert into `deployment_profile_it_services` with `source = 'manual'`
-5. Summary: "Linked 47 services across 23 applications. 3 rows skipped."
+3. Preview screen: **green** = will be inserted, **grey** = already linked (skipped as duplicate), **red** = errored (unresolved name or SaaS primary DP)
+4. Confirm → bulk insert into `deployment_profile_it_services` with `source = 'manual'` (batched, no rollback of successful batches)
+5. Summary retains preview colors so users understand partial success. Safe to retry with corrected CSV — unique constraint prevents duplicate inserts.
 
 **Maturity model alignment:**
 - Day 1: Bulk import from spreadsheet (this feature)
