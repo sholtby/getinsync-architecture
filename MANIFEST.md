@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-07 (v1.97)
+Last updated: 2026-04-06 (v1.99)
 
 ---
 
@@ -90,7 +90,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | core/conceptual-erd.md | v2.0 | 🟡 | Conceptual ERD — ProductContract replaced by ITServiceSoftwareProduct junction (updated Mar 4) |
 | core/composite-application.md | v2.0 | 🟡 | **Application Relationships — v2.0: suite children get own DP with `inherits_tech_from`, `architecture_type` field, CSDM-aligned, badge/tag UI, suite-only Phase 1 (updated Mar 8)** |
 | core/composite-application-erd.md | v2.0 | 🟡 | **Composite application ERD — v2.0: replaces `parent_application_id` with relationship table + `inherits_tech_from` (updated Mar 8)** |
-| core/deployment-profile.md | v1.9 | 🟢 | **DP-centric assessment, clone/move, naming, `inherits_tech_from` suite inheritance (updated Mar 8)** |
+| core/deployment-profile.md | v2.0 | 🟢 | **DP-centric assessment, clone/move, naming, `inherits_tech_from` suite inheritance, CSDM auto-wiring §10 (updated Apr 6)** |
 | core/workspace-group.md | v1.6 | 🟢 | Workspace groups — stack-agnostic, no AWS refs found |
 | features/technology-health/technology-stack-erd.md | v1.0 | 🟢 | CSDM-aligned ERD — SP, TP, IT Services parallel to DPs |
 | features/technology-health/technology-stack-erd-addendum.md | v1.1 | 🟢 | **Two-path model: inventory tags vs IT Service cost/blast radius — DEPLOYED** |
@@ -177,7 +177,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/visual-diagram.md | v2.5 | ✅ | **Visual tab — React Flow + dagre. Four-level drill-down: App → DP → Blast Radius → Tech Products. Single-click navigation. ArchiMate-informed design language.** |
+| core/visual-diagram.md | v2.6 | ✅ | **Visual tab — React Flow + dagre. Four-level drill-down: App → DP → Blast Radius → Tech Products. Single-click navigation. ArchiMate-informed design language. Derived lifecycle badges on ServiceNode.** |
 
 ### Technology Health & Risk
 
@@ -860,6 +860,7 @@ The following documents were removed during the architecture audit. They describ
 | v1.88 | 2026-04-03 | **Stage A.1: DB Session.** Schema deployed: Contract-Aware Cost Bundles (4 columns on deployment_profiles, vw_contract_expiry UNION view) + CSDM Export Readiness (teams table with RLS/audit, 3 FK columns on deployment_profiles, change_control CHECK update). Security posture validator v1.3→v1.4 (added 5 missing objects). pgTAP sentinels updated v1.7→v1.8 (102 tables, 39 views, 60 audit triggers). Schema: 99→102 tables, 38→41 views, 57→60 triggers, 380→389 RLS. |
 | v1.87 | 2026-04-03 | NEW: `planning/april-2026-session-guide.md` v1.0 ☪ — Companion session guide. 8 copy-paste Claude Code prompts with prerequisites, continuation templates, gap-fillers, lifecycle reminders. Document count 117→118. |
 | v1.86 | 2026-04-03 | NEW: `planning/april-2026-level-set.md` v1.0 ☪ — April 2026 Level Set. Sequences 4 ADRs into staged delivery (A-D). Dependency map, April-May calendar, success criteria. Calls out Gamification + Entra ID/SSO as independent tracks. Document count 116→117. |
+| v1.99 | 2026-04-06 | **CSDM Chain Phase COMPLETE (Chunk 4).** Derived IT Service lifecycle: `deriveWorstLifecycle()` computes worst-of-components from tech product lifecycle statuses (End of Support > Extended > Mainstream > Not Set). Displayed on Visual Level 3 ServiceNode, Level 4 hero card, and IT Service Catalog (replaces stored `lifecycle_reference_id` badge). `core/visual-diagram.md` v2.5→v2.6: derived lifecycle badge docs. `core/deployment-profile.md` v1.9→v2.0: §10 CSDM Auto-Wiring (add/remove tech product triggers, source column, SaaS guard). `guides/whats-new.md`: derived lifecycle entry. |
 | v1.98 | 2026-04-06 | **Visual Tab Level 4 — IT Service Tech Drill-Down.** `core/visual-diagram.md` v2.4→v2.5: Four-level drill-down (App → DP → Blast Radius → Tech Products). Single-click navigation replaces double-click. New nodes: `ServiceNode.tsx` (hover tooltip), `TechProductNode.tsx` (teal, lifecycle badges, DP cross-reference). `LegendNode.tsx` Level 4 legend. IT Service modal: Technology Lifecycle section removed (Chunk 4 derives lifecycle from components). `guides/whats-new.md`: April 6 entries. NEW: `planning/csdm-chain-phase-chunk3-plan.md`. |
 | v1.97 | 2026-04-07 | **CSDM Chain Phase — Chunk 1-2.** NEW: `planning/csdm-chain-phase-plan.md` v1.0 (supersedes session guide). Chunk 1: 7-query data validation, demo data fixes (5 double-count links removed, 7 portfolio assignments, 2 tech products created, GIS Platform providers wired, tech composition cleanup — removed infrastructure OS from service definitions). Chunk 2: `deployment_profile_it_services.source` column (auto/manual), auto-wiring frontend (LinkedTechnologyProductsList auto-wire/unwire with cost-aware confirm dialog, SaaS guard, informational toasts, ITServiceDependencyList source badge + refresh coordination). Document count 119→120. |
 | v1.96 | 2026-04-06 | **COR Demo Data Reset + CSDM Auto-Wiring Spec.** Phase 1 DELETE + Phase 2 INSERT applied (30 apps, 42 DPs, 12 IT services). Police assessments seeded (8 apps, full TIME/PAID). Data fixes: duplicate DPs from trigger, SaaS→Azure Cloud Hosting incorrect links, IT Service service_type_id NULL. NEW: `planning/csdm-auto-wiring-session-guide.md` v1.0 — 4-chunk session guide for auto-wiring + Visual Level 4 drill-down. NEW: `schema/cor-demo-data-police-assessments.sql` — reusable assessment seed script. Document count 117→119. |

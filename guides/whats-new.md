@@ -10,6 +10,7 @@ Recent updates to GetInSync NextGen.
 - **Single-Click Navigation** — All drill-down actions on the Visual tab now use single-click instead of double-click, including deployment profile and IT service exploration. Hover tooltips read "Click to explore."
 - **IT Service Modal Simplified** — The Technology Lifecycle section has been removed from the IT Service edit modal. Lifecycle data will be derived from component technology products in a future update.
 - **CSDM Auto-Wiring** — Adding or removing a technology product from a SaaS deployment profile now automatically links or unlinks the corresponding IT service. An informational toast confirms the action.
+- **IT Service Derived Lifecycle** — IT services now display a lifecycle badge derived from their component technology products. The worst lifecycle status across all linked tech products is shown (End of Support > Extended Support > Mainstream). Visible on Visual tab Level 3 service nodes, Level 4 hero card, and the IT Service Catalog. Replaces the previously stored lifecycle reference with a live aggregation.
 
 ## April 5, 2026
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Date:** April 7, 2026
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 **Branch:** `feat/csdm-chain-phase`
 **Supersedes:** `planning/csdm-auto-wiring-session-guide.md`
 
@@ -200,31 +200,114 @@ COMMENT ON COLUMN deployment_profile_it_services.source IS
 
 ---
 
-## Chunk 4: IT Service Lifecycle Derivation + Architecture Docs
+## Chunk 4: IT Service Lifecycle Derivation + Architecture Docs — COMPLETE
 
 **Prerequisites:** Chunk 3 complete
 **Branch:** `feat/csdm-chain-phase` (continue)
 
-### Derived Lifecycle Status
+### Part A — Derived Lifecycle Status
 
-Compute worst lifecycle from component tech products: End of Support > Extended Support > Mainstream > Not Set
+Compute worst lifecycle from an IT Service's component tech products. Hierarchy (worst to best): End of Support > Extended Support > Mainstream > Not Set. IT Services with zero tech composition = "Not Set" (correct — they have no tech to age).
 
-Display in:
-- IT Service card in catalog
-- ServiceNode in Visual Level 3
-- IT Service hero card on Level 4
+Frontend-only derivation — no new database column. Replaces the stored `lifecycle_reference_id` FK on `it_services` for display purposes (column stays in DB for future cleanup).
 
-Implementation: Frontend-only derivation using `it_service_technology_products` → `technology_products` → `technology_lifecycle_reference`. Compute at render time or in the data hook. No stored column.
+#### Step 1: Add `deriveWorstLifecycle()` utility
 
-### Architecture Docs to Update
+**File:** `src/utils/technology-health.ts`
 
-1. `docs-architecture/core/visual-diagram.md` — Add Level 4 docs, update level descriptions
-2. `docs-architecture/core/deployment-profile.md` — Document auto-wiring behavior
-3. `docs-architecture/MANIFEST.md` — Bump version, changelog entry
-4. `docs-architecture/guides/whats-new.md` — Entry for CSDM auto-wiring + Level 4
-5. `docs-architecture/guides/user-help/` — Update relevant help articles
+New function after existing lifecycle helpers. Takes array of `{ lifecycle_status: string | null }`, returns worst status using priority map: `end_of_support: 3`, `extended: 2`, `mainstream: 1`. All other statuses (`preview`, `business_vendor_managed`, `incomplete_data`, `null`) score 0. Returns `null` for empty array or all-zero scores. `LifecycleBadge` renders nothing for `null`.
 
-### Merge Sequence
+#### Step 2: Add `derived_lifecycle` to `ITServiceInfo` in data hook
+
+**File:** `src/hooks/useVisualGraphData.ts`
+
+- Add `derived_lifecycle: string | null` to `ITServiceInfo` interface (line 43)
+- Import `deriveWorstLifecycle` from `../utils/technology-health`
+- At service building loop (line 197-204), filter `itServiceTechDetails` per service and compute:
+  ```typescript
+  derived_lifecycle: deriveWorstLifecycle(svcTechForThis)
+  ```
+
+#### Step 3: Pass lifecycle through `buildLevel3`
+
+**File:** `src/components/visual/graphBuilders.ts` (line 495)
+
+Add `derivedLifecycle: svc.derived_lifecycle` to service node data in `buildLevel3()`.
+
+#### Step 4: Update `ServiceNode` component
+
+**File:** `src/components/visual/nodes/ServiceNode.tsx`
+
+- Add `derivedLifecycle?: string | null` to `ServiceNodeData` interface
+- Import `LifecycleBadge` from `../../technology-health/LifecycleBadge`
+- After service type display (line 46), render lifecycle badge when present
+- Increase `NODE_HEIGHT_SERVICE` from `60` to `75` in `graphBuilders.ts` (line 17)
+
+#### Step 5: Pass lifecycle through `buildLevel4` hero card
+
+**File:** `src/components/visual/graphBuilders.ts` (lines 557-561)
+
+Add `derivedLifecycle: selectedService.derived_lifecycle` to hero node data. Same `ServiceNode` component renders badge automatically.
+
+#### Step 6: Replace stored lifecycle with derived in IT Service Catalog
+
+**File:** `src/pages/settings/ITServiceCatalogSettings.tsx`
+
+- Expand tech composition query (line 194-206) to join `lifecycle_reference:technology_lifecycle_reference(current_status)` inside `technology_products`
+- Update `ServiceNode` interface `techs` type to include `lifecycle_status: string | null`
+- Extract `current_status` from nested lifecycle reference during tech mapping (lines 270-283)
+- Import `deriveWorstLifecycle`, compute per service node
+- Replace `node.service.lifecycle_reference.current_status` LifecycleBadge (line 722) with derived lifecycle badge
+
+#### Step 7: Remove TODO comment
+
+**File:** `src/components/ITServiceModal.tsx` (line 124)
+
+Remove: `// TODO: Chunk 4 will derive lifecycle from component tech products — lifecycle_reference_id stored field becomes redundant.`
+
+### Part B — Architecture Documentation
+
+#### Step 8: Update `docs-architecture/core/visual-diagram.md`
+
+Bump to v2.6. Add derived lifecycle badge to ServiceNode docs, Level 3, Level 4. Document derivation logic.
+
+#### Step 9: Update `docs-architecture/core/deployment-profile.md`
+
+Bump to v2.0. Add §10 "CSDM Auto-Wiring": tech product add/remove triggers, `source` column (`auto`/`manual`), SaaS DPs skip auto-wiring, cost confirmation dialog on remove.
+
+#### Step 10: Update `docs-architecture/MANIFEST.md`
+
+Bump v1.97 → v1.98. Update visual-diagram (v2.5→v2.6), deployment-profile (v1.9→v2.0). Changelog for CSDM Chain Phase.
+
+#### Step 11: Update `docs-architecture/guides/whats-new.md`
+
+Entry for IT Service Derived Lifecycle under April 6 section.
+
+#### Step 12: Mark this plan COMPLETE
+
+Update status to COMPLETE, add changelog entry.
+
+### Part C — Verification + Merge
+
+#### Step 13: Build verification
+
+```bash
+npx tsc --noEmit    # zero errors
+npm run build       # production build passes
+```
+
+#### Step 14: Commit both repos
+
+```bash
+# Code repo (feature branch)
+cd ~/Dev/getinsync-nextgen-ag && git add -A && git commit -m "feat: Chunk 4 — derived IT Service lifecycle + architecture docs"
+
+# Architecture repo (main)
+cd ~/getinsync-architecture && git add -A && git commit -m "docs: CSDM Chain Phase complete — auto-wiring, Visual Level 4, derived lifecycle" && git push origin main
+cd ~/Dev/getinsync-nextgen-ag
+```
+
+#### Step 15: Merge
 
 ```bash
 git checkout dev && git pull origin dev
@@ -232,16 +315,30 @@ git merge feat/csdm-chain-phase && git push origin dev
 git checkout main && git merge dev && git push origin main
 ```
 
-Run session-end checklist.
+#### Step 16: Session-end checklist — no overrides
 
-### Verification
+### Key Files
 
-1. Verify derived lifecycle shows on IT Service cards
-2. Verify derived lifecycle on ServiceNode (Level 3)
-3. Verify derived lifecycle on IT Service hero (Level 4)
-4. Architecture docs accurate and committed
-5. `npm run build` — passes
-6. Session-end checklist passes
+| File | Change |
+|------|--------|
+| `src/utils/technology-health.ts` | New `deriveWorstLifecycle()` |
+| `src/hooks/useVisualGraphData.ts` | `ITServiceInfo.derived_lifecycle` + populate |
+| `src/components/visual/graphBuilders.ts` | Pass lifecycle in Level 3/4, adjust `NODE_HEIGHT_SERVICE` |
+| `src/components/visual/nodes/ServiceNode.tsx` | `LifecycleBadge` in node UI |
+| `src/pages/settings/ITServiceCatalogSettings.tsx` | Expand query, derive lifecycle, replace badge |
+| `src/components/ITServiceModal.tsx` | Remove TODO |
+| `docs-architecture/core/visual-diagram.md` | Lifecycle badge docs |
+| `docs-architecture/core/deployment-profile.md` | Auto-wiring section |
+| `docs-architecture/MANIFEST.md` | Version bump + changelog |
+| `docs-architecture/guides/whats-new.md` | Derived lifecycle entry |
+
+### Reused Utilities
+
+| Utility | Path |
+|---------|------|
+| `LifecycleBadge` | `src/components/technology-health/LifecycleBadge.tsx` |
+| `getLifecycleLabel` | `src/utils/technology-health.ts` |
+| `ITServiceTechDetail` | `src/hooks/useVisualGraphData.ts:52-60` |
 
 ---
 
@@ -250,3 +347,5 @@ Run session-end checklist.
 | Version | Date | Changes |
 |---------|------|---------|
 | v1.0 | 2026-04-07 | Initial plan. Chunk 1 complete (validation + fixes). Chunks 2-4 planned. Supersedes csdm-auto-wiring-session-guide.md. |
+| v1.1 | 2026-04-06 | Chunk 4 detailed implementation plan added. 16 steps across 3 parts. |
+| v1.2 | 2026-04-06 | Chunk 4 COMPLETE. All 4 chunks delivered. CSDM Chain Phase closed. |

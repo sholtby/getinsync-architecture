@@ -1,6 +1,6 @@
 # core/deployment-profile.md
 Deployment Profile Architecture - Data Residency & Location Tracking
-Last updated: 2026-03-08
+Last updated: 2026-04-06
 
 ---
 
@@ -415,7 +415,44 @@ If the parent DP is deleted, `inherits_tech_from` becomes NULL. The child revert
 
 ---
 
-## 10. Future Enhancements
+## 10. CSDM Auto-Wiring (NEW in v2.0)
+
+When a technology product is added to or removed from a deployment profile, the system automatically manages IT service links via the `deployment_profile_it_services` junction table.
+
+### 10.1 Add Tech Product → Auto-Link IT Services
+
+1. Query `it_service_technology_products` joined with `it_services` to find IT services powered by the added tech product (filtered to same namespace)
+2. For each match, check if `deployment_profile_it_services` already has a row for this DP + service
+3. If not, insert with `relationship_type = 'depends_on'` and `source = 'auto'`
+4. Toast per link: "Automatically linked to [Service Name]"
+5. If zero matches: informational toast "[Tech Product] added. No IT Service covers this technology yet."
+
+### 10.2 Remove Tech Product → Auto-Unlink IT Services
+
+1. Find IT services powered by the removed tech product
+2. For each, check if any OTHER tech products still on this DP also power that service
+3. If none remain AND `source = 'auto'`:
+   - Query IT service annual cost
+   - If cost > 0: show confirm dialog with cost impact
+   - On confirm: delete the `deployment_profile_it_services` row
+4. Manual links (`source = 'manual'`) are never touched by auto-wiring
+
+### 10.3 Source Column
+
+The `source` column on `deployment_profile_it_services` tracks link provenance:
+
+| Value | Meaning |
+|-------|---------|
+| `auto` | Created by tech product auto-wiring |
+| `manual` | User explicitly linked via IT Service dependency picker |
+
+### 10.4 SaaS Deployment Profiles
+
+SaaS deployment profiles skip auto-wiring. Adding a tech product shows an informational toast only — no IT service links are created or removed automatically.
+
+---
+
+## 11. Future Enhancements
 
 ### 10.1 Data Center Costs (Phase 26+)
 
@@ -450,7 +487,7 @@ As needed, add more providers to standard_regions:
 
 ---
 
-## 11. Related Documents
+## 12. Related Documents
 
 | Document | Content |
 |----------|---------|

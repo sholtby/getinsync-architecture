@@ -1,6 +1,6 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.5
+**Version:** 2.6
 **Date:** April 6, 2026
 **Status:** ✅ SHIPPED
 
@@ -102,13 +102,15 @@ Shows the "blast radius" — what other systems are affected if this specific DP
 - DP rendered as hero card with integration summary (sends/receives/bidirectional counts)
 - Directional edge coloring: outbound amber (#BA7517), inbound blue (#185FA5), bidirectional amber with arrows both ends
 
+IT service nodes display a derived lifecycle badge showing the worst lifecycle status across their component technology products.
+
 **Click actions:**
 - Click connected app → navigate to that app's page
 - Click IT service → drill to Level 4 (technology products for that service)
 
 ### Level 4 — Technology Products
 
-**Top:** IT Service hero card (ServiceNode)
+**Top:** IT Service hero card (ServiceNode) with derived lifecycle badge
 **Below:** Technology products that compose this service (from `it_service_technology_products`)
 **Layout direction:** Top-to-bottom (TB)
 
@@ -178,7 +180,8 @@ Renders IT services linked to deployment profiles. Purple color scheme.
 
 - Left border: 3px solid #a855f7 (purple)
 - Background: #faf5ff
-- Shows: service name (`Layers` icon), service type
+- Shows: service name (`Layers` icon), service type, derived lifecycle badge
+- **Derived lifecycle:** Computed as the worst lifecycle status across component tech products (End of Support > Extended > Mainstream > Not Set). Uses `deriveWorstLifecycle()` from `src/utils/technology-health.ts`. Displayed via `LifecycleBadge` component. Services with no tech composition show no badge ("Not Set").
 - Hover tooltip: "Click to explore"
 - Handles: Top (target) + Bottom (source)
 
