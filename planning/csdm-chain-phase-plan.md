@@ -349,3 +349,4 @@ git checkout main && git merge dev && git push origin main
 | v1.0 | 2026-04-07 | Initial plan. Chunk 1 complete (validation + fixes). Chunks 2-4 planned. Supersedes csdm-auto-wiring-session-guide.md. |
 | v1.1 | 2026-04-06 | Chunk 4 detailed implementation plan added. 16 steps across 3 parts. |
 | v1.2 | 2026-04-06 | Chunk 4 COMPLETE. All 4 chunks delivered. CSDM Chain Phase closed. |
+| v1.3 | 2026-04-07 | Chunk 5 COMPLETE. Cleanup: removed overhead service links, reclassified ITSM Platform → app, moved M365+Collab to Platform/Runtime/PaaS, widened catalog Name column. |

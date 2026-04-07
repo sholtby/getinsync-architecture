@@ -4,6 +4,11 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 7, 2026
+
+- **IT Service Catalog Cleanup** — Network Infrastructure and Cybersecurity Operations are now classified as overhead services with no per-app dependency links. Their costs ($250K and $200K) remain in the catalog but no longer appear on individual app dependency lists. ITSM Platform has been converted to a business application ("ServiceNow ITSM") in the IT workspace with an $85K SaaS cost bundle. Microsoft 365 Enterprise and Collaboration & Conferencing have been reclassified from Managed Service to Platform > Runtime/PaaS.
+- **IT Service Catalog — Wider Name Column** — The Name column in the IT Service Catalog has been widened so service names like "Enterprise Backup & Recovery" fit on 1-2 lines instead of wrapping to 3.
+
 ## April 6, 2026
 
 - **Visual Tab Level 4 — IT Service Technology Drill-Down** — Click any IT service on the Visual tab blast radius (Level 3) to see the technology products that compose it. A teal "Built on" row shows each technology product with lifecycle status badges (Mainstream, Extended, End of Support). Products used by the current deployment profile appear in full color; unused products are dimmed. Services with no technology products linked show an informational empty state. Breadcrumb navigation lets you click back through App > Deployment Profile > IT Service.
