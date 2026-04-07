@@ -1,14 +1,14 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.4
-**Date:** April 5, 2026
+**Version:** 2.5
+**Date:** April 6, 2026
 **Status:** ✅ SHIPPED
 
 ---
 
 ## Overview
 
-The Visual tab on the Application Detail page renders an interactive graph using **React Flow** (@xyflow/react) with **dagre** (@dagrejs/dagre) for automatic layout. Users navigate three drill-down levels via click interactions (single-click for apps, double-click for DPs). Breadcrumb navigation provides level context and backtracking.
+The Visual tab on the Application Detail page renders an interactive graph using **React Flow** (@xyflow/react) with **dagre** (@dagrejs/dagre) for automatic layout. Users navigate four drill-down levels via single-click interactions. Breadcrumb navigation provides level context and backtracking.
 
 ### Technology Stack
 
@@ -16,14 +16,16 @@ The Visual tab on the Application Detail page renders an interactive graph using
 |---------|---------|
 | `@xyflow/react` | Graph rendering, pan/zoom, node dragging |
 | `@dagrejs/dagre` | Automatic directed-graph layout (LR or TB) |
-| Custom nodes | `AppNode`, `DPNode`, `TierLabelNode`, `LegendNode` |
+| Custom nodes | `AppNode`, `DPNode`, `ServiceNode`, `TechProductNode`, `TierLabelNode`, `LegendNode` |
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
 | `src/components/integrations/ConnectionsVisual.tsx` | Main component — ReactFlow canvas, breadcrumbs, layout persistence, navigation |
-| `src/components/visual/graphBuilders.ts` | Layout + node/edge construction for all three levels (manual 3-tier for L1, dagre for L2/L3) |
+| `src/components/visual/graphBuilders.ts` | Layout + node/edge construction for all four levels (manual 3-tier for L1, dagre for L2/L3, manual for L4) |
+| `src/components/visual/nodes/ServiceNode.tsx` | Custom node for IT services (purple) |
+| `src/components/visual/nodes/TechProductNode.tsx` | Custom node for technology products (teal) |
 | `src/components/visual/nodes/AppNode.tsx` | Custom node for applications and external systems |
 | `src/components/visual/nodes/DPNode.tsx` | Custom node for deployment profiles |
 | `src/components/visual/nodes/TierLabelNode.tsx` | Non-interactive tier label with dashed rule |
@@ -32,20 +34,20 @@ The Visual tab on the Application Detail page renders an interactive graph using
 
 ---
 
-## Three-Level Drill-Down
+## Four-Level Drill-Down
 
 ```
-Level 1: App Graph (TB)         Level 2: DP Overview (TB)       Level 3: Blast Radius (LR)
-─────────────────────          ──────────────────              ─────────────────────
-  Connected App 1                [FOCUSED APP]                  Connected Apps ──┐
-  Connected App 2                     |                         External Systems─┤
-  External System 1              ├── DP 1                                        ├──[SELECTED DP]
-       |                         ├── DP 2                       Connected Apps ──┤
-  [FOCUSED APP]                  └── DP 3                       External Systems─┘
-       |
-  DP 1   DP 2   DP 3
+Level 1: App Graph (TB)    Level 2: DP Overview (TB)    Level 3: Blast Radius (LR)    Level 4: Tech Products (TB)
+─────────────────────      ──────────────────           ─────────────────────          ─────────────────────
+  Connected App 1            [FOCUSED APP]               Connected Apps ──┐              [IT SERVICE HERO]
+  Connected App 2                 |                      External Systems─┤                     |
+  External System 1          ├── DP 1                                     ├──[SELECTED DP] ── BUILT ON ──
+       |                     ├── DP 2                    Connected Apps ──┤              [Tech1] [Tech2]
+  [FOCUSED APP]              └── DP 3                    External Systems─┘
+       |                                                       |
+  DP 1   DP 2   DP 3                                    IT Services row
 
-Layout: TB (top-bottom)        Layout: TB (top-bottom)         Layout: LR (left-right)
+Layout: TB                  Layout: TB                   Layout: LR                    Layout: TB
 ```
 
 ### Level 1 — App Graph (Three-Tier Vertical)
@@ -69,8 +71,7 @@ Manual three-tier positioning (not dagre — dagre merges ranks in this topology
 - Click focused app → drill to Level 2
 - Click connected app → navigate to that app's page
 - Click external system → no action
-- Single-click DP → select only (React Flow default)
-- Double-click DP → drill to Level 3 (blast radius for that DP)
+- Click DP → drill to Level 3 (blast radius for that DP)
 
 ### Level 2 — Deployment Profiles
 
@@ -87,8 +88,7 @@ Manual three-tier positioning (not dagre — dagre merges ranks in this topology
 
 **Click actions:**
 - Click app node → back to Level 1
-- Single-click DP → select only
-- Double-click DP → drill to Level 3 for that DP
+- Click DP → drill to Level 3 for that DP
 
 ### Level 3 — Blast Radius
 
@@ -104,6 +104,24 @@ Shows the "blast radius" — what other systems are affected if this specific DP
 
 **Click actions:**
 - Click connected app → navigate to that app's page
+- Click IT service → drill to Level 4 (technology products for that service)
+
+### Level 4 — Technology Products
+
+**Top:** IT Service hero card (ServiceNode)
+**Below:** Technology products that compose this service (from `it_service_technology_products`)
+**Layout direction:** Top-to-bottom (TB)
+
+Shows the technology products that compose an IT service. Cross-references `deployment_profile_technology_products` to indicate which products this DP uses.
+
+- Subtitle: "Technology products composing this IT service" (or "No technology products are linked to this service" if empty)
+- "Built on" tier label above tech product row
+- Tech products used by the current DP are full color; unused are dimmed (opacity 0.5) with "Not used by this deployment"
+- Dashed structural edges from service → each tech product
+- Breadcrumb: App name > DP name > Service name
+
+**Click actions:**
+- Click service hero → back to Level 3
 
 ---
 
@@ -150,14 +168,31 @@ Renders deployment profiles with ArchiMate-informed shape (nearly square, `borde
 - **Level 2 (enriched):** Min-width 240px, tech health progress bar (8px, colored fill), integration count amber pill
 - **Level 3 (hero card):** Min-width 300px, crown jewel star, server_name, tech health bar, divider, integration summary (sends/receives/bidirectional)
 
-**ServiceNode technology count pill:**
-- IT Service nodes (ServiceNode) display a teal pill with a `Cpu` icon showing the count of technology products that compose the service
-- Data source: count of rows in `it_service_technology_products` for the service, fetched in `useVisualGraphData.ts`
-- Only shown when count > 0
-
-**Hover hint:** Shows "Double-click to explore" text below the node on hover (L1/L2).
+**Hover hint:** Shows "Click to explore" text below the node on hover (L1/L2).
 
 **Handles:** All four sides.
+
+### ServiceNode (`src/components/visual/nodes/ServiceNode.tsx`)
+
+Renders IT services linked to deployment profiles. Purple color scheme.
+
+- Left border: 3px solid #a855f7 (purple)
+- Background: #faf5ff
+- Shows: service name (`Layers` icon), service type
+- Hover tooltip: "Click to explore"
+- Handles: Top (target) + Bottom (source)
+
+### TechProductNode (`src/components/visual/nodes/TechProductNode.tsx`)
+
+Renders technology products composing an IT service. Teal color scheme.
+
+- Left border: 3px solid #14b8a6 (teal)
+- Background: #f0fdfa
+- Shows: product name (`Cpu` icon), version, `LifecycleBadge` (Mainstream/Extended/End of Support)
+- When `usedByDp`: full opacity, shows deployed version or category
+- When not used by DP: opacity 0.5, "Not used by this deployment"
+- Handle: Top (target) only
+- Size: 180-220px wide
 
 ### TierLabelNode (`src/components/visual/nodes/TierLabelNode.tsx`)
 
@@ -174,7 +209,8 @@ Non-interactive layout element that labels horizontal tiers. Implemented as a Re
 Compact horizontal legend rendered as a non-interactive React Flow node at the bottom of the canvas.
 
 - L1/L2: External dashed rect, internal solid rect, dashed gray line "Structural", solid amber arrow "Data flow"
-- L3: Amber arrow "Sends data", blue arrow "Receives data"
+- L3: IT service purple rect, amber arrow "Data flow", dashed amber bidirectional
+- L4: Teal tech product rect, lifecycle status dots (green Mainstream, amber Extended, red End of Support), dashed structural line "Composition"
 
 ---
 
@@ -214,7 +250,8 @@ visual_layout jsonb DEFAULT NULL
 interface SavedLayout {
   level1?: SavedLevelLayout;
   level2?: SavedLevelLayout;
-  level3?: SavedLevelLayout;
+  // Level 3+ use dynamic keys: "level3:{dpId}", "level4:{serviceId}"
+  [key: string]: SavedLevelLayout | undefined;
 }
 
 interface SavedLevelLayout {
@@ -223,7 +260,7 @@ interface SavedLevelLayout {
 }
 ```
 
-Each level's layout is saved independently. When a user drags nodes or pans/zooms, positions are saved to the appropriate level key.
+Each level's layout is saved independently with dynamic keys for DP-specific (Level 3) and service-specific (Level 4) layouts.
 
 ### Save Triggers
 

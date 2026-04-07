@@ -4,6 +4,13 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 6, 2026
+
+- **Visual Tab Level 4 — IT Service Technology Drill-Down** — Click any IT service on the Visual tab blast radius (Level 3) to see the technology products that compose it. A teal "Built on" row shows each technology product with lifecycle status badges (Mainstream, Extended, End of Support). Products used by the current deployment profile appear in full color; unused products are dimmed. Services with no technology products linked show an informational empty state. Breadcrumb navigation lets you click back through App > Deployment Profile > IT Service.
+- **Single-Click Navigation** — All drill-down actions on the Visual tab now use single-click instead of double-click, including deployment profile and IT service exploration. Hover tooltips read "Click to explore."
+- **IT Service Modal Simplified** — The Technology Lifecycle section has been removed from the IT Service edit modal. Lifecycle data will be derived from component technology products in a future update.
+- **CSDM Auto-Wiring** — Adding or removing a technology product from a SaaS deployment profile now automatically links or unlinks the corresponding IT service. An informational toast confirms the action.
+
 ## April 5, 2026
 
 - **CSDM Demo Data Consistency** — IT Service Catalog now shows technology composition via teal "Built on:" chips under each service. Technology Catalog now shows IT Service usage via purple "Powers:" chips under each technology product. Software Catalog displays an amber "Org-wide" badge for organization-wide licenses that don't require DP associations. Visual tab ServiceNode shows a teal technology count pill (Cpu icon) indicating how many technologies compose the service. All cross-reference data sourced from the `it_service_technology_products` junction table.
