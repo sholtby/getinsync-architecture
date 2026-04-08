@@ -402,9 +402,9 @@ VALUES
   (gen_random_uuid(), 'ba000004-0000-0000-0000-000000000004', 'b4000004-0000-0000-0000-000000000004',
    'impacted', 'Migration may retire Oracle DB service entirely'),
 
-  -- IT Strategic Planning → ITSM Platform
-  (gen_random_uuid(), 'ba000005-0000-0000-0000-000000000005', 'b4000009-0000-0000-0000-000000000009',
-   'enhanced', 'Strategic planning will formalize ITSM processes and governance'),
+  -- IT Strategic Planning → Identity & Access Management
+  (gen_random_uuid(), 'ba000005-0000-0000-0000-000000000005', 'b4000008-0000-0000-0000-000000000008',
+   'enhanced', 'Strategic planning will formalize IAM governance and access policies'),
 
   -- ERP replacement → SQL Server Database Services (dependency)
   (gen_random_uuid(), 'ba000006-0000-0000-0000-000000000006', 'b4000003-0000-0000-0000-000000000003',
