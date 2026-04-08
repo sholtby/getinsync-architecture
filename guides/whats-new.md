@@ -4,6 +4,15 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 8, 2026
+
+- **Dashboard — Server Count on Expand** — Expanding a deployment profile row on the Dashboard now shows the server name alongside environment and hosting details, giving quick infrastructure visibility without navigating to the detail page.
+- **IT Spend — Sortable Columns** — All columns in the IT Services table on IT Spend are now sortable (click column headers). Default sort is by Committed cost descending so the largest spending items appear first.
+- **IT Spend — Budget Status from Run Rate** — IT Service budget status badges now derive from actual run rate vs. budget allocation rather than static data. Services over budget show "OVER CRITICAL" or "OVER 10" badges; healthy services show green "HEALTHY" badges. A new "UNDER 25" warning badge appears when less than 25% of budget remains.
+- **IT Spend — View Contract Fix** — Fixed a mismatch between the IT Service budget view and the TypeScript interface that could cause incorrect data display. The Consumers column has been removed (data not available at the view level). Status color coding now properly distinguishes between over-budget severity levels.
+- **Tech Health — "End of Support" Label** — The Tech Health dashboard now uses "End of Support" instead of "At Risk" for the lifecycle status label, distinguishing technology lifecycle risk from the Overview page's business-level "At Risk" metric.
+- **Overview KPI Reorder** — KPI cards on the Overview page have been reordered to place "At Risk" first, prioritizing the most actionable metric.
+
 ## April 7, 2026
 
 - **Assessment Staleness Awareness** — "Assessment Progress" is now "Assessment Status" on the Overview page. Below the progress bar, a staleness indicator warns when assessments are older than 180 days. Click the warning to jump to Explorer filtered to stale items. When all assessments are current, clicking the green status text opens Application Health. The Explorer now has a "Last Assessed" column showing relative timestamps ("3d ago", "2mo ago"), sortable to surface the stalest items first. A "Stale assessments only" checkbox in the Explorer filter drawer lets you isolate overdue assessments.

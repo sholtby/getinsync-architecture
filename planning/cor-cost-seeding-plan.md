@@ -6,6 +6,12 @@ The COR (City of Riverside) demo namespace has IT Services with realistic costs 
 
 **Goal:** Every COR app should show a non-zero Total Run Rate in its Cost Summary so demos look realistic.
 
+## Status
+
+- **Part 1 (Cost Bundles):** SQL generated — `planning/sql/phase-29b-cost-bundles.sql` — pending Stuart execution
+- **Part 2 (IT Service Allocations):** COMPLETE — $2.56M allocated across 56 dpis rows (Phase 29, Apr 8)
+- **IT Service Budgets:** SQL generated — `planning/sql/phase-29b-it-service-budgets.sql` — pending Stuart execution
+
 ## Current State
 
 ### Cost paths in the data model
