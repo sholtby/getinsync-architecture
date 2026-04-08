@@ -1575,6 +1575,8 @@ See v1.1 Section 15. Both tables retained — `application_roadmap` for tactical
 
 ## 14. Seed Data (Riverside Demo)
 
+> **Status:** Lost during cor-demo-data-reset (Apr 2026). Restoration SQL: `schema/cor-demo-data-roadmap-seed.sql` (Phase 3).
+
 ### 14.1 Findings (8 records — Deployed v1.1)
 
 | Domain | Impact | Title | Source |

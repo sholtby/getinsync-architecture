@@ -182,6 +182,27 @@ Rebuild in dependency order (parents first, then children, then junctions).
 
 ---
 
+## Phase 3: Roadmap Seed (added Apr 2026)
+
+Phase 1 DELETEs cleared roadmap data (findings, initiatives, ideas, programs, dependencies) but Phase 2 INSERTs did not restore them. Phase 3 seeds all roadmap entities per architecture doc Section 14.
+
+**SQL file:** `docs-architecture/schema/cor-demo-data-roadmap-seed.sql`
+
+**Entities seeded:**
+- 7 contacts (COR staff for initiative ownership and idea submission)
+- 8 findings (ti/bpa/cr/icoms/dqa domains)
+- 6 initiatives (risk/optimize/growth themes, linked to findings)
+- 6 ideas (submitted/under_review/approved/declined, one promoted to initiative)
+- 2 programs (Infrastructure Stabilization $200K, Digital Transformation $500K)
+- 6 program-initiative links
+- 4 initiative dependencies (2 bidirectional pairs)
+- 8 initiative-deployment-profile links
+- 6 initiative-IT-service links
+
+**Run after:** Phase 2 insert is already applied.
+
+---
+
 ## Critical Files
 
 | File | Purpose |
@@ -189,6 +210,7 @@ Rebuild in dependency order (parents first, then children, then junctions).
 | `docs-architecture/planning/cor-demo-data-reset.md` | Design document — the target state |
 | `docs-architecture/schema/cor-demo-data-reset-phase1-delete.sql` | DELETE script (to be generated) |
 | `docs-architecture/schema/cor-demo-data-reset-phase2-insert.sql` | INSERT script (to be generated) |
+| `docs-architecture/schema/cor-demo-data-roadmap-seed.sql` | Roadmap seed (Phase 3) |
 | `docs-architecture/schema/nextgen-schema-current.sql` | Schema reference |
 
 ---
