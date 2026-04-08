@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict EV14eQgMhFCwbKzxwJb0uWPFmM9M91cklBpJkTDVJk8Y6xPAlqX0qTHqNHZs4mQ
+\restrict zGhPHwN9cUOfSK8nG0gareXwyHqYeqG7J5stH8iN6vSDkJdld46CsdNfHL3YEIB
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -8238,6 +8238,7 @@ CREATE TABLE public.portfolio_assignments (
     cost_allocation_percent numeric(5,2) DEFAULT NULL::numeric,
     cost_allocation_basis text,
     cost_allocation_notes text,
+    business_assessed_at timestamp with time zone,
     CONSTRAINT portfolio_assignments_assessment_status_check CHECK (((business_assessment_status IS NULL) OR (business_assessment_status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'complete'::text, 'Not Started'::text, 'In Progress'::text, 'Complete'::text])))),
     CONSTRAINT portfolio_assignments_b10_user_satisfaction_check CHECK (((b10 >= 1) AND (b10 <= 5))),
     CONSTRAINT portfolio_assignments_b1_strategic_goals_check CHECK (((b1 >= 1) AND (b1 <= 5))),
@@ -8252,6 +8253,13 @@ CREATE TABLE public.portfolio_assignments (
     CONSTRAINT portfolio_assignments_relationship_type_check CHECK ((relationship_type = ANY (ARRAY['publisher'::text, 'consumer'::text]))),
     CONSTRAINT portfolio_assignments_remediation_effort_check CHECK ((remediation_effort = ANY (ARRAY['XS'::text, 'S'::text, 'M'::text, 'L'::text, 'XL'::text, '2XL'::text])))
 );
+
+
+--
+-- Name: COLUMN portfolio_assignments.business_assessed_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.portfolio_assignments.business_assessed_at IS 'Timestamp of last business assessment save (b1-b10 scores)';
 
 
 --
@@ -9395,7 +9403,8 @@ CREATE VIEW public.vw_dashboard_summary_scoped WITH (security_invoker='true') AS
             dp.paid_action,
             dp.annual_licensing_cost,
             dp.annual_cost,
-            dp.estimated_tech_debt
+            dp.estimated_tech_debt,
+            dp.assessed_at
            FROM ((public.workspaces w
              JOIN public.applications a ON ((a.workspace_id = w.id)))
              JOIN public.deployment_profiles dp ON (((dp.application_id = a.id) AND (dp.workspace_id = w.id))))
@@ -9414,7 +9423,9 @@ CREATE VIEW public.vw_dashboard_summary_scoped WITH (security_invoker='true') AS
             round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
             COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
             COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
-            COALESCE(sum(dp_base.estimated_tech_debt), (0)::numeric) AS total_estimated_tech_debt
+            COALESCE(sum(dp_base.estimated_tech_debt), (0)::numeric) AS total_estimated_tech_debt,
+            min(dp_base.assessed_at) AS oldest_tech_assessment,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE ((dp_base.assessed_at IS NOT NULL) AND (dp_base.assessed_at < (now() - '180 days'::interval)))) AS stale_tech_count
            FROM dp_base
           GROUP BY dp_base.namespace_id
         ), pa_base AS (
@@ -9480,7 +9491,9 @@ CREATE VIEW public.vw_dashboard_summary_scoped WITH (security_invoker='true') AS
     COALESCE(d.total_annual_cost, (0)::numeric) AS total_annual_cost,
     COALESCE(d.total_estimated_tech_debt, (0)::numeric) AS total_estimated_tech_debt,
     COALESCE(p.business_assessed_count, (0)::bigint) AS business_assessed_count,
-    COALESCE(p.business_in_progress_count, (0)::bigint) AS business_in_progress_count
+    COALESCE(p.business_in_progress_count, (0)::bigint) AS business_in_progress_count,
+    d.oldest_tech_assessment,
+    COALESCE(d.stale_tech_count, (0)::bigint) AS stale_tech_count
    FROM ((dp_agg d
      FULL JOIN pa_agg p ON ((p.namespace_id = d.namespace_id)))
      LEFT JOIN risk_agg r ON ((r.namespace_id = d.namespace_id)));
@@ -9698,7 +9711,8 @@ CREATE VIEW public.vw_explorer_detail WITH (security_invoker='true') AS
             dp.paid_action,
             dp.tech_assessment_status,
             dp.estimated_tech_debt,
-            dp.hosting_type
+            dp.hosting_type,
+            dp.assessed_at
            FROM public.deployment_profiles dp
           WHERE ((dp.dp_type = 'application'::text) AND (dp.operational_status = 'operational'::text))
           ORDER BY dp.application_id, dp.is_primary DESC, dp.created_at
@@ -9708,7 +9722,8 @@ CREATE VIEW public.vw_explorer_detail WITH (security_invoker='true') AS
             pa_1.criticality,
             pa_1.time_quadrant,
             pa_1.business_assessment_status,
-            pa_1.remediation_effort
+            pa_1.remediation_effort,
+            pa_1.business_assessed_at
            FROM public.portfolio_assignments pa_1
           WHERE (pa_1.relationship_type = 'publisher'::text)
           ORDER BY pa_1.application_id,
@@ -9799,7 +9814,9 @@ CREATE VIEW public.vw_explorer_detail WITH (security_invoker='true') AS
     oc.owner_name,
     sc.support_name,
     COALESCE(ic.integration_count, (0)::numeric) AS integration_count,
-    pa.remediation_effort
+    pa.remediation_effort,
+    pdp.assessed_at,
+    pa.business_assessed_at
    FROM ((((((((public.applications a
      JOIN public.workspaces w ON ((w.id = a.workspace_id)))
      LEFT JOIN primary_dp pdp ON ((pdp.application_id = a.id)))
@@ -10891,7 +10908,7 @@ CREATE VIEW public.vw_workspace_budget_summary WITH (security_invoker='true') AS
     wb.budget_amount AS workspace_budget,
     wb.fiscal_year AS budget_fiscal_year,
     COALESCE(sum(a.budget_amount), (0)::numeric) AS app_budget_allocated,
-    COALESCE(sum(( SELECT vpc.total_cost
+    COALESCE(sum(( SELECT vpc.bundle_cost
            FROM public.vw_deployment_profile_costs vpc
           WHERE ((vpc.application_id = a.id) AND (vpc.deployment_profile_id = ( SELECT deployment_profiles.id
                    FROM public.deployment_profiles
@@ -11080,22 +11097,6 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
--- Name: messages_2026_04_04; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_04 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
 -- Name: messages_2026_04_05; Type: TABLE; Schema: realtime; Owner: -
 --
 
@@ -11180,6 +11181,22 @@ CREATE TABLE realtime.messages_2026_04_09 (
 --
 
 CREATE TABLE realtime.messages_2026_04_10 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_11; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_11 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -11389,13 +11406,6 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
--- Name: messages_2026_04_04; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_04 FOR VALUES FROM ('2026-04-04 00:00:00') TO ('2026-04-05 00:00:00');
-
-
---
 -- Name: messages_2026_04_05; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
@@ -11435,6 +11445,13 @@ ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_09
 --
 
 ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_10 FOR VALUES FROM ('2026-04-10 00:00:00') TO ('2026-04-11 00:00:00');
+
+
+--
+-- Name: messages_2026_04_11; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_11 FOR VALUES FROM ('2026-04-11 00:00:00') TO ('2026-04-12 00:00:00');
 
 
 --
@@ -13053,14 +13070,6 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
--- Name: messages_2026_04_04 messages_2026_04_04_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_04
-    ADD CONSTRAINT messages_2026_04_04_pkey PRIMARY KEY (id, inserted_at);
-
-
---
 -- Name: messages_2026_04_05 messages_2026_04_05_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
@@ -13106,6 +13115,14 @@ ALTER TABLE ONLY realtime.messages_2026_04_09
 
 ALTER TABLE ONLY realtime.messages_2026_04_10
     ADD CONSTRAINT messages_2026_04_10_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_11 messages_2026_04_11_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_11
+    ADD CONSTRAINT messages_2026_04_11_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
@@ -14794,13 +14811,6 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
--- Name: messages_2026_04_04_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_04_inserted_at_topic_idx ON realtime.messages_2026_04_04 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
 -- Name: messages_2026_04_05_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
@@ -14840,6 +14850,13 @@ CREATE INDEX messages_2026_04_09_inserted_at_topic_idx ON realtime.messages_2026
 --
 
 CREATE INDEX messages_2026_04_10_inserted_at_topic_idx ON realtime.messages_2026_04_10 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_11_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_11_inserted_at_topic_idx ON realtime.messages_2026_04_11 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
@@ -14903,20 +14920,6 @@ CREATE INDEX name_prefix_search ON storage.objects USING btree (name text_patter
 --
 
 CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes USING btree (name, bucket_id);
-
-
---
--- Name: messages_2026_04_04_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_04_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_04_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_04_pkey;
 
 
 --
@@ -15001,6 +15004,20 @@ ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.
 --
 
 ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_10_pkey;
+
+
+--
+-- Name: messages_2026_04_11_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_11_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_11_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_11_pkey;
 
 
 --
@@ -22298,5 +22315,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict EV14eQgMhFCwbKzxwJb0uWPFmM9M91cklBpJkTDVJk8Y6xPAlqX0qTHqNHZs4mQ
+\unrestrict zGhPHwN9cUOfSK8nG0gareXwyHqYeqG7J5stH8iN6vSDkJdld46CsdNfHL3YEIB
 
