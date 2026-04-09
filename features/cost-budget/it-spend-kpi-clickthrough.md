@@ -1,7 +1,7 @@
 # IT Spend KPI Click-Through + Budget Alerts Fix
 
-**Status:** Planned
-**Date:** 2026-04-08
+**Status:** Deployed
+**Date:** 2026-04-09
 **Scope:** IT Spend namespace overview page (All Workspaces view)
 
 ---

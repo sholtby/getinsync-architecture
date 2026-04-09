@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-08 (v2.01)
+Last updated: 2026-04-09 (v2.02)
 
 ---
 
@@ -117,6 +117,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/cost-budget/cost-model-addendum.md | v2.5.1 | 🟢 | **Confirms zero cost model impact from Path 1 technology tagging — DEPLOYED** |
 | features/cost-budget/budget-management.md | v1.8 | 🟢 | Application and workspace budgets — "IT Spend" dashboard with filter drawer replacing tabs, filter-responsive KPIs (updated Mar 11) |
 | features/cost-budget/budget-alerts.md | v1.0 | 🟢 | Budget health monitoring — Phase 1 DB layer DEPLOYED |
+| features/cost-budget/it-spend-kpi-clickthrough.md | v1.0 | 🟢 | IT Spend KPI click-through + budget alerts fix — 8 clickable cards, per-workspace alert count, filter-to-problems (Apr 9) |
 | features/cost-budget/vendor-cost.md | v2.0 | 🟡 | Vendor attribution — two channels (IT Services + Cost Bundles), dpsp vendor DEPRECATED (updated Mar 4) |
 | features/cost-budget/software-contract.md | v3.0 | 🟡 | Software contracts — `vw_contract_expiry` UNION view (IT Services + Cost Bundles), dpsp cost columns DEPRECATED (updated Apr 4) |
 | features/cost-budget/cost-model-validation-2026-03-04.md | — | 🟢 | **Cost model validation report — schema debt, view bugs, frontend audit, refactoring plan** |

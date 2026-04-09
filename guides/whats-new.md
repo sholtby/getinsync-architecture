@@ -4,6 +4,13 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 9, 2026
+
+- **IT Spend — KPI Card Click-Through** — All eight metric cards on the IT Spend namespace overview (4 KPI cards + 4 allocation cards) are now clickable. Click any card to smooth-scroll to the Budget by Workspace table with the relevant sort applied. Total Budget sorts by budget descending, Run Rate by run rate descending, Remaining by unallocated ascending (worst-first). Cards show a hover effect with shadow lift and "View" hint matching the Overview KPI pattern.
+- **IT Spend — Budget Alerts Fix** — The Budget Alerts KPI card now correctly counts individual workspaces with budget issues (over budget or 80%+ utilization) instead of checking only the aggregate namespace status. Previously it always showed "0" even when individual workspaces were tight or over budget.
+- **IT Spend — Budget Alerts Filter** — Clicking the Budget Alerts card filters the workspace table to show only problem workspaces (tight or over budget). A teal info bar appears above the table showing "Showing N workspaces with budget issues" with a "Show all workspaces" dismiss link. Clicking Budget Alerts again toggles the filter off.
+- **IT Spend — TypeScript Contract Fix** — The `workspace_status` TypeScript union now includes both database view values (`over_allocated`, `under_10`) and client-derived values, preventing silent type mismatches.
+
 ## April 8, 2026
 
 - **Dashboard — Server Count on Expand** — Expanding a deployment profile row on the Dashboard now shows the server name alongside environment and hosting details, giving quick infrastructure visibility without navigating to the detail page.
