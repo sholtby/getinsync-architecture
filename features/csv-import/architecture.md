@@ -20,7 +20,15 @@ Enable customers to self-serve bulk import of applications via CSV upload. Targe
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| Import wizard (5-step) | `src/pages/settings/ImportApplications.tsx` | Main import page with preview, execution, history, undo |
+| Import orchestrator | `src/pages/settings/import/ImportApplications.tsx` | Thin orchestrator wiring hook + step components |
+| Import wizard hook | `src/pages/settings/import/useImportWizard.ts` | All state, data loading, import execution, undo logic |
+| Shared types | `src/pages/settings/import/types.ts` | ImportStep, Workspace, PreviewRow, ImportBatch, MAX_ROWS |
+| Step 1: Select Target | `src/pages/settings/import/StepSelectTarget.tsx` | Workspace/portfolio dropdowns, template download |
+| Step 2: Upload File | `src/pages/settings/import/StepUploadFile.tsx` | File drag-drop, format info |
+| Step 3: Preview | `src/pages/settings/import/StepPreview.tsx` | Validation table with green/yellow/red rows |
+| Import History | `src/pages/settings/import/ImportHistory.tsx` | Paginated history table with undo buttons |
+| Undo Confirm Modal | `src/pages/settings/import/UndoConfirmModal.tsx` | Undo confirmation dialog (uses ModalShell) |
+| Error Banner | `src/pages/settings/import/ErrorBanner.tsx` | Error list display |
 | CSV parser | `src/lib/csv-parser.ts` | Parsing, column mapping, validation with reference data |
 | CSV export utilities | `src/utils/csv-export.ts` | Used for template generation |
 | Sidebar nav | `src/components/Sidebar.tsx` | Gated to namespace admin + platform admin |
