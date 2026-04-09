@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-09 (v2.02)
+Last updated: 2026-04-09 (v2.03)
 
 ---
 
@@ -256,6 +256,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | planning/csdm-auto-wiring-session-guide.md | v1.0 | ☪ | **SUPERSEDED by csdm-chain-phase-plan.md.** Original 4-chunk session guide. |
 | planning/csdm-chain-phase-plan.md | v1.0 | 🟡 | **CSDM Chain Phase Plan.** 4-chunk plan: data validation, auto-wiring with cost awareness + SaaS guard, Visual Level 4 drill-down, lifecycle derivation. Chunk 1-2 complete, Chunks 3-4 pending. Supersedes csdm-auto-wiring-session-guide.md. |
 | planning/cor-demo-data-session-guide.md | v1.0 | 🟢 | **COR Demo Data Reset Session Guide.** 5-chunk guide for Phase 1 DELETE + Phase 2 INSERT of COR namespace demo data. Includes browser verification tests. |
+| planning/gitbook-documentation-audit.md | v1.0 | ☪ | **GitBook Documentation Audit & Gap Closure Plan.** 18 articles across 5 EA Journey tiers. 8 new, 6 refresh, 3 review, 1 publish. CSDM alignment doc, IT Spend, Explorer, Overview, Settings, Import, Cost Analysis, Global Search. Includes SUMMARY.md target state and session-end checklist enhancement plan. |
 | marketing/explainer.md | v1.7.1 | ☪ | **Product explainer — merged v1.5 base + v1.7 additions. Tenancy, identity, licensing, cost, CSDM, technology health, risk boundary, data governance, buyer personas** |
 | marketing/positioning-statements.md | v1.0 | ☪ | Positioning statements |
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
@@ -854,6 +855,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.03 | 2026-04-09 | NEW: `planning/gitbook-documentation-audit.md` v1.0 ☪ — GitBook documentation audit plan. 18 articles across 5 EA Journey tiers (Understand, Set Up, Assess, Plan, Power Features). 8 new articles (CSDM alignment, IT Spend, Explorer, Overview, Settings, Import, Cost Analysis, Global Search), 6 refreshes, 3 reviews, 1 publish. Includes SUMMARY.md target state, data readiness matrix, and operational changes (CLAUDE.md Feature-to-Article Map, session-end checklist §6h enhancement). |
 | v1.92 | 2026-04-04 | **Integration-DP Phase 3 COMPLETE.** Updated `features/integrations/architecture.md` v1.2→v1.3 🟢: DP scoping deployed, §2/§4/§7 updated. ADR `adr-integration-dp-alignment.md` v1.2→v1.3: Phase 3 marked COMPLETE. Updated `guides/whats-new.md` + `guides/user-help/integrations.md` with DP selector and list display changes. |
 | v1.91 | 2026-04-04 | **Stage A.3: CSDM Teams + Operations UI.** Updated `guides/user-help/deployment-profiles.md` v1.0→v1.1: added Operations section (team assignments) and Teams management in Settings. Updated `guides/whats-new.md`: April 4 entries for Teams Management + Operations section. Updated ADR `adr-csdm-export-readiness.md` status: PROPOSED→ACCEPTED, §6 Teams UI marked DEPLOYED. |
 | v1.90 | 2026-04-04 | **Session-end checklist pruning.** session-end-checklist.md v1.18→v1.19: Pruned from 953→497 lines (13.7k→~7k tokens) to fit within Claude Code's single-read limit. Extracted: §6h user documentation procedure → `operations/session-end-user-docs.md` v1.0, change log → `operations/session-end-checklist-changelog.md` v1.0. Removed inlined SQL duplicated in test scripts, trimmed duplicated CLAUDE.md content and static SOC2 policy table. Document count 118→120. |
