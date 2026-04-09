@@ -1,7 +1,7 @@
 -- =============================================================================
 -- GetInSync NextGen — Security Posture Validation (No pgTAP Required)
 -- =============================================================================
--- Version: 1.4 | Date: 2026-04-03
+-- Version: 1.5 | Date: 2026-04-09
 -- Run in Supabase SQL Editor — produces a single results table
 -- No extensions needed. Read-only (no data changes).
 -- =============================================================================
@@ -188,7 +188,60 @@ view_sr_grant_check AS (
     AND rtg.privilege_type = 'SELECT'
 ),
 
--- CHECK 6: Sentinel — new tables without coverage
+-- CHECK 6: Platform admin bypass on write policies
+-- For each table+operation, at least one PERMISSIVE policy must include
+-- check_is_platform_admin() OR use get_current_namespace_id() (which reads
+-- from user_sessions and works for all users including platform admins).
+-- Without this, platform admins get 403 when writing to namespaces they
+-- access via the UI but aren't explicit namespace_users members of.
+admin_bypass_check AS (
+  SELECT
+    table_name,
+    'Platform admin bypass (' ||
+      CASE cmd WHEN 'a' THEN 'INSERT' WHEN 'w' THEN 'UPDATE' WHEN 'd' THEN 'DELETE' WHEN '*' THEN 'ALL' END
+    || ')' AS check_type,
+    'FAIL' AS result
+  FROM (
+    -- Find table+operation combos that have write policies
+    SELECT DISTINCT c.relname AS table_name, p.polcmd AS cmd
+    FROM pg_policy p
+    JOIN pg_class c ON c.oid = p.polrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND p.polcmd IN ('a', 'w', 'd', '*')
+      -- Exclude user-scoped tables (keyed on auth.uid(), not namespace)
+      AND c.relname NOT IN (
+        'ai_chat_conversations', 'ai_chat_messages', 'user_sessions',
+        'audit_logs', 'user_preferences'
+      )
+      -- Exclude global reference tables (no namespace scope)
+      AND c.relname NOT IN (
+        'cloud_providers', 'countries', 'criticality_types', 'data_classification_types',
+        'data_format_types', 'data_tag_types', 'dr_statuses', 'environments',
+        'hosting_types', 'integration_direction_types', 'integration_frequency_types',
+        'integration_method_types', 'integration_status_types', 'lifecycle_statuses',
+        'remediation_efforts', 'sensitivity_types', 'service_types'
+      )
+  ) ops
+  -- Fail only if NO permissive policy for this table+op has admin bypass or uses get_current_namespace_id()
+  WHERE NOT EXISTS (
+    SELECT 1 FROM pg_policy p2
+    JOIN pg_class c2 ON c2.oid = p2.polrelid
+    JOIN pg_namespace n2 ON n2.oid = c2.relnamespace
+    WHERE n2.nspname = 'public'
+      AND c2.relname = ops.table_name
+      AND (p2.polcmd = ops.cmd OR p2.polcmd = '*')
+      AND p2.polpermissive = true
+      AND (
+        COALESCE(pg_get_expr(p2.polqual, p2.polrelid), '') LIKE '%platform_admin%'
+        OR COALESCE(pg_get_expr(p2.polwithcheck, p2.polrelid), '') LIKE '%platform_admin%'
+        OR COALESCE(pg_get_expr(p2.polqual, p2.polrelid), '') LIKE '%get_current_namespace_id%'
+        OR COALESCE(pg_get_expr(p2.polwithcheck, p2.polrelid), '') LIKE '%get_current_namespace_id%'
+      )
+  )
+),
+
+-- CHECK 7: Sentinel — new tables without coverage
 new_tables AS (
   SELECT
     pt.tablename AS table_name,
@@ -199,7 +252,7 @@ new_tables AS (
     AND pt.tablename NOT IN (SELECT table_name FROM expected_tables)
 ),
 
--- CHECK 7: Sentinel — new views without coverage
+-- CHECK 8: Sentinel — new views without coverage
 new_views AS (
   SELECT
     pv.viewname AS table_name,
@@ -220,6 +273,7 @@ all_results AS (
   UNION ALL SELECT * FROM view_check
   UNION ALL SELECT * FROM view_auth_grant_check
   UNION ALL SELECT * FROM view_sr_grant_check
+  UNION ALL SELECT * FROM admin_bypass_check
   UNION ALL SELECT * FROM new_tables
   UNION ALL SELECT * FROM new_views
 )

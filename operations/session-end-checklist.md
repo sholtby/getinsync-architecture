@@ -1,7 +1,7 @@
 # GetInSync NextGen — Session-End Checklist
 
-**Version:** 1.20
-**Date:** April 4, 2026
+**Version:** 1.21
+**Date:** April 9, 2026
 **Status:** ACTIVE
 **Purpose:** Master checklist Claude executes at session end — dispatches to individual validation skills
 **Trigger:** End of every session with database changes, or when Stuart says "run session-end checklist"
@@ -106,6 +106,46 @@ ORDER BY c.table_name;
 Compare Step 1 against Step 2. Every table in Step 2 should have a seeding function OR be a known exception.
 
 **Known exceptions:** `contacts`, `data_centers`, `organizations` (user-created data), `notification_rules`, `workflow_definitions` (future features).
+
+### 2.4 — Platform Admin Bypass Validation (when RLS policies are created or modified)
+
+Platform admins (`is_super_admin = true`) can access any namespace via the UI, but RLS policies must explicitly include `check_is_platform_admin()` in write policies — otherwise INSERT/UPDATE/DELETE fails with 403 for platform admins operating outside their `namespace_users` entries.
+
+**When:** New RLS policies are created, or existing write policies are modified.
+
+```sql
+-- Detect write policies missing platform admin bypass
+-- Empty result = PASS
+SELECT c.relname AS table_name, p.polname AS policy_name,
+  CASE p.polcmd WHEN 'a' THEN 'INSERT' WHEN 'w' THEN 'UPDATE' WHEN 'd' THEN 'DELETE' WHEN '*' THEN 'ALL' END AS cmd
+FROM pg_policy p
+JOIN pg_class c ON c.oid = p.polrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND p.polcmd IN ('a', 'w', 'd', '*')
+  AND NOT (
+    COALESCE(pg_get_expr(p.polqual, p.polrelid), '') LIKE '%platform_admin%'
+    OR COALESCE(pg_get_expr(p.polwithcheck, p.polrelid), '') LIKE '%platform_admin%'
+  )
+  -- Exclude user-scoped tables (not namespace-scoped, so admin bypass is N/A)
+  AND c.relname NOT IN (
+    'ai_chat_conversations', 'ai_chat_messages', 'user_sessions',
+    'audit_logs', 'user_preferences'
+  )
+  -- Exclude reference tables (global, not namespace-scoped)
+  AND c.relname NOT IN (
+    'cloud_providers', 'countries', 'criticality_types', 'data_classification_types',
+    'data_format_types', 'data_tag_types', 'dr_statuses', 'environments',
+    'hosting_types', 'integration_direction_types', 'integration_frequency_types',
+    'integration_method_types', 'integration_status_types', 'lifecycle_statuses',
+    'remediation_efforts', 'sensitivity_types', 'service_types'
+  )
+ORDER BY c.relname, p.polname;
+```
+
+**Pass criteria:** Query returns zero rows. Any row = a write policy that platform admins cannot execute when operating in a namespace they are not explicitly a `namespace_users` member of.
+
+**Why this matters:** Platform admins routinely access customer namespaces for support and testing. SELECT may appear to work (empty tables return HTTP 200 regardless of RLS), but INSERT/UPDATE/DELETE will fail with a 403 — a silent gap that only surfaces when the admin tries to write data.
 
 ---
 
