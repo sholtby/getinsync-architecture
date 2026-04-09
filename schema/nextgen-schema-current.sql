@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict hnX1law321CQkHeva5T1yPdPiBdbT3gLezAXzN2RWVMDvJ1tR2AXIXcQzuxJZmZ
+\restrict be6TeIvke20ardRkbAXJxmyvLJusJecF69Alef89JEqYMFUH9CcsyRbbW8uRVU4
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -8177,7 +8177,8 @@ CREATE TABLE public.organization_settings (
     name text DEFAULT ''::text,
     max_project_budget integer DEFAULT 1000000,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    custom_remediation_ranges jsonb
 );
 
 
@@ -22420,5 +22421,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hnX1law321CQkHeva5T1yPdPiBdbT3gLezAXzN2RWVMDvJ1tR2AXIXcQzuxJZmZ
+\unrestrict be6TeIvke20ardRkbAXJxmyvLJusJecF69Alef89JEqYMFUH9CcsyRbbW8uRVU4
 
