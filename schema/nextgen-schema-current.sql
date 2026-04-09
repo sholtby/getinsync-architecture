@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict zGhPHwN9cUOfSK8nG0gareXwyHqYeqG7J5stH8iN6vSDkJdld46CsdNfHL3YEIB
+\restrict hnX1law321CQkHeva5T1yPdPiBdbT3gLezAXzN2RWVMDvJ1tR2AXIXcQzuxJZmZ
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -6732,6 +6732,8 @@ CREATE TABLE public.applications (
     branch text,
     primary_use_case text,
     visual_layout jsonb,
+    import_batch_id uuid,
+    external_id text,
     CONSTRAINT applications_lifecycle_status_check CHECK ((lifecycle_status = ANY (ARRAY['Mainstream'::text, 'Extended'::text, 'End of Support'::text]))),
     CONSTRAINT applications_remediation_effort_check CHECK (((remediation_effort)::text = ANY ((ARRAY['XS'::character varying, 'S'::character varying, 'M'::character varying, 'L'::character varying, 'XL'::character varying, '2XL'::character varying])::text[]))),
     CONSTRAINT chk_app_csdm_stage CHECK (((csdm_stage IS NULL) OR (csdm_stage = ANY (ARRAY['stage_0'::text, 'stage_1'::text, 'stage_2'::text, 'stage_3'::text, 'stage_4'::text])))),
@@ -7653,6 +7655,26 @@ CREATE TABLE public.ideas (
     updated_at timestamp with time zone DEFAULT now(),
     CONSTRAINT ideas_domain_check CHECK (((assessment_domain IS NULL) OR (assessment_domain = ANY (ARRAY['icoms'::text, 'bpa'::text, 'ti'::text, 'dqa'::text, 'cr'::text, 'other'::text])))),
     CONSTRAINT ideas_status_check CHECK ((status = ANY (ARRAY['submitted'::text, 'under_review'::text, 'approved'::text, 'declined'::text, 'deferred'::text])))
+);
+
+
+--
+-- Name: import_batches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.import_batches (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    namespace_id uuid NOT NULL,
+    workspace_id uuid NOT NULL,
+    imported_by uuid,
+    filename text NOT NULL,
+    row_count integer DEFAULT 0 NOT NULL,
+    skipped_count integer DEFAULT 0 NOT NULL,
+    failed_count integer DEFAULT 0 NOT NULL,
+    status text DEFAULT 'completed'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    rolled_back_at timestamp with time zone,
+    CONSTRAINT import_batches_status_check CHECK ((status = ANY (ARRAY['completed'::text, 'rolled_back'::text])))
 );
 
 
@@ -11097,22 +11119,6 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
--- Name: messages_2026_04_05; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_05 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
 -- Name: messages_2026_04_06; Type: TABLE; Schema: realtime; Owner: -
 --
 
@@ -11197,6 +11203,22 @@ CREATE TABLE realtime.messages_2026_04_10 (
 --
 
 CREATE TABLE realtime.messages_2026_04_11 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_12; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_12 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -11406,13 +11428,6 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
--- Name: messages_2026_04_05; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_05 FOR VALUES FROM ('2026-04-05 00:00:00') TO ('2026-04-06 00:00:00');
-
-
---
 -- Name: messages_2026_04_06; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
@@ -11452,6 +11467,13 @@ ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_10
 --
 
 ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_11 FOR VALUES FROM ('2026-04-11 00:00:00') TO ('2026-04-12 00:00:00');
+
+
+--
+-- Name: messages_2026_04_12; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_12 FOR VALUES FROM ('2026-04-12 00:00:00') TO ('2026-04-13 00:00:00');
 
 
 --
@@ -12259,6 +12281,14 @@ ALTER TABLE ONLY public.hosting_types
 
 ALTER TABLE ONLY public.ideas
     ADD CONSTRAINT ideas_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: import_batches import_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_batches
+    ADD CONSTRAINT import_batches_pkey PRIMARY KEY (id);
 
 
 --
@@ -13070,14 +13100,6 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
--- Name: messages_2026_04_05 messages_2026_04_05_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_05
-    ADD CONSTRAINT messages_2026_04_05_pkey PRIMARY KEY (id, inserted_at);
-
-
---
 -- Name: messages_2026_04_06 messages_2026_04_06_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
@@ -13123,6 +13145,14 @@ ALTER TABLE ONLY realtime.messages_2026_04_10
 
 ALTER TABLE ONLY realtime.messages_2026_04_11
     ADD CONSTRAINT messages_2026_04_11_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_12 messages_2026_04_12_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_12
+    ADD CONSTRAINT messages_2026_04_12_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
@@ -13744,6 +13774,13 @@ CREATE INDEX idx_application_roadmap_application ON public.application_roadmap U
 --
 
 CREATE INDEX idx_application_services_application ON public.application_services USING btree (application_id);
+
+
+--
+-- Name: idx_applications_import_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_applications_import_batch_id ON public.applications USING btree (import_batch_id) WHERE (import_batch_id IS NOT NULL);
 
 
 --
@@ -14811,13 +14848,6 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
--- Name: messages_2026_04_05_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_05_inserted_at_topic_idx ON realtime.messages_2026_04_05 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
 -- Name: messages_2026_04_06_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
@@ -14857,6 +14887,13 @@ CREATE INDEX messages_2026_04_10_inserted_at_topic_idx ON realtime.messages_2026
 --
 
 CREATE INDEX messages_2026_04_11_inserted_at_topic_idx ON realtime.messages_2026_04_11 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_12_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_12_inserted_at_topic_idx ON realtime.messages_2026_04_12 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
@@ -14920,20 +14957,6 @@ CREATE INDEX name_prefix_search ON storage.objects USING btree (name text_patter
 --
 
 CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes USING btree (name, bucket_id);
-
-
---
--- Name: messages_2026_04_05_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_05_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_05_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_05_pkey;
 
 
 --
@@ -15018,6 +15041,20 @@ ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.
 --
 
 ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_11_pkey;
+
+
+--
+-- Name: messages_2026_04_12_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_12_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_12_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_12_pkey;
 
 
 --
@@ -15172,6 +15209,13 @@ CREATE TRIGGER audit_findings AFTER INSERT OR DELETE OR UPDATE ON public.finding
 --
 
 CREATE TRIGGER audit_ideas AFTER INSERT OR DELETE OR UPDATE ON public.ideas FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: import_batches audit_import_batches; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_import_batches AFTER INSERT OR DELETE OR UPDATE ON public.import_batches FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -16357,6 +16401,14 @@ ALTER TABLE ONLY public.application_services
 
 
 --
+-- Name: applications applications_import_batch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.applications
+    ADD CONSTRAINT applications_import_batch_id_fkey FOREIGN KEY (import_batch_id) REFERENCES public.import_batches(id) ON DELETE SET NULL;
+
+
+--
 -- Name: applications applications_owner_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -16770,6 +16822,30 @@ ALTER TABLE ONLY public.ideas
 
 ALTER TABLE ONLY public.ideas
     ADD CONSTRAINT ideas_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: import_batches import_batches_imported_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_batches
+    ADD CONSTRAINT import_batches_imported_by_fkey FOREIGN KEY (imported_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: import_batches import_batches_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_batches
+    ADD CONSTRAINT import_batches_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: import_batches import_batches_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_batches
+    ADD CONSTRAINT import_batches_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
 
 
 --
@@ -20313,6 +20389,13 @@ CREATE POLICY "Namespace admins can delete workspaces in current namespace" ON p
 
 
 --
+-- Name: import_batches Namespace admins can insert import_batches; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Namespace admins can insert import_batches" ON public.import_batches FOR INSERT WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id))));
+
+
+--
 -- Name: workspace_users Namespace admins can remove workspace members; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -20321,6 +20404,13 @@ CREATE POLICY "Namespace admins can remove workspace members" ON public.workspac
   WHERE (w.namespace_id = public.get_current_namespace_id()))) AND (public.check_is_platform_admin() OR (EXISTS ( SELECT 1
    FROM public.workspaces w
   WHERE ((w.id = workspace_users.workspace_id) AND public.check_is_namespace_admin_of_namespace(w.namespace_id)))))));
+
+
+--
+-- Name: import_batches Namespace admins can update import_batches; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Namespace admins can update import_batches" ON public.import_batches FOR UPDATE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id)))) WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id))));
 
 
 --
@@ -20358,14 +20448,14 @@ CREATE POLICY "Namespace admins can view all workspace members in their namesp" 
 -- Name: apm_chat_usage Namespace isolation; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Namespace isolation" ON public.apm_chat_usage USING ((namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid));
+CREATE POLICY "Namespace isolation" ON public.apm_chat_usage USING ((public.check_is_platform_admin() OR (namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid))) WITH CHECK ((public.check_is_platform_admin() OR (namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid)));
 
 
 --
 -- Name: apm_embeddings Namespace isolation; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Namespace isolation" ON public.apm_embeddings USING ((namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid));
+CREATE POLICY "Namespace isolation" ON public.apm_embeddings USING ((public.check_is_platform_admin() OR (namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid))) WITH CHECK ((public.check_is_platform_admin() OR (namespace_id = ((auth.jwt() ->> 'namespace_id'::text))::uuid)));
 
 
 --
@@ -21124,6 +21214,13 @@ CREATE POLICY "Users can view ideas in current namespace" ON public.ideas FOR SE
 
 
 --
+-- Name: import_batches Users can view import_batches in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view import_batches in current namespace" ON public.import_batches FOR SELECT USING ((namespace_id = public.get_current_namespace_id()));
+
+
+--
 -- Name: individuals Users can view individuals in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -21722,6 +21819,12 @@ ALTER TABLE public.hosting_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ideas ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: import_batches; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.import_batches ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: individuals; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22037,9 +22140,11 @@ ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
 -- Name: teams teams_namespace_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY teams_namespace_isolation ON public.teams USING ((namespace_id IN ( SELECT namespace_users.namespace_id
+CREATE POLICY teams_namespace_isolation ON public.teams USING ((public.check_is_platform_admin() OR (namespace_id IN ( SELECT namespace_users.namespace_id
    FROM public.namespace_users
-  WHERE (namespace_users.user_id = auth.uid()))));
+  WHERE (namespace_users.user_id = auth.uid()))))) WITH CHECK ((public.check_is_platform_admin() OR (namespace_id IN ( SELECT namespace_users.namespace_id
+   FROM public.namespace_users
+  WHERE (namespace_users.user_id = auth.uid())))));
 
 
 --
@@ -22315,5 +22420,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zGhPHwN9cUOfSK8nG0gareXwyHqYeqG7J5stH8iN6vSDkJdld46CsdNfHL3YEIB
+\unrestrict hnX1law321CQkHeva5T1yPdPiBdbT3gLezAXzN2RWVMDvJ1tR2AXIXcQzuxJZmZ
 

@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-09 (v2.06)
+Last updated: 2026-04-09 (v2.07)
 
 ---
 
@@ -149,7 +149,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
 | identity-security/secrets-inventory.md | v1.0 | 🟢 | Secrets inventory — 6 Edge Function secrets, rotation procedures, SOC2 CC6.1/CC6.3/CC6.6 |
 | operations/secure-coding-standards.md | v1.0 | 🟢 | **Secure coding standards — OWASP + SOC 2 adapted for React + Supabase. RLS-first model, red flag checklist, 8-item gap roadmap. CC6.1/CC6.3/CC6.7/CC7.1/CC7.2.** |
-| operations/session-end-checklist.md | **v1.19** | 🟢 | **Master session-end compliance checklist — v1.19: Pruned from 953→497 lines (under 10k token limit). §6h and changelog extracted.** |
+| operations/session-end-checklist.md | **v1.21** | 🟢 | **Master session-end compliance checklist — v1.21: Added §2.4 Platform Admin Bypass Validation.** |
 | operations/session-end-checklist-changelog.md | v1.0 | 🟢 | Session-end checklist version history (extracted from main checklist) |
 | operations/session-end-user-docs.md | v1.0 | 🟢 | User documentation procedure for session-end (§6h detail, extracted from main checklist) |
 
@@ -158,7 +158,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | testing/pgtap-rls-coverage.sql | v1.8 | 🟢 | pgTAP security regression — 437 assertions: RLS, GRANTs (102 tables + 39 views), audit triggers (60), view security, sentinel checks |
-| testing/security-posture-validation.sql | v1.4 | 🟢 | Standalone security validation — PASS/FAIL output for all 102 tables + 39 views (incl. view GRANTs) |
+| testing/security-posture-validation.sql | v1.5 | 🟢 | Standalone security validation — PASS/FAIL output for all 103 tables + 39 views (incl. view GRANTs + platform admin bypass check) |
 
 ### Integration & Alignment
 
@@ -864,6 +864,7 @@ The following documents were removed during the architecture audit. They describ
 | Version | Date | Changes |
 |---------|------|---------|
 | v2.05 | 2026-04-09 | **CSV Import v2 DEPLOYED.** `features/csv-import/architecture.md` v1.0→v2.0 🟡→🟢. Complete rewrite of ImportApplications.tsx: 5-step wizard with preview table (green/yellow/red validation), import batch tracking (`import_batches` table + `applications.import_batch_id`), undo with modification detection, `external_id` column, DP fields (hosting/cloud/env) with retry loop, assessment scores (T-scores→DP, B-scores→portfolio_assignments), namespace admin + platform admin gate, 500-row cap, template download, import history table. Schema: `import_batches` table + `applications.import_batch_id` FK + `applications.external_id`. Sidebar gate fixed (was workspace admin, now namespace admin). Empty state "Import from CSV" button on ApplicationsPool. AS-BUILT 85→86. AS-DESIGNED 30→29. |
+| v2.07 | 2026-04-09 | **Platform admin RLS bypass fix.** Fixed teams/apm_chat_usage/apm_embeddings RLS policies — platform admins got 403 on INSERT when accessing namespaces without explicit namespace_users entry. Updated `operations/session-end-checklist.md` v1.20→v1.21: added §2.4 Platform Admin Bypass Validation. Updated `testing/security-posture-validation.sql` v1.4→v1.5: added CHECK 6 (automated detection of write policies missing platform admin bypass). |
 | v2.06 | 2026-04-09 | **Garland 21-app showcase import EXECUTED.** NEW: `operations/imports/import-lessons-learned.md` v1.0 ☪ — 13 schema/trigger gotchas, check constraint reference, recommended import order for bulk import. NEW: `operations/imports/sql/` — 19 SQL scripts executed and validated. Updated `garland-showcase-demo-plan.md` status 🟡→🟢 (EXECUTED). Document count 121→123. |
 | v2.05 | 2026-04-09 | CSV Import v2 architecture decomposition. Updated `features/csv-import/architecture.md` v1.0→v2.0. Decomposed monolith ImportApplications.tsx (1117 lines) into 14 feature-folder files. |
 | v2.04 | 2026-04-09 | NEW: `features/csv-import/architecture.md` v1.0 🟡 — Self-serve CSV import architecture. Audit of existing import feature (ImportApplications.tsx, CSVImportModal.tsx, csv-parser.ts). Gap analysis: missing DP field mapping (hosting/cloud/env), no preview step, no row limits. v1 column spec (9 fields validated against schema, enum values documented). Enhancement plan: preview table with validation, row-by-row import with error reporting, 500-row cap. v2 roadmap: external_id, contact linking, update-existing mode. Requested by Dan Warfield. Document count 120→121. AS-DESIGNED 29→30. |
