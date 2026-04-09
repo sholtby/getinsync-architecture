@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-09 (v2.03)
+Last updated: 2026-04-09 (v2.04)
 
 ---
 
@@ -217,6 +217,12 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | features/global-search/architecture.md | v1.0 | 🟢 | **Global search — DEPLOYED. Ctrl+K overlay, 12 entity types, categorized results. RPC + frontend fully built.** |
+
+### CSV Import (Self-Serve Onboarding)
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| features/csv-import/architecture.md | v1.0 | 🟡 | **CSV Import — self-serve application onboarding. Audit of existing import (ImportApplications.tsx + csv-parser.ts), gap analysis, v1 column spec (9 fields validated against schema), enhancement plan (preview step, DP field mapping, row limits). Requested by Dan Warfield.** |
 
 ### In-App Support
 
@@ -855,6 +861,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.04 | 2026-04-09 | NEW: `features/csv-import/architecture.md` v1.0 🟡 — Self-serve CSV import architecture. Audit of existing import feature (ImportApplications.tsx, CSVImportModal.tsx, csv-parser.ts). Gap analysis: missing DP field mapping (hosting/cloud/env), no preview step, no row limits. v1 column spec (9 fields validated against schema, enum values documented). Enhancement plan: preview table with validation, row-by-row import with error reporting, 500-row cap. v2 roadmap: external_id, contact linking, update-existing mode. Requested by Dan Warfield. Document count 120→121. AS-DESIGNED 29→30. |
 | v2.03 | 2026-04-09 | NEW: `planning/gitbook-documentation-audit.md` v1.0 ☪ — GitBook documentation audit plan. 18 articles across 5 EA Journey tiers (Understand, Set Up, Assess, Plan, Power Features). 8 new articles (CSDM alignment, IT Spend, Explorer, Overview, Settings, Import, Cost Analysis, Global Search), 6 refreshes, 3 reviews, 1 publish. Includes SUMMARY.md target state, data readiness matrix, and operational changes (CLAUDE.md Feature-to-Article Map, session-end checklist §6h enhancement). |
 | v1.92 | 2026-04-04 | **Integration-DP Phase 3 COMPLETE.** Updated `features/integrations/architecture.md` v1.2→v1.3 🟢: DP scoping deployed, §2/§4/§7 updated. ADR `adr-integration-dp-alignment.md` v1.2→v1.3: Phase 3 marked COMPLETE. Updated `guides/whats-new.md` + `guides/user-help/integrations.md` with DP selector and list display changes. |
 | v1.91 | 2026-04-04 | **Stage A.3: CSDM Teams + Operations UI.** Updated `guides/user-help/deployment-profiles.md` v1.0→v1.1: added Operations section (team assignments) and Teams management in Settings. Updated `guides/whats-new.md`: April 4 entries for Teams Management + Operations section. Updated ADR `adr-csdm-export-readiness.md` status: PROPOSED→ACCEPTED, §6 Teams UI marked DEPLOYED. |
