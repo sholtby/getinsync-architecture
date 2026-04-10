@@ -1,8 +1,8 @@
 # Complete GitBook Documentation Rollout Plan
 
-**Version:** 1.0
-**Date:** 2026-04-09
-**Status:** Approved — not yet started
+**Version:** 1.1
+**Date:** 2026-04-10 (v1.1 — Phase 0 complete; corrected cost_bundle wording in §4 and expanded Article 4.3 scope to cover full three-channel cost model)
+**Status:** Approved — Phase 0 complete, Phase 1+ not yet started
 **Owner:** Stuart Holtby
 **Supersedes execution model of:** `gitbook-documentation-audit.md` v1.0 (content inventory remains authoritative)
 
@@ -72,7 +72,7 @@ This plan expands the audit from 18 → 19 articles (adding 1.5 Transitioning fr
 | 2.4 Integrations | Confirm ≥2 integrations exist with DP-aligned source/target (post Integration-DP alignment Mar 2026) |
 | 4.1 Roadmap Initiatives | Confirm ≥3 initiatives exist with linked apps and target dates |
 | 4.2 IT Spend | Confirm budget data is populated (`workspace_budgets`, IT service budgets) |
-| 4.3 Cost Analysis | Confirm cost channel data is populated (IT services with `annual_cost`, cost bundles) |
+| 4.3 Cost Analysis | Confirm cost channel data is populated: IT services with `annual_cost` + contract fields, and `deployment_profiles` with `dp_type = 'cost_bundle'` (the Cost Bundle channel — **not** a separate table; see `cost-model.md` §3.3 and §12 ERD) |
 
 **Blocker rule:** If any seeding step cannot be completed via the UI, stop and flag it. Database changes are out of scope — Stuart handles those via Supabase SQL Editor.
 
@@ -165,7 +165,9 @@ This plan expands the audit from 18 → 19 articles (adding 1.5 Transitioning fr
 |---|---------|------|------|-------------|
 | 4.1 | Creating & Managing Initiatives | `roadmap-initiatives.md` | Refresh | Programs/ideas, Gantt/Kanban views, scorecard |
 | 4.2 | Understanding IT Spend | `it-spend.md` | **NEW** | Budget tab walkthrough, KPI cards, workspace/service views, run rate |
-| 4.3 | Cost Analysis & Run Rate | `cost-analysis.md` | **NEW** | Cost analysis panel, vendor attribution, contracts, expiry widget |
+| 4.3 | Cost Analysis & Run Rate | `cost-analysis.md` | **NEW** | Three cost channels per `cost-model.md` v3.0 §3 (Software Product **inventory-only** → IT Service **cost pool** with allocations → **Cost Bundle DPs** (`dp_type = 'cost_bundle'`) for everything else); Cost Tracking Maturity levels 0–4 (§8 of cost-model) as the reader framing — "which level are you at and how do you move up?"; the **"Recurring Costs" section** on the DP edit screen as the user-facing surface for cost bundles; **two contract-expiry surfaces** (IT Service via `vw_it_service_contract_expiry`; Cost Bundle DPs via `deployment_profiles.contract_end_date` + `renewal_notice_days`); vendor attribution via `vendor_org_id` on both channels; portfolio-level run-rate rollup via `vw_portfolio_costs_rollup.bundle_cost`; Stranded Cost concept (§6 of cost-model) for IT Service pool minus recovered allocations |
+
+> **Note on 4.3 scope (updated 2026-04-10):** Article 4.3 is positioned as the canonical **reader-facing explainer** for the three-channel cost model documented in `cost-model.md` §3. It should walk a reader from "what is a cost channel?" → "where does each channel's data come from?" → "which maturity level am I at, and how do I move up?" The article assumes **no prior knowledge** of the cost model — it's the first time a non-architect user encounters Software Product / IT Service / Cost Bundle as distinct concepts. Demo data prerequisite: Phase 0 enrichment chunk 06 must have seeded at least 2–3 `dp_type = 'cost_bundle'` DPs in the Riverside namespace (see `planning/phase-0-assets/enrichment-session-prompt.md` chunk 06), otherwise the "Recurring Costs" panel screenshots will be empty.
 
 **Tier 4 review checkpoint.**
 
