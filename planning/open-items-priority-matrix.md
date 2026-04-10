@@ -43,6 +43,8 @@
 | 70 | Feature | AI Chat: add teams query tool | `teams` table not discoverable by AI Chat. Add `search_teams` tool to `ai-chat/tools.ts` exposing team name, scope, DP assignment counts. Example questions: "what teams support SAP?", "which team manages Finance apps?" ~1 hr. | -- | Stuart + Claude Code |
 | 71 | Feature | Global Search: add teams entity | `teams` table not in `global_search` RPC. Add `team_results` WITH clause searching by team name. Requires SQL script + AppHeader.tsx routing. ~1 hr. | -- | Stuart + Claude Code |
 | 83 | Database | audit_logs.workspace_id FK blocks orphan cleanup | `audit_log_trigger()` tries to INSERT the deleted row's workspace_id into audit_logs, but audit_logs has its own FK to workspaces — DELETE of orphaned workspace_users fails. Discovered during EV-002 cleanup (Apr 9). Fix: make `audit_logs.workspace_id` FK ON DELETE SET NULL, or drop the FK (audit logs should survive entity deletion). ~15 min SQL. | -- | Stuart |
+| 84 | SOC2 | generate_soc2_evidence RPC — last_manual_backup hardcoded | RPC returns hardcoded `last_manual_backup: "2026-02-08"` — 60+ days stale as of EV-002. Options: make dynamic (query pg_stat_backup?), or update on each manual pg_dump. Flagged in both EV-001 and EV-002 validation. ~15 min. | -- | Stuart |
+| 85 | SOC2 | generate_soc2_evidence RPC — schema_function_count scope | Function count jumped from 50 (EV-001) to 1,283 (EV-002). Likely now includes pg_catalog/extension functions instead of just public schema user functions. Review RPC query and scope correctly. ~15 min. | -- | Stuart |
 
 ---
 
