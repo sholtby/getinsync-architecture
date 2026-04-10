@@ -78,7 +78,7 @@ This project spans two git repos. When you modify files in `./docs-architecture/
 
 ### Data Model
 - **Deployment Profile is the assessment anchor, NOT Application.** Scores live on deployment_profiles.
-- **Cost data lives on cost channels** (SoftwareProduct / ITService / CostBundle), NEVER on applications directly.
+- **Cost data lives on cost channels** (SoftwareProduct / ITService / CostBundle), NEVER on applications directly. CostBundle is **not a separate table** — it is implemented as `deployment_profiles.dp_type = 'cost_bundle'` with cost/contract columns (`annual_cost`, `cost_recurrence`, `vendor_org_id`, `contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`). Canonical definition: `docs-architecture/features/cost-budget/cost-model.md` §3.3.
 - **Budget data lives in workspace_budgets table**, NOT workspaces.budget_amount (that column is legacy — do not read or write to it).
 - **Namespace-level config:** Assessment factors/thresholds are universal within a namespace.
 
@@ -273,6 +273,7 @@ git branch -r --merged dev | grep -v 'main\|dev\|HEAD'
 - Do NOT create separate CSS/JS files — keep everything in single component files
 - Do NOT read from `workspaces.budget_amount` — use `workspace_budgets` table
 - Do NOT assume schema from memory — check actual table/view definitions via Supabase queries
+- Do NOT search for a literal `cost_bundles` table — CostBundle is a deployment-profile type (`dp_type = 'cost_bundle'`), not a separate table (see Data Model rule above)
 - Do NOT create a data table without pagination — use the shared TablePagination component
 - Do NOT show duplicate count displays (e.g. filter count at top AND pagination count at bottom)
 - Do NOT ship feature changes without updating the corresponding architecture doc
