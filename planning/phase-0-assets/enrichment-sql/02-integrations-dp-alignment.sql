@@ -12,7 +12,13 @@
 --     criticality/status values already pass existing check constraints.
 --   - DP IDs used below are PROD primary DPs discovered by pre-audit.
 --   - Idempotent via WHERE <col> IS NULL guards. Safe to re-run.
--- Namespace scope: all three integrations belong to Riverside apps.
+-- Namespace scope: all three integrations belong to Riverside apps. Note
+--                  that applications has NO namespace_id column — per
+--                  Garland lesson 12, namespace scoping goes through
+--                  workspaces.namespace_id via a workspace_id IN (SELECT ...)
+--                  subquery. Do not "simplify" any clause to
+--                  `WHERE sa.namespace_id = '...'` — that column does not
+--                  exist and the query will fail.
 
 BEGIN;
 

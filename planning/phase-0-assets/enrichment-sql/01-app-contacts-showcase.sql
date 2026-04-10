@@ -6,6 +6,10 @@
 --   - Tables touched: contacts, application_contacts, applications
 --   - Reference tables read: contacts.contact_category check constraint
 --     (internal / external / vendor_rep) — no lookup table, use check values.
+--   - contacts.workspace_role check constraint (Garland lesson 6):
+--     admin / editor / steward / read_only / restricted. We use 'read_only'
+--     for demo-seed contacts — they are decoration for screenshots, not
+--     editors of real data.
 --   - Unique constraint: application_contacts (application_id, contact_id, role_type)
 --   - Idempotent via WHERE NOT EXISTS guards. Safe to re-run.
 -- Namespace scope: a1b2c3d4-e5f6-7890-abcd-ef1234567890 (City of Riverside)
@@ -28,7 +32,7 @@ SELECT
   'Police Communications',
   'pat.alvarez@riverside-demo.example',
   '555-0101',
-  'editor',
+  'read_only',
   'internal',
   true
 WHERE NOT EXISTS (
@@ -50,7 +54,7 @@ SELECT
   'Police Communications',
   'jordan.chen@riverside-demo.example',
   '555-0102',
-  'editor',
+  'read_only',
   'internal',
   true
 WHERE NOT EXISTS (

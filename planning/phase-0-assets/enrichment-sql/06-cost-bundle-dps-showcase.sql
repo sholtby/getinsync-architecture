@@ -22,7 +22,25 @@
 --   - Idempotent via WHERE NOT EXISTS guards on both the vendor org and
 --     the DPs (keyed by (application_id, name, dp_type)).
 -- Namespace scope: all IDs below belong to Riverside. vendor org INSERT
---                  is scoped by namespace_id.
+--                  is scoped by namespace_id. deployment_profiles itself
+--                  has NO namespace_id column — see Garland lesson 12;
+--                  scoping to Riverside is enforced by targeting specific
+--                  application_id and workspace_id values.
+-- Trigger audit (per Garland lessons review, 2026-04-10):
+--   - create_deployment_profile_on_app_create (Garland lesson 5) fires only
+--     on applications INSERT. This chunk inserts directly into
+--     deployment_profiles, so that auto-DP trigger is not in play and
+--     there is no risk of doubled DPs.
+--   - trigger_auto_calculate_tech_scores (BEFORE INSERT OR UPDATE OF t01..t15
+--     on deployment_profiles) fires on every INSERT. The cost_bundle rows
+--     below have all t-scores NULL; calculate_tech_health() and
+--     calculate_tech_risk() both return NULL for all-NULL input, so
+--     tech_health and tech_risk will be NULL on the new rows — matching the
+--     14 pre-existing cost_bundle DPs already in Riverside.
+--   - audit_deployment_profiles audit trigger reads NEW.namespace_id via
+--     to_jsonb; since deployment_profiles has no such column, the audit
+--     row lands with namespace_id NULL (audit_logs.namespace_id is nullable
+--     — safe).
 
 BEGIN;
 
