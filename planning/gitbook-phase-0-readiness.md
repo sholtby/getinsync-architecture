@@ -137,7 +137,7 @@ Alternative: Phase 2 writer can publish 2.1 with a note that Contacts is documen
 | ServiceDesk ← Active Directory SSO | ServiceDesk Plus → Active Directory Services | sso | ❌ |
 | Workday → Dynamics GP Payroll | Workday HCM → Microsoft Dynamics GP | file | ❌ |
 
-**Gap:** Article 2.4 is a refresh specifically to document the **Phase 2 DP-aligned integrations** feature (`source_deployment_profile_id` / `target_deployment_profile_id` FKs shipped Mar 2026). Currently only 1 of 9 integrations has both DPs set, and that row has no `name` — so it reads poorly in a screenshot.
+**Gap:** Article 2.4 is a refresh specifically to document the **Phase 2 DP-aligned integrations** feature (`source_deployment_profile_id` / `target_deployment_profile_id` FKs shipped Mar 2026). Currently, only 1 of 9 integrations has both DPs set, and that row has no `name` — so it reads poorly in a screenshot.
 
 **Enrichment task for Stuart (before Phase 2):**
 
@@ -210,15 +210,18 @@ Stuart could add fiscal 2026 budgets to 2-3 more workspaces (e.g. Fire Departmen
 | Contract references | 0 of 11 IT services have `contract_reference` |
 | Contract expiry widget | 0 of 11 IT services have `contract_end_date` |
 | Software product costs | 0 of 17 software products have `annual_cost` (cost lives only on IT services) |
-| "Cost bundles" panel | `cost_bundles` table **does not exist** in the schema (referenced in parent plan §4 but not implemented) |
+| ~~"Cost bundles" panel~~ | ~~`cost_bundles` table **does not exist** in the schema (referenced in parent plan §4 but not implemented)~~ **[STRUCK — see Correction below]** |
+| Recurring Costs / Cost Bundle DPs | **0 cost_bundle DPs** exist in Riverside (the CAD showcase app's "Recurring Costs" section reads $0 because no child cost_bundle DPs are linked) |
+
+> **Correction (2026-04-10):** The struck row above is wrong. **Cost Bundle is not a separate table** — it is a deployment-profile type. `deployment_profiles.dp_type = 'cost_bundle'` is a fully-shipped feature with `annual_cost`, `cost_recurrence`, `vendor_org_id`, `contract_reference`, `contract_start_date`, `contract_end_date`, and `renewal_notice_days` columns, all commented as "Primarily for cost_bundle DPs" in the schema. Views `vw_portfolio_costs` / `vw_portfolio_costs_rollup` already aggregate `WHERE dp_type = 'cost_bundle' AND cost_recurrence = 'recurring'` into a `bundle_cost` column. The canonical definition is `docs-architecture/features/cost-budget/cost-model.md` §3.3. The original Phase 0 walk pattern-matched on "cost_bundles table" and missed the DP-type discriminator. The real enrichment need for Article 4.3 is to **seed cost_bundle DPs in the Riverside demo namespace** — zero exist today (confirmed via the CAD app's "Recurring Costs: $0" cost summary).
 
 **Enrichment tasks for Stuart (before Phase 4):**
 
-1. Add `contract_reference` + `contract_start_date` + `contract_end_date` to **≥3 IT services** so the contract expiry widget has content. Suggested: the three largest-cost services.
-2. Clarify with the 4.3 author that `cost_bundles` is not a real table — the "cost bundle" concept in the article needs to be reframed around `vw_portfolio_costs_rollup` or removed from the article scope.
+1. Add `contract_reference` + `contract_start_date` + `contract_end_date` to **≥3 IT services** so the IT-service contract expiry widget has content. Suggested: the three largest-cost services.
+2. ~~Clarify with the 4.3 author that `cost_bundles` is not a real table — the "cost bundle" concept in the article needs to be reframed around `vw_portfolio_costs_rollup` or removed from the article scope.~~ **[STRUCK — the clarification was based on the wrong finding.]** Instead: **seed 2-3 `dp_type = 'cost_bundle'` deployment profiles** linked to the CAD / Hexagon / NG911 showcase apps, with realistic vendor, contract dates, and annual cost (e.g. "Accela Annual Support Contract", "Hexagon Managed Services Agreement", "Axon Evidence Cloud Hosting"). This gives Article 4.3 a real Recurring Costs + renewal-alert story on the showcase DPs.
 3. Optional: populate `annual_cost` on a handful of software products if the article wants to show cost attribution at the software-product level rather than only IT-service level.
 
-**Unblocking alternative:** Phase 4 writer can publish 4.3 focused entirely on IT-service-level costs + annual run rate calculation, and mention contract expiry as "coming soon when contract data is populated."
+**Unblocking alternative:** Phase 4 writer can publish 4.3 focused entirely on IT-service-level costs + annual run rate calculation, and mention cost_bundle DPs as "coming soon when demo data is populated." But with enrichment task 2 done, Article 4.3 can cover the full three-channel story (Software Product inventory → IT Service cost pool → Cost Bundle DPs for everything else) that `cost-model.md` §3.3 and §12 already document.
 
 ---
 

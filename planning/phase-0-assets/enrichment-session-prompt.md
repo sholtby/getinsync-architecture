@@ -100,6 +100,7 @@ Create that directory. Use these exact filenames (sorted execution order matters
 03-workspace-budgets-fy2026.sql     # Article 4.2 — add budgets for Fire, Public Works, Finance
 04-it-service-contracts.sql         # Article 4.3 — add contract data to top-3 IT services
 05-deployment-profile-ops-fields.sql  # Article 1.4 OPTIONAL — on-prem DP enrichment
+06-cost-bundle-dps-showcase.sql     # Article 4.3 — seed cost_bundle DPs for CAD/Hexagon/NG911
 99-verify-state-after.sql           # read-only SELECTs — confirms every chunk landed
 ```
 
@@ -146,17 +147,43 @@ Use the readiness report (§2.1, §2.4, §4.2, §4.3, §1.4) as the canonical so
 - Use `INSERT ... WHERE NOT EXISTS (SELECT 1 FROM workspace_budgets WHERE workspace_id = X AND fiscal_year = 2026)` to keep it idempotent.
 - Confirm column list in the schema file before writing — do not use `workspaces.budget_amount` (that column is legacy per CLAUDE.md).
 
-**04-it-service-contracts.sql (Article 4.3 — Cost Analysis)**
+**04-it-service-contracts.sql (Article 4.3 — Cost Analysis, IT-service contract side)**
 - Current state: 11 IT services in Riverside, total annual_cost $2,976,000. Zero have contract data.
 - Pick the **top 3 IT services by `annual_cost`** (SELECT ORDER BY annual_cost DESC LIMIT 3, scoped to the Riverside namespace via `it_services.namespace_id`).
 - For each, `UPDATE` to set:
   - `contract_reference` — a realistic fictional contract number (e.g. `CR-2024-0412`, `CR-2025-0183`, `CR-2023-0904`)
   - `contract_start_date` — a date 1-3 years before today
-  - `contract_end_date` — a date 6-24 months in the future from today (gives the contract-expiry widget a mix of near-expiry and safe-horizon rows)
+  - `contract_end_date` — a date 6-24 months in the future from today (gives the `vw_it_service_contract_expiry` view a mix of near-expiry and safe-horizon rows)
 - `UPDATE ... WHERE contract_reference IS NULL` for idempotency.
 - Do NOT touch `annual_cost` or `budget_amount` — those already match the overview KPI.
-- **Do NOT create or reference `cost_bundles`** — per the readiness report, that table does not exist in the schema. If you feel tempted to touch it, STOP and flag it.
-- **Do NOT populate `annual_cost` on software products** — the readiness report flagged this as optional and the cost model rule says cost lives on cost channels (SoftwareProduct is one, but for now keep cost on IT services only).
+- **Do NOT populate `annual_cost` on software products** — per `docs-architecture/features/cost-budget/cost-model.md` §3.1, Software Products are now inventory-only; cost lives on IT Service allocations and Cost Bundle DPs (the two channels per v3.0 of the cost model).
+
+**06-cost-bundle-dps-showcase.sql (Article 4.3 — Cost Analysis, Cost Bundle channel side)**
+
+> **IMPORTANT CONTEXT:** A Cost Bundle is **not a separate table** — it is a deployment profile with `dp_type = 'cost_bundle'`. Read `docs-architecture/features/cost-budget/cost-model.md` §3.3 and §12 (ERD) before writing this chunk. The schema supports cost bundles via these columns on `deployment_profiles`: `dp_type` (set to `'cost_bundle'`), `annual_cost`, `cost_recurrence` (`'recurring'` or `'one_time'`), `vendor_org_id`, `contract_reference`, `contract_start_date`, `contract_end_date`, `renewal_notice_days`. Views `vw_portfolio_costs` and `vw_portfolio_costs_rollup` already aggregate `WHERE dp_type = 'cost_bundle' AND cost_recurrence = 'recurring'` into a `bundle_cost` column. The Riverside demo has **zero** cost_bundle DPs today, which is why the CAD app's "Recurring Costs" section shows $0 in the UI. Your job is to seed 2-3 of them so Article 4.3 has real Recurring Costs + renewal-alert content to screenshot.
+
+- **Target applications (showcase):** `Computer-Aided Dispatch`, `Hexagon OnCall CAD/RMS`, `NG911 System` — all in the Police Department workspace. Discover their `application_id` values via SELECT.
+- **Insert 2-3 rows into `deployment_profiles`**, one per showcase bundle. Each row must have:
+  - `application_id` = showcase app's UUID (so it appears under that app's Recurring Costs)
+  - `workspace_id` = Police Department workspace UUID
+  - `name` = realistic bundle name (e.g. `"Accela Annual Support Contract"`, `"Hexagon Managed Services Agreement"`, `"Axon Evidence Cloud Hosting"`)
+  - `dp_type = 'cost_bundle'` (REQUIRED — this is what makes it a cost bundle)
+  - `cost_recurrence = 'recurring'` (so it feeds the run rate — see `cost-model.md` §3.3 and the view predicates)
+  - `annual_cost` = a realistic amount (e.g. `$24,000`, `$48,000`, `$18,000`) with type `numeric(12,2)`
+  - `vendor_org_id` = a real vendor org in the Riverside namespace (SELECT from `organizations` WHERE namespace_id = riverside and name matches the vendor — e.g. Accela, Hexagon, Axon). If the vendor org does not exist in Riverside, either (a) create it via `INSERT INTO organizations` with sensible defaults, or (b) leave `vendor_org_id NULL` and flag it with a `-- NOTE:` comment.
+  - `contract_reference` = realistic fictional PO / agreement number
+  - `contract_start_date` = 1-3 years ago
+  - `contract_end_date` = 3-15 months in the future (mix of near-expiry and safe horizons)
+  - `renewal_notice_days` = 90 (default)
+  - `hosting_type` should be blank/unset for cost bundles — cost_bundle DPs aren't "running" so hosting/environment/DR fields don't apply. Leave NULL.
+  - `is_primary = false` (the primary DP is the application DP, not the bundle)
+  - Any other required NOT NULL columns discovered from the schema file — fill with sensible defaults
+- **Idempotency:** `INSERT ... WHERE NOT EXISTS (SELECT 1 FROM deployment_profiles WHERE application_id = X AND name = Y AND dp_type = 'cost_bundle')`. Re-running the chunk must not create duplicates.
+- **Verification SELECT (before COMMIT):** query the showcase apps' Recurring Cost total by summing `annual_cost` where `dp_type = 'cost_bundle' AND cost_recurrence = 'recurring' AND application_id IN (...)`. Should return the sum of the bundles you just inserted.
+- **Verification SELECT (nice-to-have):** also select from `vw_portfolio_costs` for the showcase apps and confirm the `bundle_cost` column now shows non-zero values.
+- **Rollback comment:** a `DELETE FROM deployment_profiles WHERE dp_type = 'cost_bundle' AND application_id IN (...) AND name IN (...)` statement that Stuart can use to remove only the rows this chunk inserted.
+- **Safety:** stay inside `application_id IN (<the three showcase apps>)`. Do not touch any other application's deployment profiles.
+- **Do NOT** modify the application DP or any existing non-bundle DPs. This chunk is additive only.
 
 **05-deployment-profile-ops-fields.sql (Article 1.4 — OPTIONAL)**
 - Pick one on-prem DP: recommended `Computer-Aided Dispatch - PROD - CHDC` (On-Prem, PROD).
@@ -174,7 +201,7 @@ Use the readiness report (§2.1, §2.4, §4.2, §4.3, §1.4) as the canonical so
 
 When you are done, produce:
 
-1. **7 `.sql` files** in `docs-architecture/planning/phase-0-assets/enrichment-sql/` (six enrichment chunks + before/after verifiers).
+1. **8 `.sql` files** in `docs-architecture/planning/phase-0-assets/enrichment-sql/` (seven enrichment chunks + before/after verifiers).
 2. **A `README.md` in that same directory** (≤ 80 lines) that:
    - Lists the chunks in execution order
    - Notes which chunks are mandatory vs optional
@@ -188,6 +215,7 @@ When you are done, produce:
    - The workspaces you budgeted in chunk 03
    - The IT services you contracted in chunk 04
    - Whether you wrote chunk 05 (optional) or skipped it
+   - The cost_bundle DPs you seeded in chunk 06 (name / vendor / amount / contract_end_date per bundle)
 
 ### Step 6 — Commit
 
@@ -205,7 +233,7 @@ cd ~/Dev/getinsync-nextgen-ag
 
 - [ ] All required-reading files in Step 1 have been read
 - [ ] Read-only DB introspection confirmed namespace ID, showcase app, DP IDs, integration IDs, IT service IDs, workspace IDs, reference-table codes
-- [ ] `enrichment-sql/` directory exists with 7 `.sql` files + `README.md`
+- [ ] `enrichment-sql/` directory exists with 8 `.sql` files + `README.md` (00, 01, 02, 03, 04, 05, 06, 99)
 - [ ] Every mutation file has `BEGIN;` / `COMMIT;` and a verification SELECT
 - [ ] Every mutation file has a `-- Rollback:` comment at the bottom
 - [ ] No schema changes present (`grep -i "CREATE\|ALTER\|DROP\|TRUNCATE" *.sql` returns only matches inside comments)
@@ -221,7 +249,7 @@ cd ~/Dev/getinsync-nextgen-ag
 - Do NOT modify any file outside `docs-architecture/planning/phase-0-assets/enrichment-sql/`.
 - Do NOT write to `guides/` — that directory syncs live to docs.getinsync.ca.
 - Do NOT invent reference-table codes. If a code does not exist, flag and stop.
-- Do NOT touch `cost_bundles` — the table does not exist.
+- Do NOT look for a table literally named `cost_bundles` — it doesn't exist because Cost Bundle is implemented as `deployment_profiles.dp_type = 'cost_bundle'`. See `cost-model.md` §3.3 and chunk 06 above. If you find yourself wanting to `CREATE TABLE cost_bundles` or `INSERT INTO cost_bundles`, you have misread the model.
 - Do NOT touch `workspaces.budget_amount` — it is legacy.
 - Do NOT start Phase 1 (Tier 1 article writing). That is a separate session and explicitly out of scope here.
 - Do NOT modify the code repo (`~/Dev/getinsync-nextgen-ag` outside `docs-architecture/`). This session is architecture-repo-only.
