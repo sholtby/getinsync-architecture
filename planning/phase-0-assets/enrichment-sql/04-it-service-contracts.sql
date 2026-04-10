@@ -56,30 +56,47 @@ WHERE id           = 'b4000008-0000-0000-0000-000000000008'
   AND namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
   AND contract_reference IS NULL;
 
--- Verification: show every Riverside IT service with its contract state.
-SELECT
-  name,
-  annual_cost,
-  contract_reference,
-  contract_start_date,
-  contract_end_date,
-  CASE
-    WHEN contract_end_date IS NULL THEN 'no_contract'
-    WHEN contract_end_date <  CURRENT_DATE THEN 'expired'
-    WHEN contract_end_date <= CURRENT_DATE + (renewal_notice_days * INTERVAL '1 day')
-         THEN 'renewal_window'
-    ELSE 'safe'
-  END AS renewal_state
-FROM it_services
-WHERE namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-ORDER BY annual_cost DESC;
-
-SELECT
-  count(*) FILTER (WHERE contract_reference IS NOT NULL) AS services_with_contract_after,
-  count(*)                                               AS total_services,
-  sum(annual_cost)                                       AS unchanged_total_annual_cost
-FROM it_services
-WHERE namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+-- Verification: consolidated into ONE SELECT (Supabase SQL Editor shows
+-- only the last result set of a multi-statement query).
+WITH riverside_its AS (
+  SELECT
+    name,
+    annual_cost,
+    contract_reference,
+    contract_start_date,
+    contract_end_date,
+    CASE
+      WHEN contract_end_date IS NULL THEN 'no_contract'
+      WHEN contract_end_date <  CURRENT_DATE THEN 'expired'
+      WHEN contract_end_date <= CURRENT_DATE + (renewal_notice_days * INTERVAL '1 day')
+           THEN 'renewal_window'
+      ELSE 'safe'
+    END AS renewal_state
+  FROM it_services
+  WHERE namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+)
+SELECT ord, section, details FROM (
+  SELECT 1 AS ord, '04a counts' AS section,
+         jsonb_build_object(
+           'services_with_contract', count(*) FILTER (WHERE contract_reference IS NOT NULL),
+           'total_services',         count(*),
+           'unchanged_annual_cost',  sum(annual_cost)
+         ) AS details
+  FROM riverside_its
+  UNION ALL
+  SELECT
+    2 + row_number() OVER (ORDER BY annual_cost DESC),
+    '04b ' || name,
+    jsonb_build_object(
+      'annual_cost',         annual_cost,
+      'contract_reference',  contract_reference,
+      'contract_start_date', contract_start_date,
+      'contract_end_date',   contract_end_date,
+      'renewal_state',       renewal_state
+    )
+  FROM riverside_its
+) x
+ORDER BY ord, section;
 
 COMMIT;
 

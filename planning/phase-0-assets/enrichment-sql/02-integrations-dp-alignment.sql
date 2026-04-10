@@ -58,34 +58,49 @@ WHERE id = 'c1000007-0000-0000-0000-000000000007'
   AND source_deployment_profile_id IS NULL
   AND target_deployment_profile_id IS NULL;
 
--- Verification: show all Riverside integrations and which are DP-aligned.
-SELECT
-  ai.id,
-  ai.name,
-  sa.name AS source_app,
-  ta.name AS target_app,
-  (ai.source_deployment_profile_id IS NOT NULL
-   AND ai.target_deployment_profile_id IS NOT NULL) AS dp_aligned,
-  ai.integration_type,
-  ai.direction,
-  ai.status
-FROM application_integrations ai
-LEFT JOIN applications sa ON sa.id = ai.source_application_id
-LEFT JOIN applications ta ON ta.id = ai.target_application_id
-WHERE sa.workspace_id IN (
-  SELECT id FROM workspaces WHERE namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+-- Verification: consolidated into ONE SELECT so every row renders in
+-- the Supabase SQL Editor (the Editor only displays the LAST result set
+-- from a multi-statement query — see CLAUDE.md Database Access rule).
+WITH riverside_ai AS (
+  SELECT ai.id,
+         ai.name                                   AS integration_name,
+         sa.name                                   AS source_app,
+         ta.name                                   AS target_app,
+         (ai.source_deployment_profile_id IS NOT NULL
+          AND ai.target_deployment_profile_id IS NOT NULL) AS dp_aligned,
+         ai.integration_type,
+         ai.direction,
+         ai.status
+  FROM application_integrations ai
+  LEFT JOIN applications sa ON sa.id = ai.source_application_id
+  LEFT JOIN applications ta ON ta.id = ai.target_application_id
+  WHERE sa.workspace_id IN (
+    SELECT id FROM workspaces WHERE namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+  )
 )
-ORDER BY dp_aligned DESC, sa.name, ta.name;
-
-SELECT
-  count(*)                                                                 AS total,
-  count(*) FILTER (WHERE source_deployment_profile_id IS NOT NULL
-                    AND target_deployment_profile_id IS NOT NULL)          AS aligned_after
-FROM application_integrations ai
-JOIN applications sa ON sa.id = ai.source_application_id
-WHERE sa.workspace_id IN (
-  SELECT id FROM workspaces WHERE namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-);
+SELECT ord, section, details FROM (
+  SELECT 1 AS ord,
+         '02a counts' AS section,
+         jsonb_build_object(
+           'total',        count(*),
+           'both_dps_set', count(*) FILTER (WHERE dp_aligned),
+           'unnamed',      count(*) FILTER (WHERE integration_name IS NULL OR integration_name = '')
+         ) AS details
+  FROM riverside_ai
+  UNION ALL
+  SELECT 2,
+         '02b ' || COALESCE(integration_name, '(unnamed)'),
+         jsonb_build_object(
+           'source',     source_app,
+           'target',     target_app,
+           'dp_aligned', dp_aligned,
+           'type',       integration_type,
+           'direction',  direction,
+           'status',     status
+         )
+  FROM riverside_ai
+) x
+ORDER BY ord, section;
 
 COMMIT;
 

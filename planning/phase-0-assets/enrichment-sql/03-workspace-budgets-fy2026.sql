@@ -53,19 +53,34 @@ WHERE NOT EXISTS (
     AND fiscal_year  = 2026
 );
 
--- Verification: all FY2026 budgets in Riverside after this chunk.
-SELECT w.name, wb.fiscal_year, wb.budget_amount, wb.is_current, wb.budget_notes
-FROM workspace_budgets wb
-JOIN workspaces w ON w.id = wb.workspace_id
-WHERE w.namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-  AND wb.fiscal_year = 2026
-ORDER BY w.name;
-
-SELECT count(*) AS fy2026_budgets_in_riverside_after
-FROM workspace_budgets wb
-JOIN workspaces w ON w.id = wb.workspace_id
-WHERE w.namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-  AND wb.fiscal_year = 2026;
+-- Verification: consolidated into ONE SELECT (Supabase SQL Editor shows
+-- only the last result set of a multi-statement query).
+WITH riverside_fy2026 AS (
+  SELECT w.name AS workspace_name, wb.fiscal_year, wb.budget_amount,
+         wb.is_current, wb.budget_notes
+  FROM workspace_budgets wb
+  JOIN workspaces w ON w.id = wb.workspace_id
+  WHERE w.namespace_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+    AND wb.fiscal_year = 2026
+)
+SELECT ord, section, details FROM (
+  SELECT 1 AS ord, '03a counts' AS section,
+         jsonb_build_object(
+           'fy2026_budgets_in_riverside', count(*),
+           'total_budgeted_amount',       sum(budget_amount)
+         ) AS details
+  FROM riverside_fy2026
+  UNION ALL
+  SELECT 2, '03b ' || workspace_name,
+         jsonb_build_object(
+           'fiscal_year', fiscal_year,
+           'budget',      budget_amount,
+           'is_current',  is_current,
+           'notes',       budget_notes
+         )
+  FROM riverside_fy2026
+) x
+ORDER BY ord, section;
 
 COMMIT;
 

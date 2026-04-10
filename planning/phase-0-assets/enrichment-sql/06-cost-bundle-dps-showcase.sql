@@ -134,62 +134,69 @@ WHERE NOT EXISTS (
     AND name           = 'Hexagon OnCall Managed Services Agreement'
 );
 
--- Verification #1: show the 2 new cost bundles and any pre-existing ones on
--- the three showcase apps.
-SELECT
-  a.name          AS app_name,
-  dp.name         AS bundle_name,
-  dp.dp_type,
-  dp.cost_recurrence,
-  dp.annual_cost,
-  o.name          AS vendor,
-  dp.contract_reference,
-  dp.contract_end_date
-FROM deployment_profiles dp
-JOIN applications a ON a.id = dp.application_id
-LEFT JOIN organizations o ON o.id = dp.vendor_org_id
-WHERE dp.dp_type = 'cost_bundle'
-  AND a.id IN (
-    'b1000006-0000-0000-0000-000000000006',  -- CAD
-    'b1000001-0000-0000-0000-000000000001',  -- Hexagon OnCall CAD/RMS
-    'b1000007-0000-0000-0000-000000000007'   -- NG911 System
-  )
-ORDER BY a.name, dp.name;
-
--- Verification #2: per-app recurring bundle total (what the Recurring Costs
--- section on the app detail page should now show).
-SELECT
-  a.name                                                                              AS app_name,
-  COALESCE(sum(dp.annual_cost) FILTER (WHERE dp.cost_recurrence = 'recurring'), 0)    AS recurring_bundle_total
-FROM applications a
-LEFT JOIN deployment_profiles dp
-       ON dp.application_id = a.id
-      AND dp.dp_type        = 'cost_bundle'
-WHERE a.id IN (
-  'b1000006-0000-0000-0000-000000000006',
-  'b1000001-0000-0000-0000-000000000001',
-  'b1000007-0000-0000-0000-000000000007'
+-- Verification: consolidated into ONE SELECT (Supabase SQL Editor shows
+-- only the last result set of a multi-statement query). Combines the
+-- cost-bundle listing, per-app recurring total, and the view rollup.
+WITH showcase_apps(app_id) AS (
+  VALUES
+    ('b1000006-0000-0000-0000-000000000006'::uuid),  -- CAD
+    ('b1000001-0000-0000-0000-000000000001'::uuid),  -- Hexagon OnCall CAD/RMS
+    ('b1000007-0000-0000-0000-000000000007'::uuid)   -- NG911 System
+),
+bundles AS (
+  SELECT a.name AS app_name, dp.name AS bundle_name, dp.cost_recurrence,
+         dp.annual_cost, o.name AS vendor, dp.contract_reference,
+         dp.contract_end_date
+  FROM deployment_profiles dp
+  JOIN applications a ON a.id = dp.application_id
+  LEFT JOIN organizations o ON o.id = dp.vendor_org_id
+  WHERE dp.dp_type = 'cost_bundle'
+    AND a.id IN (SELECT app_id FROM showcase_apps)
+),
+per_app AS (
+  SELECT a.name AS app_name,
+         count(dp.id)                                                                        AS cost_bundle_count,
+         COALESCE(sum(dp.annual_cost) FILTER (WHERE dp.cost_recurrence = 'recurring'), 0)    AS recurring_bundle_total
+  FROM applications a
+  LEFT JOIN deployment_profiles dp
+         ON dp.application_id = a.id AND dp.dp_type = 'cost_bundle'
+  WHERE a.id IN (SELECT app_id FROM showcase_apps)
+  GROUP BY a.name
+),
+view_rollup AS (
+  SELECT application_name, deployment_profile_name,
+         software_cost, service_cost, bundle_cost, total_cost
+  FROM vw_deployment_profile_costs
+  WHERE application_id IN (SELECT app_id FROM showcase_apps)
 )
-GROUP BY a.name
-ORDER BY a.name;
-
--- Verification #3: bundle_cost rollup from the DP cost view (read-only).
--- Note: bundle_cost on the application's primary DP includes the sum of
--- child cost_bundle DPs linked to the same application_id.
-SELECT
-  application_name,
-  deployment_profile_name,
-  software_cost,
-  service_cost,
-  bundle_cost,
-  total_cost
-FROM vw_deployment_profile_costs
-WHERE application_id IN (
-  'b1000006-0000-0000-0000-000000000006',
-  'b1000001-0000-0000-0000-000000000001',
-  'b1000007-0000-0000-0000-000000000007'
-)
-ORDER BY application_name, deployment_profile_name;
+SELECT ord, section, details FROM (
+  SELECT 1 AS ord, '06a ' || app_name || ' — ' || bundle_name AS section,
+         jsonb_build_object(
+           'cost_recurrence', cost_recurrence,
+           'annual_cost',     annual_cost,
+           'vendor',          vendor,
+           'contract_ref',    contract_reference,
+           'contract_end',    contract_end_date
+         ) AS details
+  FROM bundles
+  UNION ALL
+  SELECT 2, '06b ' || app_name,
+         jsonb_build_object(
+           'cost_bundle_count',      cost_bundle_count,
+           'recurring_bundle_total', recurring_bundle_total
+         )
+  FROM per_app
+  UNION ALL
+  SELECT 3, '06c ' || application_name || ' / ' || deployment_profile_name,
+         jsonb_build_object(
+           'software_cost', software_cost,
+           'service_cost',  service_cost,
+           'bundle_cost',   bundle_cost,
+           'total_cost',    total_cost
+         )
+  FROM view_rollup
+) x
+ORDER BY ord, section;
 
 COMMIT;
 
