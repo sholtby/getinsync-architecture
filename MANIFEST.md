@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-09 (v2.07)
+Last updated: 2026-04-10 (v2.08)
 
 ---
 
@@ -263,6 +263,8 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | planning/csdm-chain-phase-plan.md | v1.0 | 🟡 | **CSDM Chain Phase Plan.** 4-chunk plan: data validation, auto-wiring with cost awareness + SaaS guard, Visual Level 4 drill-down, lifecycle derivation. Chunk 1-2 complete, Chunks 3-4 pending. Supersedes csdm-auto-wiring-session-guide.md. |
 | planning/cor-demo-data-session-guide.md | v1.0 | 🟢 | **COR Demo Data Reset Session Guide.** 5-chunk guide for Phase 1 DELETE + Phase 2 INSERT of COR namespace demo data. Includes browser verification tests. |
 | planning/gitbook-documentation-audit.md | v1.0 | ☪ | **GitBook Documentation Audit & Gap Closure Plan.** 18 articles across 5 EA Journey tiers. 8 new, 6 refresh, 3 review, 1 publish. CSDM alignment doc, IT Spend, Explorer, Overview, Settings, Import, Cost Analysis, Global Search. Includes SUMMARY.md target state and session-end checklist enhancement plan. |
+| planning/gitbook-phase-0-readiness.md | v1.0 | ☪ | **GitBook Rollout Phase 0 Readiness Report.** Walks City of Riverside demo data against 8 candidate articles; 4 READY, 4 NEEDS ENRICHMENT. Per-article data gap analysis with recommended showcase apps/DPs and enrichment task lists. Corrected cost_bundle finding (DP type, not a separate table). |
+| planning/phase-0-assets/enrichment-sql/ | v1.0 | ☪ | **Riverside demo data enrichment SQL (9 files).** Idempotent, namespace-scoped SQL chunks that seeded the Phase 0 demo gaps for articles 2.1, 2.4, 4.2, 4.3 (plus optional 1.4). BEGIN/COMMIT with consolidated verification SELECTs, `-- Rollback:` comments, Supabase-SQL-Editor safe. Garland-lessons-informed. Executed 2026-04-10. |
 | marketing/explainer.md | v1.7.1 | ☪ | **Product explainer — merged v1.5 base + v1.7 additions. Tenancy, identity, licensing, cost, CSDM, technology health, risk boundary, data governance, buyer personas** |
 | marketing/positioning-statements.md | v1.0 | ☪ | Positioning statements |
 | marketing/product-roadmap-2026.md | v1.0 | ☪ | 2026 product roadmap |
@@ -823,9 +825,9 @@ The following documents were removed during the architecture audit. They describ
 | 🟢 AS-BUILT | 61 |
 | 🟡 AS-DESIGNED | 29 |
 | 🟠 NEEDS UPDATE | 1 |
-| ☪ REFERENCE | 21 |
+| ☪ REFERENCE | 23 |
 | ⏸ PARKED | 3 |
-| **Total tracked** | **115** |
+| **Total tracked** | **117** |
 
 ---
 
@@ -864,6 +866,7 @@ The following documents were removed during the architecture audit. They describ
 | Version | Date | Changes |
 |---------|------|---------|
 | v2.05 | 2026-04-09 | **CSV Import v2 DEPLOYED.** `features/csv-import/architecture.md` v1.0→v2.0 🟡→🟢. Complete rewrite of ImportApplications.tsx: 5-step wizard with preview table (green/yellow/red validation), import batch tracking (`import_batches` table + `applications.import_batch_id`), undo with modification detection, `external_id` column, DP fields (hosting/cloud/env) with retry loop, assessment scores (T-scores→DP, B-scores→portfolio_assignments), namespace admin + platform admin gate, 500-row cap, template download, import history table. Schema: `import_batches` table + `applications.import_batch_id` FK + `applications.external_id`. Sidebar gate fixed (was workspace admin, now namespace admin). Empty state "Import from CSV" button on ApplicationsPool. AS-BUILT 85→86. AS-DESIGNED 30→29. |
+| v2.08 | 2026-04-10 | **GitBook Phase 0 demo data enrichment — EXECUTED.** NEW: `planning/gitbook-phase-0-readiness.md` v1.0 ☪ — readiness walk against City of Riverside, 4 READY / 4 NEEDS ENRICHMENT. NEW: `planning/phase-0-assets/enrichment-sql/` (9 SQL files + README) — idempotent, namespace-scoped, Supabase-SQL-Editor-safe enrichment chunks closing article 2.1/2.4/4.2/4.3 demo gaps (plus optional 1.4). Executed 2026-04-10: 3 CAD contacts seeded, 3 integrations DP-aligned + ServiceNow CMDB Sync named, 3 new FY2026 workspace budgets (Fire/PW/Finance = +$3.65M), top-3 IT services contracted + Azure pulled into renewal window, CAD PROD DP data_center+server_name populated, 2 new cost_bundle DPs (CentralSquare $85K + Hexagon $110K). Security posture + data quality validators pass. CLAUDE.md companion rule: "Supabase SQL Editor — Multi-statement output semantics" (commit 9bccf67 on code repo, merged to dev). Document count 115→117 (readiness report + enrichment-sql bundle, both REFERENCE). |
 | v2.07 | 2026-04-09 | **Platform admin RLS bypass fix.** Fixed teams/apm_chat_usage/apm_embeddings RLS policies — platform admins got 403 on INSERT when accessing namespaces without explicit namespace_users entry. Updated `operations/session-end-checklist.md` v1.20→v1.21: added §2.4 Platform Admin Bypass Validation. Updated `testing/security-posture-validation.sql` v1.4→v1.5: added CHECK 6 (automated detection of write policies missing platform admin bypass). |
 | v2.06 | 2026-04-09 | **Garland 21-app showcase import EXECUTED.** NEW: `operations/imports/import-lessons-learned.md` v1.0 ☪ — 13 schema/trigger gotchas, check constraint reference, recommended import order for bulk import. NEW: `operations/imports/sql/` — 19 SQL scripts executed and validated. Updated `garland-showcase-demo-plan.md` status 🟡→🟢 (EXECUTED). Document count 121→123. |
 | v2.05 | 2026-04-09 | CSV Import v2 architecture decomposition. Updated `features/csv-import/architecture.md` v1.0→v2.0. Decomposed monolith ImportApplications.tsx (1117 lines) into 14 feature-folder files. |
