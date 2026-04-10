@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** April 9, 2026
+**As of:** April 10, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -76,6 +76,8 @@
 | 80 | Bug | ESLint config error — BudgetNamespaceOverview.tsx:21 | Malformed eslint-disable comment includes rule description text. ESLint parses it as a rule name → 1 error. ~1 min fix. | -- | Stuart + Claude Code |
 | 81 | RBAC | "New Application" button visible to viewers and restricted users | DashboardAppTable.tsx and ApplicationsPool.tsx show "New Application" in empty state without role-gating. Viewers and restricted users see the button but inserts would fail at RLS. Gate behind `canCreateApp` from `usePermissions()`. ~15 min. | -- | Stuart + Claude Code |
 | 74 | Feature | Lifecycle Diagram — dual lifecycle view (app + technology) | Two distinct lifecycles per application: (1) Business Application lifecycle (vendor support status for the software product version), (2) Technology lifecycle (worst-case EOL/EOS from underlying technology stack via `deployment_profile_technology_products` → `technology_lifecycle_reference`). Should be a table/timeline view similar to GetInSync OG's Lifecycle Diagram tab — shows dependencies with Gantt-style bars, highlights EOS items in red. Current `applications.lifecycle_status` is manually set and misleading — remove from Visual tab tooltip until derived version is built. Requires: schema for derived lifecycle computation, UI for timeline view, auto-derivation logic from technology EOL dates. ~3-5 days. | -- | Stuart + Claude Code |
+| 86 | Data Quality | Legacy title-case `deployment_profiles.paid_action` | 11 DP rows still hold `'Plan'`, `'Address'`, `'Ignore'` (title case). CLAUDE.md constraint allows both forms but `testing/data-quality-validation.sql` §casing:paid_action FAILs. Pre-existing — predates 2026-04-10. ~15 min `UPDATE deployment_profiles SET paid_action = lower(paid_action) WHERE paid_action IN ('Plan','Address','Ignore','Delay')`. Flagged during Phase 0 session-end checklist. | -- | Stuart |
+| 87 | Data Quality | Legacy title-case `portfolio_assignments.business_assessment_status` | 33 portfolio_assignment rows still hold `'Not Started'` (title case with space). Check constraint allows both forms. `testing/data-quality-validation.sql` §assessment:business_assessment_status FAILs. Pre-existing — predates 2026-04-10. ~15 min `UPDATE portfolio_assignments SET business_assessment_status = 'not_started' WHERE business_assessment_status = 'Not Started'`. Flagged during Phase 0 session-end checklist. | -- | Stuart |
 
 ---
 
@@ -98,6 +100,12 @@ These features have complete architecture documents but no code implementation. 
 | **ITSM Integration (Phase 37)** | features/integrations/itsm-api-research.md | 15-20 days | FUTURE | ServiceNow + HaloITSM publish/subscribe. Q3+. |
 
 ---
+
+## Completed Apr 10
+
+| Item | Resolution |
+|------|------------|
+| GitBook Phase 0 — Riverside demo data enrichment | ✅ EXECUTED. All 4 NEEDS-ENRICHMENT articles (2.1, 2.4, 4.2, 4.3) unblocked + optional 1.4 covered. 9 idempotent SQL chunks in `planning/phase-0-assets/enrichment-sql/` (BEGIN/COMMIT, consolidated verification SELECTs, Supabase-SQL-Editor safe, rollback comments, Garland-lessons-informed). Landed in Riverside: 3 CAD contacts (Pat Alvarez / K. Patel / Jordan Chen), 3 DP-aligned integrations + ServiceNow CMDB Sync named, 3 new FY2026 workspace budgets (Fire/PW/Finance = +$3.65M), top-3 IT services contracted + Azure pulled into renewal window (2026-06-30), CAD PROD DP data_center+server_name populated, 2 new cost_bundle DPs (CentralSquare CAD Support $85K + Hexagon OnCall Managed Services $110K). CLAUDE.md: new "Supabase SQL Editor — Multi-statement output semantics" rule added after discovering the Editor only shows the last result set. Manifest v2.07→v2.08. |
 
 ## Completed Apr 5
 
@@ -187,9 +195,9 @@ These features have complete architecture documents but no code implementation. 
 |----------|-------|-------|
 | **HIGH** | 3 | 3 SOC2 policies (OVERDUE) — Delta-assigned |
 | **MEDIUM** | 22 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC assessment split, scope indicator, servers on visual/dashboard, namespace UI, budget alerts, assessment tour, VwIntegrationDetail DP columns |
-| **LOW** | 13 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail |
+| **LOW** | 15 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail, **+2 data-quality legacy casing items (#86, #87) flagged Apr 10** |
 | **Feature Roadmap** | 11 | Edge Functions (T1), AI Chat (T1), Gamification (T2), Scoring Patterns (T2), Realtime (T2), Business Capability (T2), App Relationships (T2), Standards Ph2 (T2), Cloud Discovery (Future), Unified Chat (Future), ITSM (Future) |
-| **Total Open** | 38 | #67 closed Mar 20, #68 added. 12 items completed Mar 8–12. Feature Roadmap section added. |
+| **Total Open** | 40 | Apr 10: +2 data quality items (#86, #87). GitBook Phase 0 enrichment closed. |
 
 ### SOC2 Policy Scorecard
 
