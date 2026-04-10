@@ -277,7 +277,7 @@ git branch -r --merged dev | grep -v 'main\|dev\|HEAD'
 - Do NOT show duplicate count displays (e.g. filter count at top AND pagination count at bottom)
 - Do NOT ship feature changes without updating the corresponding architecture doc
 - Do NOT refactor existing code to match Bulletproof React patterns unless Stuart asks
-- Do NOT put non-publishable files in `guides/` — that directory syncs live to docs.getinsync.ca (see GitBook section)
+- Do NOT put non-publishable files in `guides/` — that directory syncs live to docs.getinsync.ca. Screenshots referenced by published user-help articles are allowed under `guides/user-help/images/` (see GitBook section)
 
 ---
 
@@ -347,6 +347,7 @@ Only markdown files intended for public docs.getinsync.ca belong in `guides/`. C
 |------|--------------|
 | `guides/whats-new.md` | `docs.getinsync.ca/whats-new` |
 | `guides/user-help/getting-started.md` | `docs.getinsync.ca/user-help/getting-started` |
+| `guides/user-help/navigating-getinsync.md` | `docs.getinsync.ca/user-help/navigating-getinsync` |
 | `guides/user-help/assessment-guide.md` | `docs.getinsync.ca/user-help/assessment-guide` |
 | `guides/user-help/time-framework.md` | `docs.getinsync.ca/user-help/time-framework` |
 | `guides/user-help/paid-framework.md` | `docs.getinsync.ca/user-help/paid-framework` |
@@ -355,11 +356,22 @@ Only markdown files intended for public docs.getinsync.ca belong in `guides/`. C
 | `guides/user-help/roadmap-initiatives.md` | `docs.getinsync.ca/user-help/roadmap-initiatives` |
 | `guides/user-help/integrations.md` | `docs.getinsync.ca/user-help/integrations` |
 
+### Screenshots and images
+
+Screenshots that illustrate user-help articles are allowed under **`guides/user-help/images/`** only. Rules:
+
+- Each image MUST be referenced by at least one published article via a relative markdown link (e.g. `![description](images/filename.png)`). Orphaned images will be pruned.
+- Use lowercase-kebab filenames that describe the content (e.g. `overview-kpi-cards.png`, `nextgen-nav.png`).
+- Capture at retina 2x scale where possible; compress to PNG. Keep files under ~500 KB unless a legible diagram requires more.
+- Do NOT create other image subdirectories under `guides/` (no diagrams/ or assets/) — keep everything under `guides/user-help/images/`.
+- Do NOT commit work-in-progress screenshots here; park them in `planning/phase-0-assets/` or similar until the referencing article is ready.
+
 ### What does NOT belong in `guides/`
 
-- `.docx` files, `.zip` files, or any non-markdown assets — move to `marketing/`
+- `.docx` files, `.zip` files, or any binary assets other than screenshots under `guides/user-help/images/` — move to `marketing/`
 - Internal architecture docs — those stay in their existing directories (`core/`, `features/`, etc.)
 - Draft docs not ready for public — keep in `marketing/` or another directory until ready
+- Orphaned screenshots not referenced by any published article
 
 ### Internal link rules
 
@@ -387,9 +399,9 @@ For links from `user-help/` to `whats-new.md` (one level up): `[What's New](../w
 
 ### Do NOT
 
-- Do NOT put non-publishable files (`.docx`, `.zip`, images, drafts) in `guides/`
+- Do NOT put non-publishable files (`.docx`, `.zip`, drafts, orphaned images) in `guides/`. Screenshots referenced by published articles are allowed in `guides/user-help/images/` per the Screenshots section above.
 - Do NOT use absolute URL paths or bare slugs in markdown links
-- Do NOT create new subdirectories in `guides/` without telling Stuart — new folders create new sections on the live docs site
+- Do NOT create new subdirectories in `guides/` without telling Stuart — new folders create new sections on the live docs site. The only pre-approved subdirectories are `user-help/` and `user-help/images/`.
 
 ---
 
@@ -483,5 +495,5 @@ Track these for future sessions. When Stuart asks to continue refactoring, start
 
 ---
 
-*Last updated: March 19, 2026*
+*Last updated: April 10, 2026 — Added Screenshots section carving out `guides/user-help/images/` exception; added `navigating-getinsync.md` to published URL table.*
 *Update this file when architecture rules change.*
