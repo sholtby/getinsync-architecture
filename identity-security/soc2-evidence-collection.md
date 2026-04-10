@@ -1,7 +1,7 @@
 # identity-security/soc2-evidence-collection
 GetInSync NextGen — SOC2 Evidence Collection Procedure  
-Version: 1.1
-Date: 2026-02-23  
+Version: 1.3
+Date: 2026-04-09  
 Status: 🟢 AS-BUILT  
 SOC2 Controls: CC6.1, CC6.2, CC6.6, CC7.1, C1.1, A1.2
 
@@ -214,16 +214,17 @@ Every evidence JSON file has this structure:
 
 These metrics tell the SOC2 story month over month:
 
-| Metric | Current | Expected Trend |
-|--------|---------|----------------|
-| `total_tables` | 92 | Gradual increase (new features) |
-| `tables_with_rls` | 92 | Must equal total_tables (100%) |
-| `total_rls_policies` | 357 | Increases with tables |
-| `total_users` | 19 | Grows with customers |
+| Metric | Current (EV-002, Apr 9) | Expected Trend |
+|--------|--------------------------|----------------|
+| `total_tables` | 103 | Gradual increase (new features) |
+| `tables_with_rls` | 103 | Must equal total_tables (100%) |
+| `total_rls_policies` | 392 | Increases with tables |
+| `total_users` | 25 | Grows with customers |
 | `platform_admins` | 3 | Stable (changes = investigate) |
-| `total_audit_entries` | 1 | Monotonically increasing |
+| `total_audit_entries` | 8,600 | Monotonically increasing |
+| `audited_tables` | 52 | Increases with new business tables |
 | `namespaces_by_region.ca` | 17 | Grows (all CA until US/EU customer) |
-| `orphaned_*` | 0, 0, 0 | Must remain 0 |
+| `orphaned_*` | 0, 1, 0 | Must remain 0 — 1 orphaned workspace_user under investigation |
 
 ---
 
@@ -237,23 +238,9 @@ These metrics tell the SOC2 story month over month:
 | `search_audit_logs()` | RPC | Filtered audit log queries for review |
 | `audit_log_cleanup()` | RPC | Retention management (365-day minimum enforced) |
 
-### Triggers Attached (50 tables)
+### Triggers Attached (52 tables per EV-002)
 
-**Core Business (15):** applications, deployment_profiles, portfolios, portfolio_assignments, contacts, organizations, it_services, deployment_profile_technology_products, findings, technology_products, software_products, data_centers, it_service_providers, application_categories, application_category_assignments
-
-**Core Entities (4):** namespaces, workspaces, workspace_budgets, workspace_groups
-
-**Integrations (6):** application_integrations, integration_contacts, integration_direction_types, integration_frequency_types, integration_method_types, integration_status_types
-
-**Reference Data (8):** criticality_types, data_classification_types, data_format_types, data_tag_types, operational_statuses, sensitivity_types, technology_lifecycle_reference, vendor_lifecycle_sources
-
-**Programs & Initiatives (6):** programs, initiatives, initiative_dependencies, initiative_deployment_profiles, initiative_it_services, program_initiatives
-
-**Assessment (2):** business_assessments, technical_assessments
-
-**Access Control (7):** workspace_users, namespace_users, user_sessions, platform_admins, invitations, users, ideas
-
-**User Data (2):** custom_field_values, individuals
+Per `cc6_6_audit_logging.audited_tables` from the April 2026 evidence snapshot. See `soc2-evidence/GIS-SOC2-EV-002-2026-04-09.json` for the full list.
 
 ---
 
@@ -276,9 +263,10 @@ These metrics tell the SOC2 story month over month:
 | v1.0 | 2026-02-08 | Initial skill. Audit logging deployed. Baseline snapshot EV-001 collected. Naming convention, collection procedure, variance analysis, and quarterly access review defined. |
 | v1.1 | 2026-02-23 | Updated trigger coverage: 11 → 37 tables. Updated key metrics: 67 → 90 tables, 282 → 347 RLS policies. Updated identity-security.md reference (v1.2 cleaned). |
 | v1.2 | 2026-03-04 | Stats updated: 92 tables (was 90), 357 RLS (was 347), 50 triggers (was 48). Added application_categories + application_category_assignments to Core Business triggers. |
+| v1.3 | 2026-04-09 | EV-002 collected. Stats updated: 103 tables, 392 RLS, 52 audited tables, 25 users, 8,600 audit entries. Created soc2-evidence/ repo directory. Archived EV-001 baseline. Condensed trigger list to reference evidence file. 1 orphaned workspace_user flagged. |
 
 ---
 
 *Document: identity-security/soc2-evidence-collection.md*  
 *SOC2 Controls: CC6.1, CC6.2, CC6.6, CC7.1, C1.1, A1.2*  
-*February 2026*
+*April 2026*

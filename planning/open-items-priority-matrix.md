@@ -42,6 +42,7 @@
 | ~~68~~ | ~~Feature~~ | ~~TypeScript types — update `VwIntegrationDetail` for 4 new DP columns~~ | ✅ **CLOSED Apr 4.** Full 34-column sync deployed. DP selector in Add Connection modal + DP name in connections list. `data_sensitivity` bug fixed. Cost bundle DPs excluded. Integration-DP Phase 3 complete. | -- | Stuart + Claude Code |
 | 70 | Feature | AI Chat: add teams query tool | `teams` table not discoverable by AI Chat. Add `search_teams` tool to `ai-chat/tools.ts` exposing team name, scope, DP assignment counts. Example questions: "what teams support SAP?", "which team manages Finance apps?" ~1 hr. | -- | Stuart + Claude Code |
 | 71 | Feature | Global Search: add teams entity | `teams` table not in `global_search` RPC. Add `team_results` WITH clause searching by team name. Requires SQL script + AppHeader.tsx routing. ~1 hr. | -- | Stuart + Claude Code |
+| 83 | Database | audit_logs.workspace_id FK blocks orphan cleanup | `audit_log_trigger()` tries to INSERT the deleted row's workspace_id into audit_logs, but audit_logs has its own FK to workspaces — DELETE of orphaned workspace_users fails. Discovered during EV-002 cleanup (Apr 9). Fix: make `audit_logs.workspace_id` FK ON DELETE SET NULL, or drop the FK (audit logs should survive entity deletion). ~15 min SQL. | -- | Stuart |
 
 ---
 

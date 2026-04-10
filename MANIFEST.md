@@ -145,7 +145,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | identity-security/security-validation-runbook.md | v1.1 | 🟠 | ~~Security validation~~ — DEPRECATED, superseded by session-end-checklist §2.1 + §6d. Retained for INC-001 history. |
 | operations/database-change-validation.md | v1.1 | 🟢 | Deep database validation (CHECK constraints, roles, FKs, namespaces). Section 1 superseded by session-end-checklist §2.1. |
 | operations/new-table-checklist.md | v1.0 | 🟢 | New table creation checklist (GRANT/RLS/triggers) |
-| identity-security/soc2-evidence-collection.md | v1.2 | 🟢 | SOC2 monthly evidence collection — 50 triggers, 92 tables (updated Mar 4) |
+| identity-security/soc2-evidence-collection.md | v1.3 | 🟢 | SOC2 monthly evidence collection — 52 audited tables, 103 tables, 392 RLS policies (updated Apr 9). EV-002 collected. |
 | identity-security/soc2-evidence-index.md | v1.3 | 🟡 | SOC2 evidence index — stats stale (92→93 tables, 357→361 RLS, 50→51 triggers) |
 | identity-security/secrets-inventory.md | v1.0 | 🟢 | Secrets inventory — 6 Edge Function secrets, rotation procedures, SOC2 CC6.1/CC6.3/CC6.6 |
 | operations/secure-coding-standards.md | v1.0 | 🟢 | **Secure coding standards — OWASP + SOC 2 adapted for React + Supabase. RLS-first model, red flag checklist, 8-item gap roadmap. CC6.1/CC6.3/CC6.7/CC7.1/CC7.2.** |
