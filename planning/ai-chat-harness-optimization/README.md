@@ -11,8 +11,8 @@
 ## Status
 
 - **Batch 0** — Baseline eval COMPLETE (10 queries run on Riverside post-Phase-0). See `00-eval-results-batch-0.md`. Result: **2/10 acceptable**.
-- **Batch 1** — COMPLETE 2026-04-11. All 3 sessions shipped; Edge Function deployed; re-eval run. See `10-eval-results-batch-1.md`. Result: **6/10 acceptable** (3× improvement). 8 improvements, 2 regressions (Q1 rationalization direction, Q4 temporal refusal).
-- **Batch 2** — RECOMMENDED but not yet started. Prompt-only, small (~20 lines added to system-prompt.ts), addresses the 2 Q1/Q4 regressions + Q9 data-classification refusal. Projected 9/10 acceptable. Do NOT merge to `dev` until Batch 2 ships — Q1 is a confident wrong answer on a realistic EA question.
+- **Batch 1** — COMPLETE 2026-04-11. All 3 sessions shipped; Edge Function deployed; re-eval run. See `10-eval-results-batch-1.md`. Result: **6/10 acceptable** (3× improvement from Batch 0). 8 improvements, 2 regressions (Q1 rationalization direction, Q4 temporal refusal).
+- **Batch 2** — COMPLETE 2026-04-11. Prompt-only Session 11 shipped (commit `b17075a`); Edge Function deployed; re-eval run. See `20-eval-results-batch-2.md`. Result: **10/10 acceptable** (perfect score). Both Batch 1 regressions resolved, Q9 shape change resolved, Q10 unexpectedly improved from SHALLOW to GOOD. Zero regressions. **Branch `feat/ai-chat-harness-eval` is now ready to merge to `dev`.**
 
 ---
 
@@ -24,8 +24,10 @@
 | `00-eval-results-batch-0.md` | Frozen-in-time baseline eval: 10 queries, per-query scoring, ranked gap list, fix batching recommendation | Complete (2/10 acceptable) |
 | `01-session-prompt-harness-code.md` | Standalone session prompt — implements code-layer fixes (new tool, iteration limit, fallback, unstub technology-risk) | Shipped (commit `473be25`) |
 | `02-session-prompt-system-prompt.md` | Standalone session prompt — rewrites `system-prompt.ts` to address tool-selection, hallucination, and orchestration gaps | Shipped (commit `25c7a6d`) |
-| `03-session-prompt-re-evaluation.md` | Standalone session prompt — reruns the 10 queries and produces a Batch 1 vs Batch 0 comparison report | Complete (see `10-eval-results-batch-1.md`) |
+| `03-session-prompt-re-evaluation.md` | Standalone session prompt — reruns the 10 queries and produces a comparison report (template, used for both Batch 1 and Batch 2 re-evals) | Reusable template |
 | `10-eval-results-batch-1.md` | Frozen-in-time Batch 1 re-eval: all 10 queries scored against Batch 0, gap-by-gap effectiveness, recommended Batch 2 scope | Complete (6/10 acceptable, 8 improvements, 2 regressions) |
+| `11-session-prompt-batch-2-system-prompt.md` | Standalone session prompt — adds three subheadings to `system-prompt.ts` (rationalization, temporal, classification refusals) | Shipped (commit `b17075a`) |
+| `20-eval-results-batch-2.md` | Frozen-in-time Batch 2 re-eval: all 10 queries scored against Batch 1, effectiveness of the three Batch 2 prompt additions, merge recommendation | Complete (10/10 acceptable, 4 improvements, 0 regressions) |
 
 ## Related files (not in this directory)
 
@@ -100,6 +102,8 @@ The three session prompts in this directory are designed to run **in strict orde
 | 2026-04-10 | 3-session batching for fix implementation | See "Why split into three sessions" above |
 | 2026-04-11 | Batch 1 re-eval complete: 6/10 acceptable (3× improvement from 2/10 baseline) | All 7 Batch 1 gap fixes landed. 8 improvements offset by 2 regressions (Q1 rationalization direction, Q4 temporal refusal). See `10-eval-results-batch-1.md` |
 | 2026-04-11 | Recommend Batch 2 before merging to `dev` | Q1 regression is a confident wrong answer on a realistic EA question. Batch 2 is small (~20 lines of prompt additions, no code changes). Projected 9/10 acceptable. |
+| 2026-04-11 | Batch 2 re-eval complete: **10/10 acceptable** (perfect score) | Three Batch 2 prompt additions all worked exactly as designed. Both Batch 1 regressions resolved (Q1, Q4), Q9 shape change resolved, Q10 unexpectedly improved from SHALLOW to GOOD. Zero regressions. Beats projected 9/10 by one query. See `20-eval-results-batch-2.md` |
+| 2026-04-11 | Approve `feat/ai-chat-harness-eval` for merge to `dev` | All eval criteria met. Five commits ready: `b17075a` (Batch 2 prompt), `2fd5393` + `3df564c` (rate-limit error UX), plus prior Batch 1 commits. No further AI Chat work needed before users can rely on the harness. |
 
 ---
 
@@ -119,4 +123,4 @@ If Batch 1 achieves the projected conversion rate, we proceed to Batch 2 targeti
 
 ---
 
-*Last updated: 2026-04-10*
+*Last updated: 2026-04-11 (Batch 2 complete — 10/10 acceptable, ready to merge)*
