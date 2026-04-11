@@ -15,7 +15,7 @@ These scripts close the data gaps identified in `../../../planning/gitbook-phase
 
 Run in Supabase SQL Editor, top to bottom. Chunks are independently runnable and independently rollback-able.
 
-| # | File | Mandatory? | Article supported |
+| # | File | Mandatory? | Article / Purpose |
 |---|------|------------|-------------------|
 | 0 | `00-verify-state-before.sql` | Run first | Baseline snapshot (read-only) |
 | 1 | `01-app-contacts-showcase.sql` | Yes | 2.1 Managing Applications |
@@ -24,7 +24,10 @@ Run in Supabase SQL Editor, top to bottom. Chunks are independently runnable and
 | 4 | `04-it-service-contracts.sql` | Yes | 4.3 Cost Analysis (IT service channel) |
 | 5 | `05-deployment-profile-ops-fields.sql` | **Optional** | 1.4 Deployment Profiles (on-prem depth) |
 | 6 | `06-cost-bundle-dps-showcase.sql` | Yes | 4.3 Cost Analysis (Cost Bundle channel) |
+| 7 | `07-it-service-vendor-attribution.sql` | Yes (post-Phase-0 repair) | AI Chat vendor-spend analysis — closes GAP 6 (Unknown: $2.56M) |
 | 99 | `99-verify-state-after.sql` | Run last | Post-enrichment snapshot (read-only) |
+
+> **Chunk 07 note:** Chunk 07 is a post-Phase-0 data repair added 2026-04-10 after AI Chat harness testing surfaced that IT services had 100% NULL `vendor_org_id`, forcing vendor cost analysis to report "Unknown (IT Service): $2.56M" (73% of namespace spend). Cost bundles already had vendor attribution post-Phase-0; IT services did not. Chunk 07 closes this gap. The baseline (00) and after (99) verifier files were written before chunk 07 existed — they do not include a `07 baseline/result` section. Chunk 07's own trailing verification SELECT is sufficient for validation.
 
 ## Workflow
 
