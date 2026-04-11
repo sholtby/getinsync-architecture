@@ -16,8 +16,6 @@
 --
 -- DEVELOPMENT and UNCATEGORIZED intentionally show 0.
 
-\pset pager off
-
 WITH ns AS (
   SELECT 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'::uuid AS id
 ),

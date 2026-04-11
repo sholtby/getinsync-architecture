@@ -15,8 +15,6 @@
 -- Idempotent (ON CONFLICT DO NOTHING). Re-running this chunk is safe.
 -- Namespace-scoped via the workspace.namespace_id join.
 
-\pset pager off
-
 BEGIN;
 
 WITH ns AS (

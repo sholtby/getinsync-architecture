@@ -8,8 +8,6 @@
 --   active_categories   = 14
 -- If anything differs, STOP and reconcile with Stuart before running 01..05.
 
-\pset pager off
-
 WITH counts AS (
   SELECT
     (SELECT COUNT(*)

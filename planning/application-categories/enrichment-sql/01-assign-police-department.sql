@@ -14,8 +14,6 @@
 -- Namespace-scoped via the workspace.namespace_id join — cross-namespace
 -- contamination is impossible.
 
-\pset pager off
-
 BEGIN;
 
 WITH ns AS (
