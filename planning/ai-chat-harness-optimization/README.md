@@ -10,11 +10,9 @@
 
 ## Status
 
-- **Batch 0** — Baseline eval COMPLETE (10 queries run on Riverside post-Phase-0). See `00-eval-results-batch-0.md`.
-- **Batch 1** — PENDING. Three downstream sessions queued:
-  - Session 1: Harness code changes (`01-session-prompt-harness-code.md`)
-  - Session 2: System prompt rewrite (`02-session-prompt-system-prompt.md`)
-  - Session 3: Re-evaluation and comparison (`03-session-prompt-re-evaluation.md`)
+- **Batch 0** — Baseline eval COMPLETE (10 queries run on Riverside post-Phase-0). See `00-eval-results-batch-0.md`. Result: **2/10 acceptable**.
+- **Batch 1** — COMPLETE 2026-04-11. All 3 sessions shipped; Edge Function deployed; re-eval run. See `10-eval-results-batch-1.md`. Result: **6/10 acceptable** (3× improvement). 8 improvements, 2 regressions (Q1 rationalization direction, Q4 temporal refusal).
+- **Batch 2** — RECOMMENDED but not yet started. Prompt-only, small (~20 lines added to system-prompt.ts), addresses the 2 Q1/Q4 regressions + Q9 data-classification refusal. Projected 9/10 acceptable. Do NOT merge to `dev` until Batch 2 ships — Q1 is a confident wrong answer on a realistic EA question.
 
 ---
 
@@ -23,10 +21,11 @@
 | File | Purpose | Status |
 |---|---|---|
 | `README.md` | This file — tracker and index | Current |
-| `00-eval-results-batch-0.md` | Frozen-in-time baseline eval: 10 queries, per-query scoring, ranked gap list, fix batching recommendation | Complete |
-| `01-session-prompt-harness-code.md` | Standalone session prompt — implements code-layer fixes (new tool, iteration limit, fallback, unstub technology-risk) | Ready to run |
-| `02-session-prompt-system-prompt.md` | Standalone session prompt — rewrites `system-prompt.ts` to address tool-selection, hallucination, and orchestration gaps | Ready to run |
-| `03-session-prompt-re-evaluation.md` | Standalone session prompt — reruns the 10 queries and produces a Batch 1 vs Batch 0 comparison report | Ready to run (after 1 & 2 + deploy) |
+| `00-eval-results-batch-0.md` | Frozen-in-time baseline eval: 10 queries, per-query scoring, ranked gap list, fix batching recommendation | Complete (2/10 acceptable) |
+| `01-session-prompt-harness-code.md` | Standalone session prompt — implements code-layer fixes (new tool, iteration limit, fallback, unstub technology-risk) | Shipped (commit `473be25`) |
+| `02-session-prompt-system-prompt.md` | Standalone session prompt — rewrites `system-prompt.ts` to address tool-selection, hallucination, and orchestration gaps | Shipped (commit `25c7a6d`) |
+| `03-session-prompt-re-evaluation.md` | Standalone session prompt — reruns the 10 queries and produces a Batch 1 vs Batch 0 comparison report | Complete (see `10-eval-results-batch-1.md`) |
+| `10-eval-results-batch-1.md` | Frozen-in-time Batch 1 re-eval: all 10 queries scored against Batch 0, gap-by-gap effectiveness, recommended Batch 2 scope | Complete (6/10 acceptable, 8 improvements, 2 regressions) |
 
 ## Related files (not in this directory)
 
@@ -99,6 +98,8 @@ The three session prompts in this directory are designed to run **in strict orde
 | 2026-04-10 | Option B (manual iterative loop) over Option A (full Meta-Harness outer loop) | Lower cost, faster feedback, sufficient signal to start |
 | 2026-04-10 | Pivot queries to match Riverside post-Phase-0 reality, skip supplemental SQL enrichment | Touching shared reference tables is cross-namespace risk; real partial data is a realistic test |
 | 2026-04-10 | 3-session batching for fix implementation | See "Why split into three sessions" above |
+| 2026-04-11 | Batch 1 re-eval complete: 6/10 acceptable (3× improvement from 2/10 baseline) | All 7 Batch 1 gap fixes landed. 8 improvements offset by 2 regressions (Q1 rationalization direction, Q4 temporal refusal). See `10-eval-results-batch-1.md` |
+| 2026-04-11 | Recommend Batch 2 before merging to `dev` | Q1 regression is a confident wrong answer on a realistic EA question. Batch 2 is small (~20 lines of prompt additions, no code changes). Projected 9/10 acceptable. |
 
 ---
 
