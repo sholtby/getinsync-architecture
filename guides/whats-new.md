@@ -4,6 +4,14 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 11, 2026
+
+- **AI Assistant — Smarter answers across the board** — A multi-batch tuning effort raised the AI Assistant's answer-quality score from 2/10 to 10/10 on a fixed evaluation set. Six concrete improvements you'll notice: (1) **rationalization questions** like "which of two overlapping systems should we consolidate to" now correctly recommend the system with better tech health, lower remediation effort, mainstream lifecycle, and assigned ownership — instead of the older system with broader functional coverage; (2) **risk questions** correctly call the technology-risk tool instead of the cost-analysis tool, so high-cost-but-healthy apps no longer get flagged as risks; (3) **listing questions** like "list my crown jewels" now return real names instead of failing; (4) **vendor consolidation questions** sum both cost channels (cost bundles + IT service allocations) so vendor totals aren't understated by half; (5) **multi-tool analyses like SWOT** now correctly orchestrate multiple data sources before answering; (6) **graceful refusals** for questions the portfolio model can't answer (historical trends, PII classification) now happen cleanly instead of producing inferred or fabricated answers.
+- **AI Assistant — Better error messages** — When the underlying AI provider rate-limits a request or is temporarily unavailable, the chat now shows a specific actionable message ("Claude is rate-limited right now. Please wait about 5 minutes and try again.") instead of the generic "Sorry, something went wrong." Network errors and expired sessions also get specific messages. When the AI provider returns extra detail about why a request failed (e.g. "exceeded daily input token limit"), that detail is appended to the message so you can see exactly what happened.
+- **Help — AI Assistant article updated** — The AI Assistant help article now reflects the six tools the assistant can access (was four), shows example questions for the new question categories (rationalization, multi-dimensional analysis, risk ranking), and explains how the assistant fails gracefully on questions it can't answer.
+
+---
+
 ## April 9, 2026
 
 - **Custom T-Shirt Size Ranges (Enterprise)** — Enterprise users can now customize the remediation effort T-shirt size boundaries (XS through XL) on the Organization Settings page. Click "Edit Ranges" to adjust the upper-bound percentages for each size relative to your maximum remediation budget. The resulting dollar ranges update in real time as you type. Non-enterprise users see a "Customize in Full" button that explains the feature is available on the Enterprise plan. Custom ranges apply across the platform — deployment profile dropdowns, the PAID chart, tech debt breakdowns, and CSV exports all reflect your custom boundaries.

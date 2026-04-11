@@ -31,7 +31,7 @@ All secrets are stored in **Supabase Edge Function Secrets** (encrypted at rest,
 | 2 | `SUPABASE_ANON_KEY` | Public anonymous key for unauthenticated Supabase access | All Edge Functions | Stuart Holtby | Project creation | On JWT secret rotation | Internal |
 | 3 | `SUPABASE_SERVICE_ROLE_KEY` | Privileged key — bypasses RLS for admin operations | Edge Functions requiring elevated access | Stuart Holtby | Project creation | On JWT secret rotation | Confidential |
 | 4 | `SUPABASE_DB_URL` | Direct PostgreSQL connection string | Edge Functions requiring direct DB access | Stuart Holtby | Project creation | On password rotation | Confidential |
-| 5 | `ANTHROPIC_API_KEY` | Claude API access for AI-powered features | `lifecycle-lookup`, `apm-chat`, `ai-generate` Edge Functions | Stuart Holtby | 2026-03-13 | Every 90 days | Confidential |
+| 5 | `ANTHROPIC_API_KEY` | Claude API access for AI-powered features | `lifecycle-lookup`, `apm-chat`, `ai-generate`, `ai-chat` Edge Functions | Stuart Holtby | 2026-03-13 | Every 90 days | Confidential |
 | 6 | `OPENAI_API_KEY` | OpenAI Embeddings API (`text-embedding-3-small`) | `embed-entity`, `apm-chat` Edge Functions | Stuart Holtby (Service Account) | 2026-03-13 | Every 90 days | Confidential |
 
 ---
