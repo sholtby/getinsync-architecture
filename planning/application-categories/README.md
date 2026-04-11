@@ -8,9 +8,9 @@
 
 ## Status
 
-- **Session 1 — Riverside category enrichment** — PENDING. Standalone session prompt at `01-session-prompt-riverside-category-data.md`. Output is chunked SQL files for Stuart to paste into the Supabase SQL Editor manually.
-- **Session 2 — AI Chat category tools** — PENDING. Standalone session prompt at `02-session-prompt-ai-chat-category-tools.md`. Output is code on a new branch `feat/ai-chat-category-tools`, branched from `dev` (NOT from `feat/ai-chat-harness-eval`).
-- **Session 3 — Category eval** — PENDING. Standalone session prompt at `03-session-prompt-category-eval.md`. Output is `10-eval-results-category-tools.md` (frozen results doc) in this directory.
+- **Session 1 — Riverside category enrichment** — **COMPLETE (2026-04-11).** 32/32 Riverside apps assigned, 53 total assignments, 0 UNCATEGORIZED misuse. Mapping reviewed and approved by Stuart in-session. Chunks 01-05 applied via the Supabase SQL Editor, each chunk verifier matched the approved mapping, and `99-verify-final.sql` returned all pass criteria. Enrichment SQL committed at `~/getinsync-architecture` main `aca430f` (initial) + `89feb89` (strip `\pset` meta-command for SQL Editor compatibility).
+- **Session 2 — AI Chat category tools** — READY TO RUN. Standalone session prompt at `02-session-prompt-ai-chat-category-tools.md`. Output is code on a new branch `feat/ai-chat-category-tools`, branched from `dev` (NOT from `feat/ai-chat-harness-eval`).
+- **Session 3 — Category eval** — PENDING (after Session 2 + Stuart deploy). Standalone session prompt at `03-session-prompt-category-eval.md`. Output is `10-eval-results-category-tools.md` (frozen results doc) in this directory.
 
 ---
 
@@ -19,10 +19,10 @@
 | File | Purpose | Status |
 |---|---|---|
 | `README.md` | This file — tracker and decision log | Current |
-| `01-session-prompt-riverside-category-data.md` | Session 1 — propose mappings, checkpoint with Stuart, then generate chunked SQL in `enrichment-sql/` | Ready to run |
-| `02-session-prompt-ai-chat-category-tools.md` | Session 2 — three new tools + system prompt subheading on `feat/ai-chat-category-tools` branch | Ready to run (after Session 1) |
+| `01-session-prompt-riverside-category-data.md` | Session 1 — propose mappings, checkpoint with Stuart, then generate chunked SQL in `enrichment-sql/` | Executed 2026-04-11 |
+| `02-session-prompt-ai-chat-category-tools.md` | Session 2 — three new tools + system prompt subheading on `feat/ai-chat-category-tools` branch | Ready to run |
 | `03-session-prompt-category-eval.md` | Session 3 — re-run 15 queries (10 Batch 1 regression + 5 new + 2 cross-tool), produce frozen results doc | Ready to run (after Session 2 + Stuart deploy) |
-| `enrichment-sql/` | Created by Session 1. Will contain `00-verify-baseline.sql`, `01-NN-assign-*.sql`, `99-verify-final.sql` | Not yet created |
+| `enrichment-sql/` | 7 chunked SQL files — `00-verify-baseline.sql`, `01-assign-police-department.sql`, `02-assign-fire-and-court.sql`, `03-assign-information-technology.sql`, `04-assign-finance-and-hr.sql`, `05-assign-customer-ops-dev-public-water.sql`, `99-verify-final.sql` | Applied 2026-04-11 |
 | `10-eval-results-category-tools.md` | Created by Session 3. Frozen results doc with per-query scoring, regression check, merge recommendation | Not yet created |
 
 ---
@@ -90,6 +90,8 @@
 | 2026-04-11 | Session 2 branches `feat/ai-chat-category-tools` from `dev`, NOT from `feat/ai-chat-harness-eval` | Clean separation from Batch 2. Stuart deploys twice (once for Batch 2, once for category tools). Avoids merge tangling. The two branches converge through `dev` once both are merged independently. |
 | 2026-04-11 | Eval set = 10 Batch 1 queries + 5 new + 2 cross-tool | The 10 Batch 1 queries are the regression check (did the new tools break Batch 2's gains?). The 5 new category queries measure the new tools directly. The 2 cross-tool queries probe whether the model orchestrates *across* category and non-category tools — the real EA use case. |
 | 2026-04-11 | `Uncategorized` category is reserved | Session 1 brief explicitly forbids using the `Uncategorized` (code `UNCATEGORIZED`) category in the enrichment. It exists as a safety default for net-new apps users add via the form, not as a real assignment. All 32 Riverside apps must end up in real categories. |
+| 2026-04-11 | Session 1 shipped with the existing 14-cat catalog; catalog refinement deferred to Phase 2 | Level-set conversation identified 3 missing Gartner MQs (`ITSM`, `EAM`, `FSM`) that would clean up shoehorning of ServiceNow ITSM / ServiceDesk Plus / Samsara Fleet / Sensus FlexNet. Decision: ship Riverside enrichment against the 14-cat catalog as-is (53 assignments defensible for demo purposes), file catalog refinement as a future Phase 2 initiative (schema add + seed function update + backfill of existing namespaces + re-map Riverside). Not in scope for Sessions 2 or 3. |
+| 2026-04-11 | Session 1 executed — 32/32 apps assigned, 53 total assignments | Mapping approved by Stuart in-session, chunks 01-05 applied via Supabase SQL Editor, each chunk verifier matched approval, and `99-verify-final.sql` returned all pass criteria (totals 32/32/53, unassigned=0, UNCATEGORIZED misuse=0, per-category counts match). One bug fix mid-session: `\pset pager off` meta-command removed from all 7 files because the SQL Editor rejects psql meta-commands (committed as `89feb89`). |
 
 ---
 
@@ -138,11 +140,33 @@ public.application_category_assignments
 | 13 | HEALTH | Health & Social Services | Clinical systems, social service delivery, benefits administration. |
 | 99 | UNCATEGORIZED | Uncategorized | Applications not yet classified. Default category. **DO NOT USE** in enrichment. |
 
-## Riverside baseline (verified 2026-04-11)
+## Riverside baseline (verified 2026-04-11 — pre-enrichment)
 
 - Total apps: **32** (across 18 workspaces)
 - Apps with category assignments: **0**
 - Total category assignments: **0**
+
+## Riverside post-enrichment state (verified 2026-04-11 via `99-verify-final.sql`)
+
+- Total apps: **32** — unchanged
+- Apps with category assignments: **32** (100% coverage)
+- Total category assignments: **53** (avg 1.66 categories per app)
+- Apps in `UNCATEGORIZED`: **0** ✓ (reserved)
+- Unassigned apps: **0** ✓
+
+**Per-category breakdown (12 of 13 real categories used; `DEVELOPMENT` = 0 by design — no dev/CI tools in Riverside's portfolio):**
+
+| Category | Apps | Category | Apps |
+|---|---|---|---|
+| RECORDS | 11 | GIS_SPATIAL | 3 |
+| CRM | 10 | HEALTH | 3 |
+| LEGAL | 7 | ANALYTICS | 2 |
+| FINANCE | 5 | ERP | 2 |
+| INFRASTRUCTURE | 5 | SECURITY | 1 |
+| HR | 3 | COLLABORATION | 1 |
+| DEVELOPMENT | 0 | UNCATEGORIZED | 0 |
+
+**Known shoehorning (Phase 2 catalog refinement targets):** ServiceNow ITSM + ServiceDesk Plus folded into `INFRASTRUCTURE` (real category is ITSM); Samsara Fleet folded into `ERP`+`GIS_SPATIAL` and Sensus FlexNet into `INFRASTRUCTURE`+`ANALYTICS` (real category is EAM). All four would re-tag cleanly when `ITSM`+`EAM`+`FSM` are added to the catalog.
 
 ---
 
@@ -153,4 +177,4 @@ public.application_category_assignments
 
 ---
 
-*Last updated: 2026-04-11*
+*Last updated: 2026-04-11 — Session 1 complete; Session 2 ready to run.*
