@@ -9,8 +9,9 @@
 ## Status
 
 - **Session 1 — Riverside category enrichment** — **COMPLETE (2026-04-11).** 32/32 Riverside apps assigned, 53 total assignments, 0 UNCATEGORIZED misuse. Mapping reviewed and approved by Stuart in-session. Chunks 01-05 applied via the Supabase SQL Editor, each chunk verifier matched the approved mapping, and `99-verify-final.sql` returned all pass criteria. Enrichment SQL committed at `~/getinsync-architecture` main `aca430f` (initial) + `89feb89` (strip `\pset` meta-command for SQL Editor compatibility).
-- **Session 2 — AI Chat category tools** — READY TO RUN. Standalone session prompt at `02-session-prompt-ai-chat-category-tools.md`. Output is code on a new branch `feat/ai-chat-category-tools`, branched from `dev` (NOT from `feat/ai-chat-harness-eval`).
-- **Session 3 — Category eval** — PENDING (after Session 2 + Stuart deploy). Standalone session prompt at `03-session-prompt-category-eval.md`. Output is `10-eval-results-category-tools.md` (frozen results doc) in this directory.
+- **Session 2 — AI Chat category tools** — **COMPLETE (2026-04-11).** Branch `feat/ai-chat-category-tools` pushed with commit `30b08ec`. Three new tools: `list-application-categories`, `category` filter on `list-applications`, `category-rollup`. System prompt updated with "Capability and category questions" subsection and cross-tool orchestration note. Stuart deployed to the dev Edge Function.
+- **Session 3 — Category eval** — **COMPLETE (2026-04-11).** Eval results at `10-eval-results-category-tools.md`. **Result: 1 regression (Q9 — WRONG), 3/7 new queries GOOD, 2 wrong answers total.** Root causes: (1) `category-rollup` tool's `assessed_count` predicate bug (counts default-0 apps as assessed), (2) missing cross-tool category-membership verification rule. **Recommendation: ITERATE on a small Session 4 fix before merging.** See eval doc for full scoring, tool effectiveness analysis, and proposed fixes.
+- **Session 4 — Category tools fix** — PENDING. Scope: (1) Fix `category-rollup` assessed_count predicate in `tools.ts` line 720 (`!== null` → `> 0`), (2) add cross-tool category-membership verification rule (~15 lines in `system-prompt.ts`), (3) re-deploy and re-eval.
 
 ---
 
@@ -20,10 +21,10 @@
 |---|---|---|
 | `README.md` | This file — tracker and decision log | Current |
 | `01-session-prompt-riverside-category-data.md` | Session 1 — propose mappings, checkpoint with Stuart, then generate chunked SQL in `enrichment-sql/` | Executed 2026-04-11 |
-| `02-session-prompt-ai-chat-category-tools.md` | Session 2 — three new tools + system prompt subheading on `feat/ai-chat-category-tools` branch | Ready to run |
-| `03-session-prompt-category-eval.md` | Session 3 — re-run 15 queries (10 Batch 1 regression + 5 new + 2 cross-tool), produce frozen results doc | Ready to run (after Session 2 + Stuart deploy) |
+| `02-session-prompt-ai-chat-category-tools.md` | Session 2 — three new tools + system prompt subheading on `feat/ai-chat-category-tools` branch | Executed 2026-04-11 |
+| `03-session-prompt-category-eval.md` | Session 3 — re-run 18 queries (11 regression + 5 new + 2 cross-tool), produce frozen results doc | Executed 2026-04-11 |
 | `enrichment-sql/` | 7 chunked SQL files — `00-verify-baseline.sql`, `01-assign-police-department.sql`, `02-assign-fire-and-court.sql`, `03-assign-information-technology.sql`, `04-assign-finance-and-hr.sql`, `05-assign-customer-ops-dev-public-water.sql`, `99-verify-final.sql` | Applied 2026-04-11 |
-| `10-eval-results-category-tools.md` | Created by Session 3. Frozen results doc with per-query scoring, regression check, merge recommendation | Not yet created |
+| `10-eval-results-category-tools.md` | Session 3 output. Frozen results doc — 18 scoring entries, 1 regression, 3/7 new queries GOOD. Merge recommendation: ITERATE | Created 2026-04-11 |
 
 ---
 
@@ -92,6 +93,9 @@
 | 2026-04-11 | `Uncategorized` category is reserved | Session 1 brief explicitly forbids using the `Uncategorized` (code `UNCATEGORIZED`) category in the enrichment. It exists as a safety default for net-new apps users add via the form, not as a real assignment. All 32 Riverside apps must end up in real categories. |
 | 2026-04-11 | Session 1 shipped with the existing 14-cat catalog; catalog refinement deferred to Phase 2 | Level-set conversation identified 3 missing Gartner MQs (`ITSM`, `EAM`, `FSM`) that would clean up shoehorning of ServiceNow ITSM / ServiceDesk Plus / Samsara Fleet / Sensus FlexNet. Decision: ship Riverside enrichment against the 14-cat catalog as-is (53 assignments defensible for demo purposes), file catalog refinement as a future Phase 2 initiative (schema add + seed function update + backfill of existing namespaces + re-map Riverside). Not in scope for Sessions 2 or 3. |
 | 2026-04-11 | Session 1 executed — 32/32 apps assigned, 53 total assignments | Mapping approved by Stuart in-session, chunks 01-05 applied via Supabase SQL Editor, each chunk verifier matched approval, and `99-verify-final.sql` returned all pass criteria (totals 32/32/53, unassigned=0, UNCATEGORIZED misuse=0, per-category counts match). One bug fix mid-session: `\pset pager off` meta-command removed from all 7 files because the SQL Editor rejects psql meta-commands (committed as `89feb89`). |
+| 2026-04-11 | Session 2 executed — 3 new tools on `feat/ai-chat-category-tools` | `list-application-categories`, `category` filter on `list-applications`, `category-rollup`. Commit `30b08ec`. Stuart deployed to dev Edge Function. |
+| 2026-04-11 | Session 3 eval complete — ITERATE recommended | 1 regression on Q9 (`category-rollup` assessed_count bug), 3/7 new queries GOOD, 1 wrong cross-tool answer (Q17). Two concrete fixes proposed: (1) 1-line `tools.ts` predicate change, (2) ~15-line cross-tool verification prompt rule. Session 4 scope is small. |
+| 2026-04-11 | Regression baseline is Batch 2 (10/10), not Batch 1 (6/10) | The session brief assumed `feat/ai-chat-category-tools` didn't include Batch 2 changes. Verified that Batch 2 (`b17075a`) IS in the branch ancestry because it was merged to `dev` before Session 2 ran. All scoring uses the Batch 2 baseline. |
 
 ---
 
@@ -177,4 +181,4 @@ public.application_category_assignments
 
 ---
 
-*Last updated: 2026-04-11 — Session 1 complete; Session 2 ready to run.*
+*Last updated: 2026-04-11 — Session 3 eval complete; Session 4 pending (iterate before merge).*
