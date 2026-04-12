@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict s59TrpexJbOZl31CgvErbZLMCz9EggqQxNflg99gWKqAMRRztpdlzuYS4ubUNkf
+\restrict vCiHaelSe9I2Ihp8cgbEavYzxkTyVqcSucwhFOXtGWaXPy1neOabbUXPoa2BRgp
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -7302,6 +7302,55 @@ COMMENT ON COLUMN public.deployment_profile_it_services.source IS 'How this link
 
 
 --
+-- Name: deployment_profile_servers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.deployment_profile_servers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    deployment_profile_id uuid NOT NULL,
+    server_id uuid NOT NULL,
+    server_role text,
+    is_primary boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: TABLE deployment_profile_servers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.deployment_profile_servers IS 'Junction table linking deployment profiles to servers (many-to-many)';
+
+
+--
+-- Name: COLUMN deployment_profile_servers.deployment_profile_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.deployment_profile_servers.deployment_profile_id IS 'FK to deployment_profiles — CASCADE on delete';
+
+
+--
+-- Name: COLUMN deployment_profile_servers.server_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.deployment_profile_servers.server_id IS 'FK to servers — RESTRICT on delete (must unlink before deleting server)';
+
+
+--
+-- Name: COLUMN deployment_profile_servers.server_role; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.deployment_profile_servers.server_role IS 'Soft reference to server_role_types.code (database, web, application, etc.)';
+
+
+--
+-- Name: COLUMN deployment_profile_servers.is_primary; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.deployment_profile_servers.is_primary IS 'Marks the primary server for this DP (display priority, backward compat)';
+
+
+--
 -- Name: deployment_profile_software_products; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -8421,6 +8470,124 @@ CREATE TABLE public.sensitivity_types (
 
 
 --
+-- Name: server_role_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.server_role_types (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code text NOT NULL,
+    name text NOT NULL,
+    description text,
+    display_order integer DEFAULT 0,
+    is_active boolean DEFAULT true,
+    is_system boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: TABLE server_role_types; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.server_role_types IS 'Reference table for server roles in deployment profile server relationships';
+
+
+--
+-- Name: COLUMN server_role_types.code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.server_role_types.code IS 'Unique code used as soft FK from deployment_profile_servers.server_role';
+
+
+--
+-- Name: COLUMN server_role_types.name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.server_role_types.name IS 'Display name for the server role';
+
+
+--
+-- Name: COLUMN server_role_types.display_order; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.server_role_types.display_order IS 'Sort order for UI dropdowns';
+
+
+--
+-- Name: COLUMN server_role_types.is_system; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.server_role_types.is_system IS 'If true, cannot be deleted by namespace admins';
+
+
+--
+-- Name: servers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.servers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    namespace_id uuid NOT NULL,
+    name text NOT NULL,
+    os text,
+    data_center_id uuid,
+    status text DEFAULT 'active'::text NOT NULL,
+    notes text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT servers_status_check CHECK ((status = ANY (ARRAY['active'::text, 'decommissioned'::text])))
+);
+
+
+--
+-- Name: TABLE servers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.servers IS 'Namespace-scoped server reference for deployment profile infrastructure mapping';
+
+
+--
+-- Name: COLUMN servers.namespace_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.servers.namespace_id IS 'Owning namespace — scopes visibility and RLS';
+
+
+--
+-- Name: COLUMN servers.name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.servers.name IS 'Server display name, e.g. PROD-SQL-01. Unique within namespace.';
+
+
+--
+-- Name: COLUMN servers.os; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.servers.os IS 'Optional OS label, e.g. Windows Server 2022';
+
+
+--
+-- Name: COLUMN servers.data_center_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.servers.data_center_id IS 'Optional link to the data_centers table for physical location';
+
+
+--
+-- Name: COLUMN servers.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.servers.status IS 'Lifecycle status: active or decommissioned';
+
+
+--
+-- Name: COLUMN servers.notes; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.servers.notes IS 'Free-form notes about this server';
+
+
+--
 -- Name: service_type_categories; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -8856,7 +9023,15 @@ CREATE VIEW public.vw_application_infrastructure_report WITH (security_invoker='
     dp.hosting_type,
     dp.cloud_provider,
     dp.environment,
-    dp.server_name,
+    COALESCE(( SELECT s.name
+           FROM (public.deployment_profile_servers dps
+             JOIN public.servers s ON ((s.id = dps.server_id)))
+          WHERE ((dps.deployment_profile_id = dp.id) AND dps.is_primary)
+         LIMIT 1), dp.server_name) AS server_name,
+    ( SELECT string_agg(s.name, ', '::text ORDER BY dps2.is_primary DESC, s.name) AS string_agg
+           FROM (public.deployment_profile_servers dps2
+             JOIN public.servers s ON ((s.id = dps2.server_id)))
+          WHERE (dps2.deployment_profile_id = dp.id)) AS server_names,
     dp.tech_health,
     dp.tech_risk,
     dp.tech_assessment_status,
@@ -9258,7 +9433,11 @@ CREATE VIEW public.vw_technology_tag_lifecycle_risk WITH (security_invoker='true
     dp.workspace_id,
     dp.hosting_type,
     dp.environment,
-    dp.server_name,
+    COALESCE(( SELECT s.name
+           FROM (public.deployment_profile_servers dps
+             JOIN public.servers s ON ((s.id = dps.server_id)))
+          WHERE ((dps.deployment_profile_id = dp.id) AND dps.is_primary)
+         LIMIT 1), dp.server_name) AS server_name,
     dp.operational_status AS dp_operational_status,
     a.name AS application_name,
     a.operational_status AS app_operational_status,
@@ -9295,7 +9474,11 @@ CREATE VIEW public.vw_technology_tag_lifecycle_risk WITH (security_invoker='true
         END AS days_to_mainstream_end,
     ( SELECT max(pa.criticality) AS max
            FROM public.portfolio_assignments pa
-          WHERE (pa.application_id = a.id)) AS max_criticality
+          WHERE (pa.application_id = a.id)) AS max_criticality,
+    ( SELECT string_agg(s.name, ', '::text ORDER BY dps2.is_primary DESC, s.name) AS string_agg
+           FROM (public.deployment_profile_servers dps2
+             JOIN public.servers s ON ((s.id = dps2.server_id)))
+          WHERE (dps2.deployment_profile_id = dp.id)) AS server_names
    FROM ((((((public.deployment_profile_technology_products dptp
      JOIN public.technology_products tp ON ((tp.id = dptp.technology_product_id)))
      JOIN public.deployment_profiles dp ON ((dp.id = dptp.deployment_profile_id)))
@@ -10663,14 +10846,45 @@ UNION ALL
 
 
 --
+-- Name: vw_server_deployment_summary; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.vw_server_deployment_summary WITH (security_invoker='true') AS
+ SELECT s.id AS server_id,
+    s.name AS server_name,
+    s.os AS server_os,
+    s.status AS server_status,
+    dc.name AS data_center_name,
+    s.namespace_id,
+    dps.deployment_profile_id,
+    dp.name AS deployment_profile_name,
+    dps.server_role,
+    dps.is_primary,
+    dp.application_id,
+    a.name AS application_name,
+    dp.workspace_id,
+    w.name AS workspace_name,
+    dp.environment,
+    dp.tech_health
+   FROM (((((public.servers s
+     JOIN public.deployment_profile_servers dps ON ((dps.server_id = s.id)))
+     JOIN public.deployment_profiles dp ON ((dp.id = dps.deployment_profile_id)))
+     JOIN public.applications a ON ((a.id = dp.application_id)))
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+     LEFT JOIN public.data_centers dc ON ((dc.id = s.data_center_id)));
+
+
+--
 -- Name: vw_server_technology_report; Type: VIEW; Schema: public; Owner: -
 --
 
 CREATE VIEW public.vw_server_technology_report WITH (security_invoker='true') AS
- SELECT dp.server_name,
-    dp.workspace_id,
-    w.name AS workspace_name,
-    w.namespace_id,
+ SELECT s.id AS server_id,
+    s.name AS server_name,
+    s.os AS server_os,
+    s.status AS server_status,
+    dc.name AS data_center_name,
+    s.namespace_id,
     count(DISTINCT dp.id) AS deployment_count,
     count(DISTINCT dp.application_id) AS application_count,
     mode() WITHIN GROUP (ORDER BY os_tp.name) AS primary_os,
@@ -10684,16 +10898,17 @@ CREATE VIEW public.vw_server_technology_report WITH (security_invoker='true') AS
         END AS worst_lifecycle_status,
     count(DISTINCT dptp.id) FILTER (WHERE (((tlr.end_of_life_date IS NOT NULL) AND (tlr.end_of_life_date < CURRENT_DATE)) OR ((tlr.extended_support_end IS NOT NULL) AND (tlr.extended_support_end < CURRENT_DATE)))) AS end_of_support_tech_count,
     min(tlr.end_of_life_date) FILTER (WHERE (tlr.end_of_life_date >= CURRENT_DATE)) AS next_eol_date
-   FROM (((((((public.deployment_profiles dp
-     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+   FROM (((((((((public.servers s
+     JOIN public.deployment_profile_servers dps ON ((dps.server_id = s.id)))
+     JOIN public.deployment_profiles dp ON ((dp.id = dps.deployment_profile_id)))
+     LEFT JOIN public.data_centers dc ON ((dc.id = s.data_center_id)))
      LEFT JOIN public.deployment_profile_technology_products dptp ON ((dptp.deployment_profile_id = dp.id)))
      LEFT JOIN public.technology_products tp ON ((tp.id = dptp.technology_product_id)))
      LEFT JOIN public.technology_lifecycle_reference tlr ON ((tlr.id = tp.lifecycle_reference_id)))
      LEFT JOIN public.deployment_profile_technology_products os_dptp ON ((os_dptp.deployment_profile_id = dp.id)))
      LEFT JOIN public.technology_products os_tp ON ((os_tp.id = os_dptp.technology_product_id)))
      LEFT JOIN public.technology_product_categories os_tpc ON (((os_tpc.id = os_tp.category_id) AND (os_tpc.name = 'Operating System'::text))))
-  WHERE (dp.server_name IS NOT NULL)
-  GROUP BY dp.server_name, dp.workspace_id, w.name, w.namespace_id;
+  GROUP BY s.id, s.name, s.os, s.status, dc.name, s.namespace_id;
 
 
 --
@@ -11129,22 +11344,6 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
--- Name: messages_2026_04_08; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_08 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
 -- Name: messages_2026_04_09; Type: TABLE; Schema: realtime; Owner: -
 --
 
@@ -11229,6 +11428,22 @@ CREATE TABLE realtime.messages_2026_04_13 (
 --
 
 CREATE TABLE realtime.messages_2026_04_14 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_15; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_15 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -11438,13 +11653,6 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
--- Name: messages_2026_04_08; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_08 FOR VALUES FROM ('2026-04-08 00:00:00') TO ('2026-04-09 00:00:00');
-
-
---
 -- Name: messages_2026_04_09; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
@@ -11484,6 +11692,13 @@ ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_13
 --
 
 ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_14 FOR VALUES FROM ('2026-04-14 00:00:00') TO ('2026-04-15 00:00:00');
+
+
+--
+-- Name: messages_2026_04_15; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_15 FOR VALUES FROM ('2026-04-15 00:00:00') TO ('2026-04-16 00:00:00');
 
 
 --
@@ -12182,6 +12397,22 @@ ALTER TABLE ONLY public.deployment_profile_it_services
 
 
 --
+-- Name: deployment_profile_servers deployment_profile_servers_dp_server_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deployment_profile_servers
+    ADD CONSTRAINT deployment_profile_servers_dp_server_key UNIQUE (deployment_profile_id, server_id);
+
+
+--
+-- Name: deployment_profile_servers deployment_profile_servers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deployment_profile_servers
+    ADD CONSTRAINT deployment_profile_servers_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: deployment_profile_software_products deployment_profile_software_products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -12782,6 +13013,38 @@ ALTER TABLE ONLY public.sensitivity_types
 
 
 --
+-- Name: server_role_types server_role_types_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.server_role_types
+    ADD CONSTRAINT server_role_types_code_key UNIQUE (code);
+
+
+--
+-- Name: server_role_types server_role_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.server_role_types
+    ADD CONSTRAINT server_role_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: servers servers_namespace_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.servers
+    ADD CONSTRAINT servers_namespace_name_key UNIQUE (namespace_id, name);
+
+
+--
+-- Name: servers servers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.servers
+    ADD CONSTRAINT servers_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: service_type_categories service_type_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -13110,14 +13373,6 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
--- Name: messages_2026_04_08 messages_2026_04_08_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_08
-    ADD CONSTRAINT messages_2026_04_08_pkey PRIMARY KEY (id, inserted_at);
-
-
---
 -- Name: messages_2026_04_09 messages_2026_04_09_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
@@ -13163,6 +13418,14 @@ ALTER TABLE ONLY realtime.messages_2026_04_13
 
 ALTER TABLE ONLY realtime.messages_2026_04_14
     ADD CONSTRAINT messages_2026_04_14_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_15 messages_2026_04_15_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_15
+    ADD CONSTRAINT messages_2026_04_15_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
@@ -14116,6 +14379,20 @@ CREATE INDEX idx_dpis_it_service ON public.deployment_profile_it_services USING 
 
 
 --
+-- Name: idx_dps_deployment_profile_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dps_deployment_profile_id ON public.deployment_profile_servers USING btree (deployment_profile_id);
+
+
+--
+-- Name: idx_dps_server_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_dps_server_id ON public.deployment_profile_servers USING btree (server_id);
+
+
+--
 -- Name: idx_dpsp_contract_end; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14620,6 +14897,13 @@ CREATE INDEX idx_programs_workspace ON public.programs USING btree (workspace_id
 
 
 --
+-- Name: idx_servers_namespace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_servers_namespace_id ON public.servers USING btree (namespace_id);
+
+
+--
 -- Name: idx_service_type_categories_namespace; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -14858,13 +15142,6 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
--- Name: messages_2026_04_08_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_08_inserted_at_topic_idx ON realtime.messages_2026_04_08 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
 -- Name: messages_2026_04_09_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
@@ -14904,6 +15181,13 @@ CREATE INDEX messages_2026_04_13_inserted_at_topic_idx ON realtime.messages_2026
 --
 
 CREATE INDEX messages_2026_04_14_inserted_at_topic_idx ON realtime.messages_2026_04_14 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_15_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_15_inserted_at_topic_idx ON realtime.messages_2026_04_15 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
@@ -14967,20 +15251,6 @@ CREATE INDEX name_prefix_search ON storage.objects USING btree (name text_patter
 --
 
 CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes USING btree (name, bucket_id);
-
-
---
--- Name: messages_2026_04_08_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_08_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_08_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_08_pkey;
 
 
 --
@@ -15065,6 +15335,20 @@ ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.
 --
 
 ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_14_pkey;
+
+
+--
+-- Name: messages_2026_04_15_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_15_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_15_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_15_pkey;
 
 
 --
@@ -15191,6 +15475,13 @@ CREATE TRIGGER audit_data_format_types AFTER INSERT OR DELETE OR UPDATE ON publi
 --
 
 CREATE TRIGGER audit_data_tag_types AFTER INSERT OR DELETE OR UPDATE ON public.data_tag_types FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: deployment_profile_servers audit_deployment_profile_servers; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_deployment_profile_servers AFTER INSERT OR DELETE OR UPDATE ON public.deployment_profile_servers FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -15408,6 +15699,13 @@ CREATE TRIGGER audit_programs AFTER INSERT OR DELETE OR UPDATE ON public.program
 --
 
 CREATE TRIGGER audit_sensitivity_types AFTER INSERT OR DELETE OR UPDATE ON public.sensitivity_types FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
+
+
+--
+-- Name: servers audit_servers; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER audit_servers AFTER INSERT OR DELETE OR UPDATE ON public.servers FOR EACH ROW EXECUTE FUNCTION public.audit_log_trigger();
 
 
 --
@@ -15898,6 +16196,13 @@ CREATE TRIGGER update_portfolios_updated_at BEFORE UPDATE ON public.portfolios F
 --
 
 CREATE TRIGGER update_programs_updated_at BEFORE UPDATE ON public.programs FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: servers update_servers_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_servers_updated_at BEFORE UPDATE ON public.servers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
@@ -16659,6 +16964,22 @@ ALTER TABLE ONLY public.deployment_profile_it_services
 
 
 --
+-- Name: deployment_profile_servers deployment_profile_servers_dp_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deployment_profile_servers
+    ADD CONSTRAINT deployment_profile_servers_dp_fkey FOREIGN KEY (deployment_profile_id) REFERENCES public.deployment_profiles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: deployment_profile_servers deployment_profile_servers_server_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deployment_profile_servers
+    ADD CONSTRAINT deployment_profile_servers_server_fkey FOREIGN KEY (server_id) REFERENCES public.servers(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: deployment_profile_software_products deployment_profile_software_products_deployment_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -17288,6 +17609,22 @@ ALTER TABLE ONLY public.programs
 
 ALTER TABLE ONLY public.programs
     ADD CONSTRAINT programs_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: servers servers_data_center_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.servers
+    ADD CONSTRAINT servers_data_center_id_fkey FOREIGN KEY (data_center_id) REFERENCES public.data_centers(id) ON DELETE SET NULL;
+
+
+--
+-- Name: servers servers_namespace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.servers
+    ADD CONSTRAINT servers_namespace_id_fkey FOREIGN KEY (namespace_id) REFERENCES public.namespaces(id) ON DELETE CASCADE;
 
 
 --
@@ -18028,6 +18365,13 @@ CREATE POLICY "Admins can delete program_initiatives" ON public.program_initiati
 --
 
 CREATE POLICY "Admins can delete programs in current namespace" ON public.programs FOR DELETE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id))));
+
+
+--
+-- Name: servers Admins can delete servers in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can delete servers in current namespace" ON public.servers FOR DELETE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id))));
 
 
 --
@@ -18884,6 +19228,13 @@ CREATE POLICY "Anyone can view sensitivity_types" ON public.sensitivity_types FO
 
 
 --
+-- Name: server_role_types Anyone can view server_role_types; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Anyone can view server_role_types" ON public.server_role_types FOR SELECT USING (true);
+
+
+--
 -- Name: technology_lifecycle_reference Anyone can view technology_lifecycle_reference; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -19183,6 +19534,19 @@ CREATE POLICY "Editors can delete deployment_profile_it_services in current na" 
    FROM (public.deployment_profiles dp
      JOIN public.workspace_users wu ON ((wu.workspace_id = dp.workspace_id)))
   WHERE ((dp.id = deployment_profile_it_services.deployment_profile_id) AND (wu.user_id = auth.uid()) AND (wu.role = 'admin'::text)))))));
+
+
+--
+-- Name: deployment_profile_servers Editors can delete deployment_profile_servers in current namesp; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can delete deployment_profile_servers in current namesp" ON public.deployment_profile_servers FOR DELETE USING (((deployment_profile_id IN ( SELECT dp.id
+   FROM (public.deployment_profiles dp
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+  WHERE (w.namespace_id = public.get_current_namespace_id()))) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (EXISTS ( SELECT 1
+   FROM (public.deployment_profiles dp
+     JOIN public.workspace_users wu ON ((wu.workspace_id = dp.workspace_id)))
+  WHERE ((dp.id = deployment_profile_servers.deployment_profile_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
 
 
 --
@@ -19530,6 +19894,19 @@ CREATE POLICY "Editors can insert deployment_profile_it_services in current na" 
 
 
 --
+-- Name: deployment_profile_servers Editors can insert deployment_profile_servers in current namesp; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can insert deployment_profile_servers in current namesp" ON public.deployment_profile_servers FOR INSERT WITH CHECK (((deployment_profile_id IN ( SELECT dp.id
+   FROM (public.deployment_profiles dp
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+  WHERE (w.namespace_id = public.get_current_namespace_id()))) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (EXISTS ( SELECT 1
+   FROM (public.deployment_profiles dp
+     JOIN public.workspace_users wu ON ((wu.workspace_id = dp.workspace_id)))
+  WHERE ((dp.id = deployment_profile_servers.deployment_profile_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
+
+
+--
 -- Name: deployment_profile_software_products Editors can insert deployment_profile_software_products in curr; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -19692,6 +20069,16 @@ CREATE POLICY "Editors can insert program_initiatives" ON public.program_initiat
 CREATE POLICY "Editors can insert programs in current namespace" ON public.programs FOR INSERT WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id) OR (EXISTS ( SELECT 1
    FROM public.workspace_users wu
   WHERE ((wu.workspace_id = programs.workspace_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
+
+
+--
+-- Name: servers Editors can insert servers in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can insert servers in current namespace" ON public.servers FOR INSERT WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id) OR (EXISTS ( SELECT 1
+   FROM (public.workspace_users wu
+     JOIN public.workspaces w ON ((w.id = wu.workspace_id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
 
 
 --
@@ -20087,6 +20474,25 @@ CREATE POLICY "Editors can update deployment_profile_it_services in current na" 
 
 
 --
+-- Name: deployment_profile_servers Editors can update deployment_profile_servers in current namesp; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can update deployment_profile_servers in current namesp" ON public.deployment_profile_servers FOR UPDATE USING (((deployment_profile_id IN ( SELECT dp.id
+   FROM (public.deployment_profiles dp
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+  WHERE (w.namespace_id = public.get_current_namespace_id()))) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (EXISTS ( SELECT 1
+   FROM (public.deployment_profiles dp
+     JOIN public.workspace_users wu ON ((wu.workspace_id = dp.workspace_id)))
+  WHERE ((dp.id = deployment_profile_servers.deployment_profile_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))))) WITH CHECK (((deployment_profile_id IN ( SELECT dp.id
+   FROM (public.deployment_profiles dp
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+  WHERE (w.namespace_id = public.get_current_namespace_id()))) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(public.get_current_namespace_id()) OR (EXISTS ( SELECT 1
+   FROM (public.deployment_profiles dp
+     JOIN public.workspace_users wu ON ((wu.workspace_id = dp.workspace_id)))
+  WHERE ((dp.id = deployment_profile_servers.deployment_profile_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
+
+
+--
 -- Name: deployment_profile_software_products Editors can update deployment_profile_software_products in curr; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -20313,6 +20719,19 @@ CREATE POLICY "Editors can update programs in current namespace" ON public.progr
   WHERE ((wu.workspace_id = programs.workspace_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))))) WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id) OR (EXISTS ( SELECT 1
    FROM public.workspace_users wu
   WHERE ((wu.workspace_id = programs.workspace_id) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
+
+
+--
+-- Name: servers Editors can update servers in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Editors can update servers in current namespace" ON public.servers FOR UPDATE USING (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id) OR (EXISTS ( SELECT 1
+   FROM (public.workspace_users wu
+     JOIN public.workspaces w ON ((w.id = wu.workspace_id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text])))))))) WITH CHECK (((namespace_id = public.get_current_namespace_id()) AND (public.check_is_platform_admin() OR public.check_is_namespace_admin_of_namespace(namespace_id) OR (EXISTS ( SELECT 1
+   FROM (public.workspace_users wu
+     JOIN public.workspaces w ON ((w.id = wu.workspace_id)))
+  WHERE ((w.namespace_id = public.get_current_namespace_id()) AND (wu.user_id = auth.uid()) AND (wu.role = ANY (ARRAY['admin'::text, 'editor'::text]))))))));
 
 
 --
@@ -20704,6 +21123,13 @@ CREATE POLICY "Platform admins can manage integration_status_types" ON public.in
 --
 
 CREATE POLICY "Platform admins can manage sensitivity_types" ON public.sensitivity_types USING (public.check_is_platform_admin()) WITH CHECK (public.check_is_platform_admin());
+
+
+--
+-- Name: server_role_types Platform admins can manage server_role_types; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Platform admins can manage server_role_types" ON public.server_role_types USING (public.check_is_platform_admin()) WITH CHECK (public.check_is_platform_admin());
 
 
 --
@@ -21208,6 +21634,16 @@ CREATE POLICY "Users can view deployment profiles in current namespace" ON publi
 
 
 --
+-- Name: deployment_profile_servers Users can view deployment_profile_servers in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view deployment_profile_servers in current namespace" ON public.deployment_profile_servers FOR SELECT USING ((deployment_profile_id IN ( SELECT dp.id
+   FROM (public.deployment_profiles dp
+     JOIN public.workspaces w ON ((w.id = dp.workspace_id)))
+  WHERE (w.namespace_id = public.get_current_namespace_id()))));
+
+
+--
 -- Name: findings Users can view findings in current namespace; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -21369,6 +21805,13 @@ CREATE POLICY "Users can view program_initiatives via program namespace" ON publ
 --
 
 CREATE POLICY "Users can view programs in current namespace" ON public.programs FOR SELECT USING (((namespace_id = public.get_current_namespace_id()) OR public.check_is_platform_admin()));
+
+
+--
+-- Name: servers Users can view servers in current namespace; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view servers in current namespace" ON public.servers FOR SELECT USING (((namespace_id = public.get_current_namespace_id()) OR public.check_is_platform_admin()));
 
 
 --
@@ -21781,6 +22224,12 @@ ALTER TABLE public.deployment_profile_contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.deployment_profile_it_services ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: deployment_profile_servers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.deployment_profile_servers ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: deployment_profile_software_products; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22111,6 +22560,18 @@ ALTER TABLE public.remediation_efforts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sensitivity_types ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: server_role_types; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.server_role_types ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: servers; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.servers ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: service_type_categories; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -22430,5 +22891,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict s59TrpexJbOZl31CgvErbZLMCz9EggqQxNflg99gWKqAMRRztpdlzuYS4ubUNkf
+\unrestrict vCiHaelSe9I2Ihp8cgbEavYzxkTyVqcSucwhFOXtGWaXPy1neOabbUXPoa2BRgp
 

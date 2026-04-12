@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-11 (v2.09)
+Last updated: 2026-04-12 (v2.10)
 
 ---
 
@@ -158,7 +158,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | testing/pgtap-rls-coverage.sql | v1.8 | 🟢 | pgTAP security regression — 437 assertions: RLS, GRANTs (102 tables + 39 views), audit triggers (60), view security, sentinel checks |
-| testing/security-posture-validation.sql | v1.5 | 🟢 | Standalone security validation — PASS/FAIL output for all 103 tables + 39 views (incl. view GRANTs + platform admin bypass check) |
+| testing/security-posture-validation.sql | v1.6 | 🟢 | Standalone security validation — PASS/FAIL output for all 106 tables + 42 views (incl. view GRANTs + platform admin bypass check) |
 
 ### Integration & Alignment
 
@@ -365,17 +365,17 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-04-11)
+## Schema Statistics (as of 2026-04-12)
 
 | Category | Count |
 |----------|-------|
-| **Tables** | 103 |
-| **Views** | 41 |
+| **Tables** | 106 |
+| **Views** | 42 |
 | **Functions (RPCs)** | 60 |
-| **RLS Policies** | 392 |
-| **Audit Triggers** | 61 |
-| **Explicit GRANTs** | 103 tables × 2 roles (authenticated + service_role) |
-| **Schema backup** | schema/nextgen-schema-current.sql (2026-04-11) |
+| **RLS Policies** | 402 |
+| **Audit Triggers** | 63 |
+| **Explicit GRANTs** | 106 tables × 2 roles (authenticated + service_role) |
+| **Schema backup** | schema/nextgen-schema-current.sql (2026-04-11) — PENDING new dump |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
 | **Production Namespaces** | 17 (all region = 'ca') |
@@ -867,6 +867,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.10 | 2026-04-12 | **Multi-server DP schema — SQL scripts generated.** NEW: `planning/sql/multi-server/` (4 SQL files: 01-tables, 02-rls, 03-migration, 04-views). 3 new tables: `servers` (namespace-scoped), `server_role_types` (reference, 6 seed rows), `deployment_profile_servers` (junction, many-to-many). 10 RLS policies, 2 audit triggers, 3 view GRANTs. Migration: 73 servers extracted from comma-separated `server_name` data, 75 junction links. Views: `vw_server_technology_report` rewritten (entity-based), `vw_application_infrastructure_report` + `vw_technology_tag_lifecycle_risk` updated (added `server_names` column), new `vw_server_deployment_summary`. Updated `testing/security-posture-validation.sql` v1.5→v1.6 (sentinels: 106 tables, 402 policies, 63 audit triggers, 42 views). Gotcha: DROP VIEW removes GRANTs — must re-GRANT after recreate. Schema stats: 103→106 tables, 392→402 policies, 61→63 audit triggers, 41→42 views. Schema backup PENDING. |
 | v2.09 | 2026-04-11 | **Application Categories Session 1 executed + schema backup refresh.** NEW: `planning/application-categories/` v1.0 ☪ — 3-session initiative against the existing 14-row `application_categories` catalog. Session 1 data-only enrichment: 32/32 Riverside apps assigned, 53 total category assignments (100% coverage), 0 UNCATEGORIZED misuse, 12 of 13 real categories used (DEVELOPMENT unused by design). Per-category breakdown: RECORDS 11, CRM 10, LEGAL 7, FINANCE 5, INFRASTRUCTURE 5, HR 3, GIS_SPATIAL 3, HEALTH 3, ANALYTICS 2, ERP 2, SECURITY 1, COLLABORATION 1. Catalog level-set identified 3 missing Gartner MQs (ITSM, EAM, FSM) shoehorning ServiceNow ITSM / ServiceDesk Plus / Samsara Fleet / Sensus FlexNet — deferred to future Phase 2 catalog refinement. NEW: `planning/application-categories/enrichment-sql/` v1.0 ☪ (7 chunked SQL files, CTE-driven, SQL-Editor-safe). Schema metadata: `application_categories` table comment corrected to reflect M:M (stale ARM v2.0 comment said 'exactly one category'). Schema backup refreshed 2026-04-03 → 2026-04-11 (`schema/nextgen-schema-current.sql`). Schema Statistics updated: tables 102→103, RLS policies 389→392, audit triggers 60→61 (views 41, functions 60 unchanged — drift was pre-existing, harvested during this session's §9 stats alignment). Sessions 2 and 3 (AI Chat category tools + eval) ready to run. Document count 117→118. |
 | v2.05 | 2026-04-09 | **CSV Import v2 DEPLOYED.** `features/csv-import/architecture.md` v1.0→v2.0 🟡→🟢. Complete rewrite of ImportApplications.tsx: 5-step wizard with preview table (green/yellow/red validation), import batch tracking (`import_batches` table + `applications.import_batch_id`), undo with modification detection, `external_id` column, DP fields (hosting/cloud/env) with retry loop, assessment scores (T-scores→DP, B-scores→portfolio_assignments), namespace admin + platform admin gate, 500-row cap, template download, import history table. Schema: `import_batches` table + `applications.import_batch_id` FK + `applications.external_id`. Sidebar gate fixed (was workspace admin, now namespace admin). Empty state "Import from CSV" button on ApplicationsPool. AS-BUILT 85→86. AS-DESIGNED 30→29. |
 | v2.08 | 2026-04-10 | **GitBook Phase 0 demo data enrichment — EXECUTED.** NEW: `planning/gitbook-phase-0-readiness.md` v1.0 ☪ — readiness walk against City of Riverside, 4 READY / 4 NEEDS ENRICHMENT. NEW: `planning/phase-0-assets/enrichment-sql/` (9 SQL files + README) — idempotent, namespace-scoped, Supabase-SQL-Editor-safe enrichment chunks closing article 2.1/2.4/4.2/4.3 demo gaps (plus optional 1.4). Executed 2026-04-10: 3 CAD contacts seeded, 3 integrations DP-aligned + ServiceNow CMDB Sync named, 3 new FY2026 workspace budgets (Fire/PW/Finance = +$3.65M), top-3 IT services contracted + Azure pulled into renewal window, CAD PROD DP data_center+server_name populated, 2 new cost_bundle DPs (CentralSquare $85K + Hexagon $110K). Security posture + data quality validators pass. CLAUDE.md companion rule: "Supabase SQL Editor — Multi-statement output semantics" (commit 9bccf67 on code repo, merged to dev). Document count 115→117 (readiness report + enrichment-sql bundle, both REFERENCE). |
