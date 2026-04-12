@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** April 11, 2026
+**As of:** April 12, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -35,13 +35,16 @@
 | 43 | RBAC | Assessment permission split — who can assess vs edit app | Currently same permission. Should be separable. Architecture decision needed. ~1-2 days. | -- | Stuart |
 | 44 | RBAC | Flag CREATE viewer exception — flags INSERT policy allows any workspace member | ADR: Flags are governance, not data edits. Viewer can create but not update/delete. Part of gamification Phase 1. | Gamification Phase 1 | Stuart |
 | 57 | UX | Scope indicator — show user's data visibility | Display "N of M workspaces" indicator in tab bar or header. Users who don't see all workspaces should know their view is filtered. ~0.5 day. | -- | Stuart + Claude Code |
-| 63 | Feature | Servers on Visual Diagram + Dashboard | Server_name now shows on Visual tab DP nodes + tooltip (Mar 19, branch `feat/dp-server-name-visual`). Remaining: surface on Overview dashboard. ~0.5 day. | -- | Stuart + Claude Code |
+| 63 | Feature | ~~Servers on Visual Diagram + Dashboard~~ | ✅ **SUPERSEDED by #93** (Multi-Server DP). Original single `server_name` display on Visual tab DP nodes shipped Mar 19. Now evolving to full many-to-many server model. | -- | Stuart + Claude Code |
+| 93 | Feature | Multi-Server Deployment Profiles | **Phase 1 COMPLETE (Apr 12).** Schema deployed: `servers` (106th table), `server_role_types`, `deployment_profile_servers`. 10 RLS policies, 2 audit triggers. Migration: 73 servers extracted, 75 junction links. 4 views updated/created. Remaining phases: Phase 2 (types/hooks/tag picker/server mgmt page), Phase 3 (dashboards/CSV), Phase 4 (visual tab + AI Chat), Phase 5 (drop `server_name`, docs). Spec: `features/technology-health/multi-server-dp-design.md`. | #63 (superseded) | Stuart + Claude Code |
+| 94 | Feature | Integration Field Parity — OG to NextGen | OG-vs-NextGen field comparison identified 6 gaps: (1) lifecycle start/end dates missing from schema, (2) SFTP transport fields missing (sftp_required, sftp_host, sftp_credentials_status), (3) `notes` + `sla_description` columns exist in DB but not rendered in AddConnectionModal UI, (4) integration contacts (`integration_contacts` table exists with roles but no UI in form), (5) `integration_method_types` missing report/etl/message_queue codes for Garland data patterns, (6) direction vocab mismatch (cosmetic, deferred). 2-phase delivery: Phase 1 (schema + dates + notes/SLA UI), Phase 2 (transport section + contacts in form). Spec: `features/integrations/integration-field-parity-design.md`. ~2-3 hrs total. | -- | Stuart + Claude Code |
 | 64 | Feature | Namespace Management UI completion | Phase 25.10 partially built. Remaining scope TBD. Prerequisites met (25.8, 25.9 complete). | -- | Stuart + Claude Code |
 | 65 | Feature | Budget Alerts frontend | DB layer deployed (alert_preferences table, vw_budget_alerts view). Frontend pending. ~1-2 days. | -- | Stuart + Claude Code |
 | 66 | Feature | In-App Support S.6 — Assessment tour | Shepherd.js already integrated (S.2 complete). Step-by-step assessment walkthrough. ~0.5 day. | -- | Stuart + Claude Code |
 | ~~68~~ | ~~Feature~~ | ~~TypeScript types — update `VwIntegrationDetail` for 4 new DP columns~~ | ✅ **CLOSED Apr 4.** Full 34-column sync deployed. DP selector in Add Connection modal + DP name in connections list. `data_sensitivity` bug fixed. Cost bundle DPs excluded. Integration-DP Phase 3 complete. | -- | Stuart + Claude Code |
 | 70 | Feature | AI Chat: add teams query tool | `teams` table not discoverable by AI Chat. Add `search_teams` tool to `ai-chat/tools.ts` exposing team name, scope, DP assignment counts. Example questions: "what teams support SAP?", "which team manages Finance apps?" ~1 hr. | -- | Stuart + Claude Code |
 | 71 | Feature | Global Search: add teams entity | `teams` table not in `global_search` RPC. Add `team_results` WITH clause searching by team name. Requires SQL script + AppHeader.tsx routing. ~1 hr. | -- | Stuart + Claude Code |
+| 95 | Feature | AI Chat: add server query tool | `servers` and `vw_server_deployment_summary` not discoverable by AI Chat. Add tool querying `vw_server_deployment_summary` to answer "what apps run on PROD-SQL-01?", "which servers does AppX use?", "show all database servers". Part of multi-server Phase 4. ~1 hr. | #93 Phase 4 | Stuart + Claude Code |
 | 83 | Database | audit_logs.workspace_id FK blocks orphan cleanup | `audit_log_trigger()` tries to INSERT the deleted row's workspace_id into audit_logs, but audit_logs has its own FK to workspaces — DELETE of orphaned workspace_users fails. Discovered during EV-002 cleanup (Apr 9). Fix: make `audit_logs.workspace_id` FK ON DELETE SET NULL, or drop the FK (audit logs should survive entity deletion). ~15 min SQL. | -- | Stuart |
 | 84 | SOC2 | generate_soc2_evidence RPC — last_manual_backup hardcoded | RPC returns hardcoded `last_manual_backup: "2026-02-08"` — 60+ days stale as of EV-002. Options: make dynamic (query pg_stat_backup?), or update on each manual pg_dump. Flagged in both EV-001 and EV-002 validation. ~15 min. | -- | Stuart |
 | 85 | SOC2 | generate_soc2_evidence RPC — schema_function_count scope | Function count jumped from 50 (EV-001) to 1,283 (EV-002). Likely now includes pg_catalog/extension functions instead of just public schema user functions. Review RPC query and scope correctly. ~15 min. | -- | Stuart |
@@ -208,10 +211,10 @@ These features have complete architecture documents but no code implementation. 
 | Priority | Count | Theme |
 |----------|-------|-------|
 | **HIGH** | 3 | 3 SOC2 policies (OVERDUE) — Delta-assigned |
-| **MEDIUM** | 22 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC assessment split, scope indicator, servers on visual/dashboard, namespace UI, budget alerts, assessment tour, VwIntegrationDetail DP columns |
+| **MEDIUM** | 24 | Identity rewrite, compliance (3 more OVERDUE), Delta enablement, demo data, website, RBAC assessment split, scope indicator, **multi-server DPs (#93)**, **integration field parity (#94)**, namespace UI, budget alerts, assessment tour |
 | **LOW** | 15 | Doc cleanup, OAuth cosmetic, polish, RBAC naming, cron job, ChartsView decomposition, CSV export label, Tech Health on app detail, **+2 data-quality legacy casing items (#86, #87) flagged Apr 10** |
 | **Feature Roadmap** | 11 | Edge Functions (T1), AI Chat (T1), Gamification (T2), Scoring Patterns (T2), Realtime (T2), Business Capability (T2), App Relationships (T2), Standards Ph2 (T2), Cloud Discovery (Future), Unified Chat (Future), ITSM (Future) |
-| **Total Open** | 40 | Apr 10: +2 data quality items (#86, #87). GitBook Phase 0 enrichment closed. |
+| **Total Open** | 42 | Apr 12: +2 features (#93 multi-server DP, #94 integration field parity). #63 superseded by #93. |
 
 ### SOC2 Policy Scorecard
 
