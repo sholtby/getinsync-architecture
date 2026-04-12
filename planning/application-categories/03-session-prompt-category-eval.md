@@ -1,12 +1,4 @@
-# Session Prompt 03 — AI Chat Category Tools Re-Evaluation (Application Categories, Part 3 of 3)
-
-> **Copy everything below the `---` line into a fresh Claude Code session.**
-> It is a complete, standalone brief — it assumes no prior conversation context.
-> This session is evaluation-only. It pulls AI Chat traces from `ai_chat_messages`, scores 15 queries against the same Batch 0/1 rubric, and writes a frozen results doc. No code, no database writes, no deploys.
-
----
-
-## Task: Re-evaluate the AI Chat harness with the new category tools and produce a frozen results doc
+# Task: Re-evaluate the AI Chat harness with the new category tools and produce a frozen results doc
 
 You are starting fresh. Read this entire brief before doing anything. Do not read other files in the repo until instructed. This session is measurement-only — do not write code, do not deploy, do not merge.
 

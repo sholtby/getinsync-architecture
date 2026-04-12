@@ -4,6 +4,13 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 12, 2026
+
+- **Multi-Server Deployment Profiles** — Deployment profiles now support linking multiple servers instead of a single server name text field. When editing a deployment profile (On-Premise, Hybrid, Third-Party Hosted, or Cloud), the new server picker lets you search existing servers by name, link multiple servers, assign a role to each (Database, Web, Application, File, Utility), and mark one as primary with a star toggle. If a server doesn't exist yet, type the name and select "Create server" to add it inline. Existing server data has been migrated automatically.
+- **Server Management Page** — A new Servers page under Settings > Organization lets namespace administrators manage the server inventory. Create, edit, decommission, or delete servers. The table shows server name, OS, data center, status, and linked deployment profile count. Search by name, filter by status (Active/Decommissioned/All), with full pagination.
+
+---
+
 ## April 11, 2026
 
 - **AI Assistant — Smarter answers across the board** — A multi-batch tuning effort raised the AI Assistant's answer-quality score from 2/10 to 10/10 on a fixed evaluation set. Six concrete improvements you'll notice: (1) **rationalization questions** like "which of two overlapping systems should we consolidate to" now correctly recommend the system with better tech health, lower remediation effort, mainstream lifecycle, and assigned ownership — instead of the older system with broader functional coverage; (2) **risk questions** correctly call the technology-risk tool instead of the cost-analysis tool, so high-cost-but-healthy apps no longer get flagged as risks; (3) **listing questions** like "list my crown jewels" now return real names instead of failing; (4) **vendor consolidation questions** sum both cost channels (cost bundles + IT service allocations) so vendor totals aren't understated by half; (5) **multi-tool analyses like SWOT** now correctly orchestrate multiple data sources before answering; (6) **graceful refusals** for questions the portfolio model can't answer (historical trends, PII classification) now happen cleanly instead of producing inferred or fabricated answers.

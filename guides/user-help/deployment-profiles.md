@@ -41,11 +41,11 @@ Each deployment profile captures:
 | **Cloud Provider** | AWS, Azure, GCP, Oracle Cloud, or other (if cloud-hosted) |
 | **Region** | The geographic region or data center where it runs |
 | **Data Center** | Your organization's specific data center (for on-premises or hybrid) |
-| **Server Name** | Optional label for the physical or virtual server (for on-premises, hybrid, third-party hosted, or cloud deployments) |
+| **Servers** | One or more servers linked to this deployment, each with a role (database, web, application, file, utility) and an optional primary designation |
 
-The hosting type drives what other fields are relevant. For example, if you select "SaaS," you do not need to specify a data center. If you select "On-Premise," you do not need a cloud provider. The Server Name field only appears for hosting types where a long-lived server is expected (On-Premise, Hybrid, Third-Party Hosted, Cloud).
+The hosting type drives what other fields are relevant. For example, if you select "SaaS," you do not need to specify a data center. If you select "On-Premise," you do not need a cloud provider. The Servers field only appears for hosting types where long-lived servers are expected (On-Premise, Hybrid, Third-Party Hosted, Cloud).
 
-As you type a server name, suggestions from existing server names in your organization appear automatically. This helps maintain consistency — for example, if someone already entered "PROD-SQL-01," you will see it suggested rather than accidentally typing "Prod-SQL-1."
+The server picker lets you search existing servers in your organization by name. Select a server to link it — it appears as a chip showing the server name, a role dropdown, and a star toggle to mark it as the primary server. You can link multiple servers to a single deployment profile (e.g., a database server, a web server, and an application server). If the server you need does not exist yet, type the name and select "Create server" to add it inline.
 
 ---
 
@@ -71,7 +71,7 @@ The primary profile's technical scores appear on the App Health dashboard by def
 3. Click **Add Deployment Profile**
 4. Select the hosting type — the form adapts to show relevant fields
 5. Fill in environment, provider, region, or data center as applicable
-6. If your hosting type involves a long-lived server (On-Premise, Hybrid, Third-Party Hosted, or Cloud), you can optionally enter a **Server Name** — suggestions from existing server names in your organization appear as you type, helping you stay consistent
+6. If your hosting type involves long-lived servers (On-Premise, Hybrid, Third-Party Hosted, or Cloud), you can optionally link **Servers** — search for existing servers or create new ones inline, assign a role to each (database, web, application, etc.), and mark one as primary
 7. Save
 
 The first profile you create automatically becomes the primary. You can change which profile is primary at any time.
