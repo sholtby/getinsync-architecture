@@ -75,7 +75,7 @@ None — this session was TypeScript-only. Schema was deployed in prior Session 
 
 ## Context for Next Session
 
-> **Phase 2b — Multi-Server DP Tag Picker + Server Management Page**
+> **Session 03 — Multi-Server DP: Server Tag Picker + DP Forms + Server Management Page**
 
 Next session should:
 1. Build the server tag picker component (multi-select typeahead with inline create)
