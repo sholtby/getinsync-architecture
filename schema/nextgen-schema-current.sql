@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict be6TeIvke20ardRkbAXJxmyvLJusJecF69Alef89JEqYMFUH9CcsyRbbW8uRVU4
+\restrict s59TrpexJbOZl31CgvErbZLMCz9EggqQxNflg99gWKqAMRRztpdlzuYS4ubUNkf
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -4409,66 +4409,75 @@ CREATE FUNCTION realtime.is_visible_through_filters(columns realtime.wal_column[
 -- Name: list_changes(name, name, integer, integer); Type: FUNCTION; Schema: realtime; Owner: -
 --
 
-CREATE FUNCTION realtime.list_changes(publication name, slot_name name, max_changes integer, max_record_bytes integer) RETURNS SETOF realtime.wal_rls
+CREATE FUNCTION realtime.list_changes(publication name, slot_name name, max_changes integer, max_record_bytes integer) RETURNS TABLE(wal jsonb, is_rls_enabled boolean, subscription_ids uuid[], errors text[], slot_changes_count bigint)
     LANGUAGE sql
     SET log_min_messages TO 'fatal'
     AS $$
-      with pub as (
-        select
-          concat_ws(
-            ',',
-            case when bool_or(pubinsert) then 'insert' else null end,
-            case when bool_or(pubupdate) then 'update' else null end,
-            case when bool_or(pubdelete) then 'delete' else null end
-          ) as w2j_actions,
-          coalesce(
-            string_agg(
-              realtime.quote_wal2json(format('%I.%I', schemaname, tablename)::regclass),
-              ','
-            ) filter (where ppt.tablename is not null and ppt.tablename not like '% %'),
-            ''
-          ) w2j_add_tables
-        from
-          pg_publication pp
-          left join pg_publication_tables ppt
-            on pp.pubname = ppt.pubname
-        where
-          pp.pubname = publication
-        group by
-          pp.pubname
-        limit 1
-      ),
-      w2j as (
-        select
-          x.*, pub.w2j_add_tables
-        from
-          pub,
-          pg_logical_slot_get_changes(
-            slot_name, null, max_changes,
-            'include-pk', 'true',
-            'include-transaction', 'false',
-            'include-timestamp', 'true',
-            'include-type-oids', 'true',
-            'format-version', '2',
-            'actions', pub.w2j_actions,
-            'add-tables', pub.w2j_add_tables
-          ) x
-      )
-      select
-        xyz.wal,
-        xyz.is_rls_enabled,
-        xyz.subscription_ids,
-        xyz.errors
-      from
-        w2j,
-        realtime.apply_rls(
-          wal := w2j.data::jsonb,
-          max_record_bytes := max_record_bytes
-        ) xyz(wal, is_rls_enabled, subscription_ids, errors)
-      where
-        w2j.w2j_add_tables <> ''
-        and xyz.subscription_ids[1] is not null
-    $$;
+  WITH pub AS (
+    SELECT
+      concat_ws(
+        ',',
+        CASE WHEN bool_or(pubinsert) THEN 'insert' ELSE NULL END,
+        CASE WHEN bool_or(pubupdate) THEN 'update' ELSE NULL END,
+        CASE WHEN bool_or(pubdelete) THEN 'delete' ELSE NULL END
+      ) AS w2j_actions,
+      coalesce(
+        string_agg(
+          realtime.quote_wal2json(format('%I.%I', schemaname, tablename)::regclass),
+          ','
+        ) filter (WHERE ppt.tablename IS NOT NULL AND ppt.tablename NOT LIKE '% %'),
+        ''
+      ) AS w2j_add_tables
+    FROM pg_publication pp
+    LEFT JOIN pg_publication_tables ppt ON pp.pubname = ppt.pubname
+    WHERE pp.pubname = publication
+    GROUP BY pp.pubname
+    LIMIT 1
+  ),
+  -- MATERIALIZED ensures pg_logical_slot_get_changes is called exactly once
+  w2j AS MATERIALIZED (
+    SELECT x.*, pub.w2j_add_tables
+    FROM pub,
+         pg_logical_slot_get_changes(
+           slot_name, null, max_changes,
+           'include-pk', 'true',
+           'include-transaction', 'false',
+           'include-timestamp', 'true',
+           'include-type-oids', 'true',
+           'format-version', '2',
+           'actions', pub.w2j_actions,
+           'add-tables', pub.w2j_add_tables
+         ) x
+  ),
+  -- Count raw slot entries before apply_rls/subscription filter
+  slot_count AS (
+    SELECT count(*)::bigint AS cnt
+    FROM w2j
+    WHERE w2j.w2j_add_tables <> ''
+  ),
+  -- Apply RLS and filter as before
+  rls_filtered AS (
+    SELECT xyz.wal, xyz.is_rls_enabled, xyz.subscription_ids, xyz.errors
+    FROM w2j,
+         realtime.apply_rls(
+           wal := w2j.data::jsonb,
+           max_record_bytes := max_record_bytes
+         ) xyz(wal, is_rls_enabled, subscription_ids, errors)
+    WHERE w2j.w2j_add_tables <> ''
+      AND xyz.subscription_ids[1] IS NOT NULL
+  )
+  -- Real rows with slot count attached
+  SELECT rf.wal, rf.is_rls_enabled, rf.subscription_ids, rf.errors, sc.cnt
+  FROM rls_filtered rf, slot_count sc
+
+  UNION ALL
+
+  -- Sentinel row: always returned when no real rows exist so Elixir can
+  -- always read slot_changes_count. Identified by wal IS NULL.
+  SELECT null, null, null, null, sc.cnt
+  FROM slot_count sc
+  WHERE NOT EXISTS (SELECT 1 FROM rls_filtered)
+$$;
 
 
 --
@@ -6531,7 +6540,7 @@ CREATE TABLE public.application_categories (
 -- Name: TABLE application_categories; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.application_categories IS 'Namespace-scoped application classification taxonomy. ARM v2.0. Each app gets exactly one category.';
+COMMENT ON TABLE public.application_categories IS 'Namespace-scoped application classification taxonomy. ARM v2.0. Apps may have many categories (M:M via application_category_assignments).';
 
 
 --
@@ -11120,38 +11129,6 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
--- Name: messages_2026_04_06; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_06 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: messages_2026_04_07; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_07 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
 -- Name: messages_2026_04_08; Type: TABLE; Schema: realtime; Owner: -
 --
 
@@ -11220,6 +11197,38 @@ CREATE TABLE realtime.messages_2026_04_11 (
 --
 
 CREATE TABLE realtime.messages_2026_04_12 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_13; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_13 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_14; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_14 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -11429,20 +11438,6 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
--- Name: messages_2026_04_06; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_06 FOR VALUES FROM ('2026-04-06 00:00:00') TO ('2026-04-07 00:00:00');
-
-
---
--- Name: messages_2026_04_07; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_07 FOR VALUES FROM ('2026-04-07 00:00:00') TO ('2026-04-08 00:00:00');
-
-
---
 -- Name: messages_2026_04_08; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
@@ -11475,6 +11470,20 @@ ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_11
 --
 
 ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_12 FOR VALUES FROM ('2026-04-12 00:00:00') TO ('2026-04-13 00:00:00');
+
+
+--
+-- Name: messages_2026_04_13; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_13 FOR VALUES FROM ('2026-04-13 00:00:00') TO ('2026-04-14 00:00:00');
+
+
+--
+-- Name: messages_2026_04_14; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_14 FOR VALUES FROM ('2026-04-14 00:00:00') TO ('2026-04-15 00:00:00');
 
 
 --
@@ -13101,22 +13110,6 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
--- Name: messages_2026_04_06 messages_2026_04_06_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_06
-    ADD CONSTRAINT messages_2026_04_06_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_04_07 messages_2026_04_07_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_07
-    ADD CONSTRAINT messages_2026_04_07_pkey PRIMARY KEY (id, inserted_at);
-
-
---
 -- Name: messages_2026_04_08 messages_2026_04_08_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
@@ -13154,6 +13147,22 @@ ALTER TABLE ONLY realtime.messages_2026_04_11
 
 ALTER TABLE ONLY realtime.messages_2026_04_12
     ADD CONSTRAINT messages_2026_04_12_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_13 messages_2026_04_13_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_13
+    ADD CONSTRAINT messages_2026_04_13_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_14 messages_2026_04_14_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_14
+    ADD CONSTRAINT messages_2026_04_14_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
@@ -14849,20 +14858,6 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
--- Name: messages_2026_04_06_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_06_inserted_at_topic_idx ON realtime.messages_2026_04_06 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_04_07_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_07_inserted_at_topic_idx ON realtime.messages_2026_04_07 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
 -- Name: messages_2026_04_08_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
@@ -14895,6 +14890,20 @@ CREATE INDEX messages_2026_04_11_inserted_at_topic_idx ON realtime.messages_2026
 --
 
 CREATE INDEX messages_2026_04_12_inserted_at_topic_idx ON realtime.messages_2026_04_12 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_13_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_13_inserted_at_topic_idx ON realtime.messages_2026_04_13 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_14_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_14_inserted_at_topic_idx ON realtime.messages_2026_04_14 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
@@ -14958,34 +14967,6 @@ CREATE INDEX name_prefix_search ON storage.objects USING btree (name text_patter
 --
 
 CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes USING btree (name, bucket_id);
-
-
---
--- Name: messages_2026_04_06_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_06_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_06_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_06_pkey;
-
-
---
--- Name: messages_2026_04_07_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_07_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_07_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_07_pkey;
 
 
 --
@@ -15056,6 +15037,34 @@ ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.
 --
 
 ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_12_pkey;
+
+
+--
+-- Name: messages_2026_04_13_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_13_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_13_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_13_pkey;
+
+
+--
+-- Name: messages_2026_04_14_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_14_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_14_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_14_pkey;
 
 
 --
@@ -22421,5 +22430,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict be6TeIvke20ardRkbAXJxmyvLJusJecF69Alef89JEqYMFUH9CcsyRbbW8uRVU4
+\unrestrict s59TrpexJbOZl31CgvErbZLMCz9EggqQxNflg99gWKqAMRRztpdlzuYS4ubUNkf
 
