@@ -332,6 +332,18 @@ JOIN public.workspaces w ON w.id = dp.workspace_id
 LEFT JOIN public.data_centers dc ON dc.id = s.data_center_id;
 
 
+-- -----------------------------------------------------------------------------
+-- 5. GRANTs for views
+-- DROP + CREATE removes existing GRANTs; CREATE OR REPLACE preserves them.
+-- Explicitly grant SELECT on all views to ensure frontend access.
+-- -----------------------------------------------------------------------------
+
+GRANT SELECT ON public.vw_server_technology_report TO authenticated, service_role;
+GRANT SELECT ON public.vw_application_infrastructure_report TO authenticated, service_role;
+GRANT SELECT ON public.vw_server_deployment_summary TO authenticated, service_role;
+-- vw_technology_tag_lifecycle_risk already has GRANTs (CREATE OR REPLACE preserved them)
+
+
 -- =============================================================================
 -- Verification SELECT
 -- =============================================================================
