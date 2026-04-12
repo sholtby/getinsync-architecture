@@ -216,9 +216,9 @@ These metrics tell the SOC2 story month over month:
 
 | Metric | Current (EV-002, Apr 9) | Expected Trend |
 |--------|--------------------------|----------------|
-| `total_tables` | 103 | Gradual increase (new features) |
-| `tables_with_rls` | 103 | Must equal total_tables (100%) |
-| `total_rls_policies` | 392 | Increases with tables |
+| `total_tables` | 106 | Gradual increase (new features) |
+| `tables_with_rls` | 106 | Must equal total_tables (100%) |
+| `total_rls_policies` | 402 | Increases with tables |
 | `total_users` | 25 | Grows with customers |
 | `platform_admins` | 3 | Stable (changes = investigate) |
 | `total_audit_entries` | 8,600 | Monotonically increasing |

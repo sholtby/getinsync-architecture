@@ -155,7 +155,7 @@ For any SOC2 auditor or enterprise security review, we can produce the following
 
 | Control | Typical Startup | GetInSync |
 |---------|----------------|-----------|
-| Data isolation | Application-layer WHERE clauses | Database-enforced RLS (357 policies) |
+| Data isolation | Application-layer WHERE clauses | Database-enforced RLS (402 policies) |
 | View security | Default (bypasses isolation) | security_invoker on all views |
 | Audit logging | Application code writes logs (gaps possible) | Database triggers (gaps impossible) |
 | Compliance validation | Manual checklist before audit | Automated validation queries, every session |
@@ -195,7 +195,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 
 | Document | Description |
 |----------|-------------|
-| RLS Policy Architecture v2.4 | Complete policy inventory for all 92 tables |
+| RLS Policy Architecture v2.4 | Complete policy inventory for all 106 tables |
 | Security Validation Runbook | Operational SQL queries for security posture checks |
 | Audit Logging DDL | Table schema, indexes, RLS on audit_logs itself |
 | Audit Logging Functions | Trigger function, evidence collection RPCs |
@@ -214,6 +214,7 @@ US and EU regions available on demand. Data never crosses regional boundaries.
 |------|-----------|
 | Feb 2026 | RLS policies complete (90 tables, 347 policies) |
 | Mar 2026 | Application Categories deployed (92 tables, 357 policies, 50 triggers) |
+| Apr 2026 | Multi-server DP schema (106 tables, 402 policies, 63 triggers) |
 | Feb 2026 | Automated validation suite operational |
 | Feb 2026 | View security hardened (29/29 custom views security_invoker; 2 extension views excluded) |
 | Feb 2026 | First evidence snapshot collected (EV-001) |
