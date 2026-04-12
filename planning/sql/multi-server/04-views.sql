@@ -10,7 +10,12 @@
 -- Date: 2026-04-12
 --
 -- All views use security_invoker = true (matching existing pattern).
--- DROP + CREATE used because column sets change.
+-- DROP + CREATE for vw_server_technology_report and vw_application_infrastructure_report
+--   (no dependent views).
+-- CREATE OR REPLACE for vw_technology_tag_lifecycle_risk (has 5 dependent views:
+--   vw_dashboard_summary, vw_dashboard_summary_scoped, vw_dashboard_workspace_breakdown,
+--   vw_run_rate_by_lifecycle_status, vw_explorer_detail).
+--   New column server_names appended at the END to preserve existing column positions.
 -- =============================================================================
 
 
@@ -219,14 +224,17 @@ LEFT JOIN LATERAL (
 
 
 -- -----------------------------------------------------------------------------
--- 3. vw_technology_tag_lifecycle_risk — Rewrite
--- OLD: single dp.server_name column
--- NEW: adds aggregated server_names, keeps server_name for backward compat
+-- 3. vw_technology_tag_lifecycle_risk — CREATE OR REPLACE
+-- Uses CREATE OR REPLACE (not DROP) because 5 dependent views exist:
+--   vw_dashboard_summary, vw_dashboard_summary_scoped,
+--   vw_dashboard_workspace_breakdown, vw_run_rate_by_lifecycle_status,
+--   vw_explorer_detail
+-- Existing columns 1-35 kept in same order (server_name at position 17 updated
+-- to use primary server with legacy fallback).
+-- New column server_names appended at position 36.
 -- -----------------------------------------------------------------------------
 
-DROP VIEW IF EXISTS public.vw_technology_tag_lifecycle_risk;
-
-CREATE VIEW public.vw_technology_tag_lifecycle_risk WITH (security_invoker='true') AS
+CREATE OR REPLACE VIEW public.vw_technology_tag_lifecycle_risk WITH (security_invoker='true') AS
 SELECT
   dptp.id AS tag_id,
   dptp.deployment_profile_id,
@@ -244,7 +252,7 @@ SELECT
   dp.workspace_id,
   dp.hosting_type,
   dp.environment,
-  -- Backward compat: keep server_name (primary server or legacy fallback)
+  -- Position 17: server_name — updated source (primary server with legacy fallback)
   COALESCE(
     (SELECT s.name FROM public.deployment_profile_servers dps
      JOIN public.servers s ON s.id = dps.server_id
@@ -252,12 +260,6 @@ SELECT
      LIMIT 1),
     dp.server_name
   ) AS server_name,
-  -- New: all servers comma-separated
-  (SELECT string_agg(s.name, ', ' ORDER BY dps2.is_primary DESC, s.name)
-   FROM public.deployment_profile_servers dps2
-   JOIN public.servers s ON s.id = dps2.server_id
-   WHERE dps2.deployment_profile_id = dp.id
-  ) AS server_names,
   dp.operational_status AS dp_operational_status,
   a.name AS application_name,
   a.operational_status AS app_operational_status,
@@ -283,7 +285,13 @@ SELECT
   CASE WHEN tlr.end_of_life_date IS NOT NULL THEN tlr.end_of_life_date - CURRENT_DATE ELSE NULL END AS days_to_eol,
   CASE WHEN tlr.extended_support_end IS NOT NULL THEN tlr.extended_support_end - CURRENT_DATE ELSE NULL END AS days_to_extended_end,
   CASE WHEN tlr.mainstream_support_end IS NOT NULL THEN tlr.mainstream_support_end - CURRENT_DATE ELSE NULL END AS days_to_mainstream_end,
-  (SELECT max(pa.criticality) FROM public.portfolio_assignments pa WHERE pa.application_id = a.id) AS max_criticality
+  (SELECT max(pa.criticality) FROM public.portfolio_assignments pa WHERE pa.application_id = a.id) AS max_criticality,
+  -- Position 36: NEW column appended at end (safe for CREATE OR REPLACE)
+  (SELECT string_agg(s.name, ', ' ORDER BY dps2.is_primary DESC, s.name)
+   FROM public.deployment_profile_servers dps2
+   JOIN public.servers s ON s.id = dps2.server_id
+   WHERE dps2.deployment_profile_id = dp.id
+  ) AS server_names
 FROM public.deployment_profile_technology_products dptp
 JOIN public.technology_products tp ON tp.id = dptp.technology_product_id
 JOIN public.deployment_profiles dp ON dp.id = dptp.deployment_profile_id
