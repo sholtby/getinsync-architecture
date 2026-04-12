@@ -1,7 +1,7 @@
 -- =============================================================================
 -- GetInSync NextGen — Security Posture Validation (No pgTAP Required)
 -- =============================================================================
--- Version: 1.5 | Date: 2026-04-09
+-- Version: 1.6 | Date: 2026-04-12
 -- Run in Supabase SQL Editor — produces a single results table
 -- No extensions needed. Read-only (no data changes).
 -- =============================================================================
@@ -20,7 +20,7 @@ WITH expected_tables AS (
     'contacts','countries','criticality_types',
     'custom_field_definitions','custom_field_values','data_centers',
     'data_classification_types','data_format_types','data_tag_types',
-    'deployment_profile_contacts','deployment_profile_it_services',
+    'deployment_profile_contacts','deployment_profile_it_services','deployment_profile_servers',
     'deployment_profile_software_products','deployment_profile_technology_products',
     'deployment_profiles','dr_statuses','environments',
     'findings','hosting_types','ideas','import_batches',
@@ -36,6 +36,7 @@ WITH expected_tables AS (
     'organizations','platform_admins','portfolio_assignments',
     'portfolio_contacts','portfolio_settings','portfolios','program_initiatives',
     'programs','remediation_efforts','sensitivity_types',
+    'server_role_types','servers',
     'service_type_categories','service_types','software_product_categories',
     'software_products','standard_regions','teams','technical_assessments',
     'technology_lifecycle_reference','technology_product_categories',
@@ -53,7 +54,7 @@ expected_audit_tables AS (
     'application_categories','application_category_assignments',
     'application_integrations','applications','contacts',
     'criticality_types','data_classification_types','data_format_types',
-    'data_tag_types','deployment_profile_technology_products','deployment_profiles',
+    'data_tag_types','deployment_profile_servers','deployment_profile_technology_products','deployment_profiles',
     'findings','ideas','initiative_dependencies',
     'initiative_deployment_profiles','initiative_it_services','initiatives',
     'import_batches','integration_contacts','integration_direction_types','integration_frequency_types',
@@ -62,7 +63,7 @@ expected_audit_tables AS (
     'it_services','namespace_users','operational_statuses',
     'organizations','platform_admins','portfolio_assignments',
     'portfolio_contacts','portfolios','program_initiatives','programs',
-    'sensitivity_types','teams','technology_lifecycle_reference','technology_products',
+    'sensitivity_types','servers','teams','technology_lifecycle_reference','technology_products',
     'user_sessions','users','vendor_lifecycle_sources',
     'workspace_contacts','workspace_users'
   ]) AS table_name
@@ -84,7 +85,7 @@ expected_views AS (
     'vw_namespace_user_detail','vw_namespace_workspace_detail',
     'vw_portfolio_costs','vw_portfolio_costs_rollup',
     'vw_program_summary','vw_run_rate_by_vendor',
-    'vw_server_technology_report','vw_service_type_picker',
+    'vw_server_deployment_summary','vw_server_technology_report','vw_service_type_picker',
     'vw_software_contract_expiry','vw_technology_health_summary',
     'vw_tag_standards_status',
     'vw_technology_standards_summary','vw_technology_tag_lifecycle_risk',
