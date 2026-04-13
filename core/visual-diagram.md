@@ -1,7 +1,7 @@
 # GetInSync NextGen — Visual Diagram Architecture
 
-**Version:** 2.6
-**Date:** April 6, 2026
+**Version:** 2.7
+**Date:** April 13, 2026
 **Status:** ✅ SHIPPED
 
 ---
@@ -166,9 +166,21 @@ Renders deployment profiles with ArchiMate-informed shape (nearly square, `borde
 - Default/On-Prem → `Server`
 
 **Level-aware rendering (via `viewLevel` in node data):**
-- **Level 1 (compact):** Name, "1°" teal badge, environment · hosting, server name, tech health %
-- **Level 2 (enriched):** Min-width 240px, tech health progress bar (8px, colored fill), integration count amber pill
-- **Level 3 (hero card):** Min-width 300px, crown jewel star, server_name, tech health bar, divider, integration summary (sends/receives/bidirectional)
+- **Level 1 (compact):** Name, "1°" teal badge, environment · hosting, primary server name only, tech health %
+- **Level 2 (enriched):** Min-width 240px, tech health progress bar (8px, colored fill), integration count amber pill, primary server name + "+N" count badge if additional servers exist (e.g. "PROD-SQL-01 +2")
+- **Level 3 (hero card):** Min-width 300px, crown jewel star, all servers listed with role labels as a mini-list (e.g. "PROD-SQL-01 (database)", "PROD-APP-01 (application)"), tech health bar, divider, integration summary (sends/receives/bidirectional)
+
+**Server rendering by zoom level (multi-server support, April 2026):**
+
+| Level | Server Rendering |
+|-------|------------------|
+| Level 1 (Compact) | Primary server name only — backward compatible appearance |
+| Level 2 (Enriched) | Primary server name + count badge if more, e.g. "PROD-SQL-01 +2" |
+| Level 3 (Hero) | All servers with roles as a mini-list inside the node card |
+
+**Data source:** Server data is fetched via `deployment_profile_servers` junction → `servers` table. Falls back to legacy `server_name` text field if no junction rows exist.
+
+**Future (out of scope for current implementation):** Add server nodes as a new tier in the React Flow graph below DPs, with edges showing role relationships. This would create a four-tier visual: Application → DP → Server → (ServiceNow CIs).
 
 **Hover hint:** Shows "Click to explore" text below the node on hover (L1/L2).
 
@@ -396,6 +408,7 @@ Design source: ArchiMate-informed visual polish prompt (April 2026).
 
 ## Future Enhancements (Not Yet Built)
 
+- **Server nodes as a graph tier:** Separate server nodes below DPs with role-labeled edges (four-tier: App → DP → Server → ServiceNow CIs). See DPNode multi-server rendering spec above for current inline approach.
 - **Level 2 tech stack nodes:** Software products, IT services, hosting, cloud provider, DR status as nodes under each DP
 - **Level 3 service/product visual:** Blast radius centered on a service or product (all DPs using it)
 - **Inter-DP edges:** Show relationships between DPs (requires `inherits_tech_from` or similar)

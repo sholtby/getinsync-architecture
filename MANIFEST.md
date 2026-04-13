@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-12 (v2.10)
+Last updated: 2026-04-13 (v2.11)
 
 ---
 
@@ -90,7 +90,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | core/conceptual-erd.md | v2.0 | 🟡 | Conceptual ERD — ProductContract replaced by ITServiceSoftwareProduct junction (updated Mar 4) |
 | core/composite-application.md | v2.0 | 🟡 | **Application Relationships — v2.0: suite children get own DP with `inherits_tech_from`, `architecture_type` field, CSDM-aligned, badge/tag UI, suite-only Phase 1 (updated Mar 8)** |
 | core/composite-application-erd.md | v2.0 | 🟡 | **Composite application ERD — v2.0: replaces `parent_application_id` with relationship table + `inherits_tech_from` (updated Mar 8)** |
-| core/deployment-profile.md | v2.0 | 🟢 | **DP-centric assessment, clone/move, naming, `inherits_tech_from` suite inheritance, CSDM auto-wiring §10 (updated Apr 6)** |
+| core/deployment-profile.md | v2.1 | 🟢 | **DP-centric assessment, clone/move, naming, `inherits_tech_from` suite inheritance, CSDM auto-wiring §10, multi-server relationship §11 (many-to-many junction with roles)** |
 | core/workspace-group.md | v1.6 | 🟢 | Workspace groups — stack-agnostic, no AWS refs found |
 | features/technology-health/technology-stack-erd.md | v1.0 | 🟢 | CSDM-aligned ERD — SP, TP, IT Services parallel to DPs |
 | features/technology-health/technology-stack-erd-addendum.md | v1.1 | 🟢 | **Two-path model: inventory tags vs IT Service cost/blast radius — DEPLOYED** |
@@ -178,13 +178,13 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| core/visual-diagram.md | v2.6 | ✅ | **Visual tab — React Flow + dagre. Four-level drill-down: App → DP → Blast Radius → Tech Products. Single-click navigation. ArchiMate-informed design language. Derived lifecycle badges on ServiceNode.** |
+| core/visual-diagram.md | v2.7 | ✅ | **Visual tab — React Flow + dagre. Four-level drill-down: App → DP → Blast Radius → Tech Products. Single-click navigation. ArchiMate-informed design language. Derived lifecycle badges on ServiceNode. Multi-server DPNode rendering (3 zoom levels).** |
 
 ### Technology Health & Risk
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| features/technology-health/dashboard.md | v1.1 | 🟢 | **Technology Health dashboard — DEPLOYED Feb 21. v1.1: Filter drawer harmonized Mar 12 — all data tabs use slide-in drawer with multi-select checkboxes.** |
+| features/technology-health/dashboard.md | v1.2 | 🟢 | **Technology Health dashboard — DEPLOYED Feb 21. v1.2: Multi-server entity-based grouping in By Server tab, vw_server_deployment_summary view. v1.1: Filter drawer harmonized.** |
 | features/technology-health/risk-boundary.md | v1.0 | ☪ | **ADR: Risk registers = GRC territory. GetInSync = computed risk indicators.** |
 | features/technology-health/infrastructure-boundary-rubric.md | v1.0 | ☪ | **What infrastructure data belongs in APM vs CMDB. Decision tree, staleness principle, server_name governance.** |
 | features/technology-health/power-bi-export.md | v1.0 | 🟡 | **Power BI Export Layer — 6 vw_pbi_* views for external BI access. Two auth approaches (Edge Function API + Service Account). SharePoint integration pattern. Enterprise tier.** |
@@ -332,7 +332,7 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
-| adr/adr-dp-infrastructure-boundary.md | v1.1 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. Garland import mapping rules, server_name governance, customer conversation guidance.** |
+| adr/adr-dp-infrastructure-boundary.md | v2.0 | ☪ | **ADR: DP Infrastructure Boundary (ACCEPTED). GetInSync vs ServiceNow — what infrastructure data belongs in APM vs CMDB. v2.0: Multi-server amendment — many-to-many junction, role context, migration from single server_name. Boundary unchanged.** |
 | adr/adr-integration-dp-alignment.md | v1.3 | ☪ | **ADR: Integration-to-DP alignment. Phase 1+2 DEPLOYED (Mar 2026), Phase 3 COMPLETE (Apr 2026). Visual tab L3 deferred to Stage C.** |
 | adr/adr-visual-tab-reactflow.md | v1.1 | ✅ | **ADR: Visual Tab React Flow Rewrite (COMPLETE). D3 replaced with React Flow + dagre. Level 3 blast radius wired to DP-scoped data.** |
 | adr/adr-csdm-export-readiness.md | v1.0 | 🟢 | **ADR: CSDM Export Readiness (ACCEPTED). §6 Teams UI DEPLOYED: Teams management CRUD + Operations section on DP card (3 team dropdowns). Schema + frontend complete.** |
@@ -868,6 +868,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.11 | 2026-04-13 | **Multi-server DP — AI Chat + architecture docs.** `supabase/functions/ai-chat/tools.ts`: server context builder rewritten to query `deployment_profile_servers` → `servers` junction with role labels and primary markers; backward-compat fallback to legacy `server_name`. `adr/adr-dp-infrastructure-boundary.md` v1.1→v2.0: Multi-Server Support amendment — many-to-many junction, boundary unchanged. `core/deployment-profile.md` v2.0→v2.1: new §11 documenting `servers` table, `deployment_profile_servers` junction, backward compat. `features/technology-health/dashboard.md` v1.1→v1.2: §3.6 + §5.3 updated for entity-based server grouping, `vw_server_deployment_summary`. `core/visual-diagram.md` v2.6→v2.7: DPNode multi-server rendering at 3 zoom levels (L1 primary only, L2 +N badge, L3 all with roles). |
 | v2.10 | 2026-04-12 | **Multi-server DP schema — SQL scripts generated.** NEW: `planning/sql/multi-server/` (4 SQL files: 01-tables, 02-rls, 03-migration, 04-views). 3 new tables: `servers` (namespace-scoped), `server_role_types` (reference, 6 seed rows), `deployment_profile_servers` (junction, many-to-many). 10 RLS policies, 2 audit triggers, 3 view GRANTs. Migration: 73 servers extracted from comma-separated `server_name` data, 75 junction links. Views: `vw_server_technology_report` rewritten (entity-based), `vw_application_infrastructure_report` + `vw_technology_tag_lifecycle_risk` updated (added `server_names` column), new `vw_server_deployment_summary`. Updated `testing/security-posture-validation.sql` v1.5→v1.6 (sentinels: 106 tables, 402 policies, 63 audit triggers, 42 views). Gotcha: DROP VIEW removes GRANTs — must re-GRANT after recreate. Schema stats: 103→106 tables, 392→402 policies, 61→63 audit triggers, 41→42 views. Schema backup PENDING. |
 | v2.09 | 2026-04-11 | **Application Categories Session 1 executed + schema backup refresh.** NEW: `planning/application-categories/` v1.0 ☪ — 3-session initiative against the existing 14-row `application_categories` catalog. Session 1 data-only enrichment: 32/32 Riverside apps assigned, 53 total category assignments (100% coverage), 0 UNCATEGORIZED misuse, 12 of 13 real categories used (DEVELOPMENT unused by design). Per-category breakdown: RECORDS 11, CRM 10, LEGAL 7, FINANCE 5, INFRASTRUCTURE 5, HR 3, GIS_SPATIAL 3, HEALTH 3, ANALYTICS 2, ERP 2, SECURITY 1, COLLABORATION 1. Catalog level-set identified 3 missing Gartner MQs (ITSM, EAM, FSM) shoehorning ServiceNow ITSM / ServiceDesk Plus / Samsara Fleet / Sensus FlexNet — deferred to future Phase 2 catalog refinement. NEW: `planning/application-categories/enrichment-sql/` v1.0 ☪ (7 chunked SQL files, CTE-driven, SQL-Editor-safe). Schema metadata: `application_categories` table comment corrected to reflect M:M (stale ARM v2.0 comment said 'exactly one category'). Schema backup refreshed 2026-04-03 → 2026-04-11 (`schema/nextgen-schema-current.sql`). Schema Statistics updated: tables 102→103, RLS policies 389→392, audit triggers 60→61 (views 41, functions 60 unchanged — drift was pre-existing, harvested during this session's §9 stats alignment). Sessions 2 and 3 (AI Chat category tools + eval) ready to run. Document count 117→118. |
 | v2.05 | 2026-04-09 | **CSV Import v2 DEPLOYED.** `features/csv-import/architecture.md` v1.0→v2.0 🟡→🟢. Complete rewrite of ImportApplications.tsx: 5-step wizard with preview table (green/yellow/red validation), import batch tracking (`import_batches` table + `applications.import_batch_id`), undo with modification detection, `external_id` column, DP fields (hosting/cloud/env) with retry loop, assessment scores (T-scores→DP, B-scores→portfolio_assignments), namespace admin + platform admin gate, 500-row cap, template download, import history table. Schema: `import_batches` table + `applications.import_batch_id` FK + `applications.external_id`. Sidebar gate fixed (was workspace admin, now namespace admin). Empty state "Import from CSV" button on ApplicationsPool. AS-BUILT 85→86. AS-DESIGNED 30→29. |

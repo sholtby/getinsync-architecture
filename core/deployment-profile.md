@@ -1,6 +1,6 @@
 # core/deployment-profile.md
 Deployment Profile Architecture - Data Residency & Location Tracking
-Last updated: 2026-04-06
+Last updated: 2026-04-13
 
 ---
 
@@ -452,9 +452,55 @@ SaaS deployment profiles skip auto-wiring. Adding a tech product shows an inform
 
 ---
 
-## 11. Future Enhancements
+## 11. Server Relationship (NEW in v2.1)
 
-### 10.1 Data Center Costs (Phase 26+)
+### 11.1 Overview
+
+Deployment Profiles support a many-to-many relationship with servers via the `deployment_profile_servers` junction table. A single DP can reference multiple servers (e.g., a database server, web server, and application server), and a single server can host multiple DPs.
+
+### 11.2 `servers` Table
+
+Namespace-scoped server reference entity. Follows the same scoping pattern as `data_centers`.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | PK |
+| `namespace_id` | uuid | FK `namespaces(id)`, namespace scoping |
+| `name` | text | Display name, e.g. "PROD-SQL-01" |
+| `os` | text | Optional OS label, e.g. "Windows Server 2022" |
+| `data_center_id` | uuid | Optional FK `data_centers(id)` |
+| `status` | text | `active` / `decommissioned` (default `active`) |
+| `notes` | text | Free-form |
+
+UNIQUE on `(namespace_id, name)`. RLS: namespace-scoped. Audit trigger enabled.
+
+### 11.3 `deployment_profile_servers` Junction
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | PK |
+| `deployment_profile_id` | uuid | FK `deployment_profiles(id)` ON DELETE CASCADE |
+| `server_id` | uuid | FK `servers(id)` ON DELETE RESTRICT |
+| `server_role` | text | Role from `server_role_types` (database, web, application, file, utility, other) |
+| `is_primary` | boolean | Default false. Marks the main server for display priority |
+
+UNIQUE on `(deployment_profile_id, server_id)`. RLS: inherited from DP's workspace/namespace scope. Audit trigger enabled.
+
+### 11.4 Backward Compatibility
+
+The legacy `server_name` text column on `deployment_profiles` is retained during transition. Consumers should prefer the junction table; if no junction rows exist, fall back to `server_name`. The column will be dropped in a future release.
+
+### 11.5 Related
+
+- **ADR:** `adr/adr-dp-infrastructure-boundary.md` v2.0 — boundary rationale and migration details
+- **Design spec:** `features/technology-health/multi-server-dp-design.md` — full schema, UI, and phased delivery plan
+- **Dashboard:** `features/technology-health/dashboard.md` — server-centric views and "By Server" tab
+
+---
+
+## 12. Future Enhancements
+
+### 12.1 Data Center Costs (Phase 26+)
 
 Track costs associated with data centers:
 ```sql
@@ -465,7 +511,7 @@ ADD COLUMN cost_allocation_basis text; -- 'square_footage', 'rack_units', 'equal
 
 Then allocate to apps based on their presence in that DC.
 
-### 10.2 Multi-Region Deployments (Phase 27+)
+### 12.2 Multi-Region Deployments (Phase 27+)
 
 Some apps span multiple regions (e.g., global CDN):
 ```sql
@@ -477,7 +523,7 @@ CREATE TABLE deployment_profile_regions (
 );
 ```
 
-### 10.3 Additional Cloud Providers
+### 12.3 Additional Cloud Providers
 
 As needed, add more providers to standard_regions:
 - IBM Cloud (ibm)
@@ -487,7 +533,7 @@ As needed, add more providers to standard_regions:
 
 ---
 
-## 12. Related Documents
+## 13. Related Documents
 
 | Document | Content |
 |----------|---------|
@@ -502,6 +548,7 @@ As needed, add more providers to standard_regions:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.1 | 2026-04-13 | Multi-server relationship. New §11: `servers` table, `deployment_profile_servers` junction (many-to-many with role and primary marker). Legacy `server_name` retained for backward compat. References ADR v2.0. |
 | v1.9 | 2026-03-08 | Add `inherits_tech_from` column for suite T-score inheritance. New §9 documenting behavior, trigger compatibility, and cross-references. |
 | v1.8 | 2026-01-31 | Add data_centers table, standard_regions table, data_center_id field, remove "N/A (Vendor Managed)", context-sensitive location tracking |
 | v1.7 | 2026-01-15 | Previous version with static region dropdown |

@@ -1,7 +1,7 @@
 # ADR: Deployment Profile Infrastructure Boundary — GetInSync vs ServiceNow
 
-**Version:** 1.1
-**Date:** March 19, 2026
+**Version:** 2.0
+**Date:** April 13, 2026
 **Status:** ACCEPTED
 **Author:** Stuart Holtby + Claude
 **Relates to:** `core/deployment-profile.md`, `features/technology-health/technology-stack-erd.md`, `features/integrations/servicenow-alignment.md`
@@ -86,7 +86,49 @@ This guidance is not Garland-specific. Any customer arriving with flat server li
 
 ---
 
+## Amendment — Multi-Server Support (April 2026)
+
+### What Changed
+
+GetInSync now supports multiple server references per Deployment Profile via a many-to-many junction table (`deployment_profile_servers`) with role context. The `servers` table is a namespace-scoped reference entity with optional attributes (OS, data center link, status).
+
+### Why
+
+Real-world import data (City of Garland — 363 apps, other municipal clients) has multiple named servers per deployment: database server, web server, application server, file server. The original single `server_name` text field forced a "pick one" choice that lost valuable portfolio intelligence — intelligence that does not require CI-level detail to be useful.
+
+### Boundary Unchanged
+
+The `servers` table is a **portfolio-level reference** for grouping and visualization. It stores:
+- Name (display label, e.g. "PROD-SQL-01")
+- Optional OS label (e.g. "Windows Server 2022")
+- Optional data center link (FK to `data_centers`)
+- Status (`active` / `decommissioned`)
+
+It is **NOT a CMDB CI**. ServiceNow still owns operational attributes: IP addresses, FQDNs, patching status, monitoring endpoints, hardware specs. The positioning statement from v1.0 remains fully in effect.
+
+### Junction Table: `deployment_profile_servers`
+
+| Column | Purpose |
+|--------|---------|
+| `deployment_profile_id` | FK to `deployment_profiles` |
+| `server_id` | FK to `servers` |
+| `server_role` | Role this server plays for this DP (database, web, application, file, utility, other) |
+| `is_primary` | Boolean — marks the "main" server for display priority and backward compatibility |
+
+Unique constraint on `(deployment_profile_id, server_id)` prevents duplicate links.
+
+### Migration
+
+Existing `server_name` text values were deduplicated into `servers` rows (73 unique servers extracted) with junction links (75 rows). The `server_name` column is retained on `deployment_profiles` during transition and will be dropped in a future release once all consumers are migrated.
+
+### Customer Conversation Guidance (Updated)
+
+> "We capture your server references for portfolio intelligence — which servers host which deployments, what role they play, and how they group for technology health analysis. Full server inventory, discovery, and operational monitoring live in ServiceNow once we publish your Application Services."
+
+---
+
 ## Changelog
 
+- **v2.0 — April 13, 2026** — Multi-Server Support amendment. Many-to-many `deployment_profile_servers` junction with role context. `servers` entity as portfolio-level reference (not CMDB CI). Migration from single `server_name` text field. Boundary unchanged — ServiceNow still owns CI-level infrastructure.
 - **v1.1 — March 19, 2026** — Expanded Garland Import Implication section into general import guidance applicable to all customers with infrastructure-rich source data.
 - **v1.0 — March 19, 2026** — Initial ADR.

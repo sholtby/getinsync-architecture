@@ -1,8 +1,8 @@
 # GetInSync — Technology Health Dashboard Architecture
 
-**Version:** 1.0  
-**Date:** February 13, 2026  
-**Status:** 🟡 PROPOSED  
+**Version:** 1.2  
+**Date:** April 13, 2026  
+**Status:** 🟢 DEPLOYED  
 **Companion to:** features/technology-health/technology-stack-erd-addendum.md, features/technology-health/lifecycle-intelligence.md
 
 ---
@@ -136,22 +136,15 @@ Support Group maps to either:
 
 No schema change needed if the constraint already allows flexible role types.
 
-### 3.6 Server Name on Deployment Profile
+### 3.6 Server Relationship (UPDATED April 2026)
 
-```sql
-ALTER TABLE deployment_profiles
-ADD COLUMN server_name TEXT;
+**Original design (v1.0):** Single `server_name` text field on `deployment_profiles`. This was deployed and used for initial imports.
 
-CREATE INDEX idx_dp_server_name ON deployment_profiles(server_name) WHERE server_name IS NOT NULL;
-```
+**Current design (v1.2):** Many-to-many relationship via `deployment_profile_servers` junction table. Each DP can reference multiple servers with role context (database, web, application, file, utility, other) and a primary marker.
 
-**What it means:** Optional hostname reference (e.g., "SKGOVW072P"). This is a reference label, not a CMDB CI link. For organizations that track individual servers, this enables the "By Server" report. For SaaS apps or cloud deployments, this stays NULL.
+See `core/deployment-profile.md` §11 for full schema and `adr/adr-dp-infrastructure-boundary.md` v2.0 for boundary rationale.
 
-**Important:** One DP can represent one server. If an app runs on 3 servers, it has 3 DPs (or we accept that one DP = one environment which may span multiple servers, and server_name is the primary/representative hostname).
-
-**Alternative:** `server_names` as TEXT[] (array) to allow multiple hostnames per DP. Simpler for the common case where one environment runs on multiple servers.
-
-**Recommendation:** Single `server_name` TEXT field. If they need multi-server, create multiple DPs. This aligns with CSDM where each cmdb_ci_service_auto maps to infrastructure CIs individually.
+**Legacy `server_name`:** Retained on `deployment_profiles` during transition. Will be dropped once all consumers migrate to the junction table.
 
 ### 3.7 Technology Subcategory / Class
 
@@ -395,38 +388,19 @@ LEFT JOIN LATERAL (
 ) manager_contact ON true;
 ```
 
-### 5.3 Server View (replaces their "By Server" table)
+### 5.3 Server View (replaces their "By Server" table) — UPDATED April 2026
 
-```sql
-CREATE OR REPLACE VIEW vw_server_technology_report
-WITH (security_invoker = true) AS
-SELECT
-  dp.server_name,
-  dp.operational_status AS server_status,
-  dp.environment,
-  w.namespace_id,
-  w.name AS workspace_name,
-  -- Count of apps on this server
-  COUNT(DISTINCT a.id) AS business_application_count,
-  -- Aggregate technology (first of each category for display)
-  -- For a full server view, UI would query deployment_profile_technology_products directly
-  string_agg(DISTINCT 
-    CASE WHEN tp.category = 'operating_system' THEN tp.name || ' ' || COALESCE(dptp.deployed_version, '') END, 
-    ', ') AS operating_systems,
-  string_agg(DISTINCT 
-    CASE WHEN tp.category = 'database' THEN tp.name || ' ' || COALESCE(dptp.deployed_version, '') END, 
-    ', ') AS databases,
-  string_agg(DISTINCT 
-    CASE WHEN tp.category = 'web_server' THEN tp.name || ' ' || COALESCE(dptp.deployed_version, '') END, 
-    ', ') AS web_servers
-FROM deployment_profiles dp
-JOIN applications a ON a.id = dp.application_id
-JOIN workspaces w ON w.id = a.workspace_id
-LEFT JOIN deployment_profile_technology_products dptp ON dptp.deployment_profile_id = dp.id
-LEFT JOIN technology_products tp ON tp.id = dptp.technology_product_id
-WHERE dp.server_name IS NOT NULL
-GROUP BY dp.server_name, dp.operational_status, dp.environment, w.namespace_id, w.name;
-```
+The "By Server" tab now uses entity-based grouping via `servers.id` instead of free-text `server_name`. The view `vw_server_technology_report` has been rewritten to join through `deployment_profile_servers` → `servers`, and a new `vw_server_deployment_summary` view provides a server-centric perspective ("what runs on this box?").
+
+**Key changes:**
+- Grouping by `servers.id` (entity) instead of `deployment_profiles.server_name` (free text)
+- New columns available from the `servers` entity: OS, Data Center (via `data_centers` FK), Status (`active`/`decommissioned`)
+- Server role from junction table (`server_role`) displayed per DP link
+- Primary marker (`is_primary`) used for display priority
+
+**New view: `vw_server_deployment_summary`** — server-centric view joining `servers` → `deployment_profile_servers` → `deployment_profiles` → `applications`. Columns include: server_id, server_name, server_os, server_status, data_center_name, deployment_profile_id/name, server_role, is_primary, application_id/name, workspace_id/name, environment, tech_health.
+
+See `features/technology-health/multi-server-dp-design.md` for the full view column spec.
 
 ---
 
@@ -584,4 +558,6 @@ This is a natural extension of the City of Garland import workflow — similar C
 
 | Version | Date | Changes |
 |---|---|---|
+| v1.2 | 2026-04-13 | Multi-server entity-based grouping. §3.6 updated from single `server_name` to many-to-many junction. §5.3 updated: `vw_server_technology_report` rewritten for entity grouping, new `vw_server_deployment_summary` view documented. |
+| v1.1 | 2026-03-12 | Filter drawer harmonized — all data tabs use slide-in drawer with multi-select checkboxes. |
 | v1.0 | 2026-02-13 | Initial. Complete field mapping from customer Power BI. Schema changes, views, UI architecture. |
