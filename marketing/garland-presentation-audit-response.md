@@ -169,4 +169,18 @@ Replace the current ITSM slide with this content:
 
 ---
 
+## 7. Roadmap Items (Not Session-Prompted)
+
+Three XL/2XL features flagged by this audit are already tracked in the product roadmap (`marketing/product-roadmap-2026.md`) and the open-items priority matrix (`planning/open-items-priority-matrix.md`). These are product-level features requiring architecture decisions beyond what a session prompt can scope — they don't need gap-closure prompts, but the Garland context should be preserved.
+
+| Feature | Triggered By | Roadmap Phase | Effort | Scheduled | Notes |
+|---------|-------------|---------------|--------|-----------|-------|
+| **ITSM / ServiceNow sync** | Slide 9 (replaced with CSDM-Ready) | Phase 37 (bi-directional) + Phase 51 (APM publishing) | 12-16 days | Q3 2026 | Slide 9 was replaced, not deferred. ITSM sync remains a roadmap feature, not a presentation gap. |
+| **Enterprise SSO (SAML/OIDC)** | Slide 7 (softened to "Enterprise OAuth") | Phase 40: Entra ID SSO | 5-6 days | Q2 2026 | Current OAuth via Google + Microsoft/Azure covers most cases. True SAML with custom IdP config is the gap. |
+| **Multi-region data residency** | Slide 7 (reframed as "by design") | Phase 43: Data Residency & Multi-Region | 10-12 days | Q4 2026 | US region is deployable on demand. EU requires regulatory analysis. Mostly infrastructure work, not application code. |
+
+If Garland specifically requests any of these during the live walkthrough, the response is: "That's on our roadmap for [quarter]. Your input helps us prioritize — let's discuss what you need."
+
+---
+
 *Audit completed 2026-04-13 against `main` branch. All evidence verified via codebase grep, schema inspection, and Edge Function source review.*
