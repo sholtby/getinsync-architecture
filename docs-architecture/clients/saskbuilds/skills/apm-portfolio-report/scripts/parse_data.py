@@ -204,7 +204,8 @@ def main():
     tf      = clean_technical(args.technical)
     infra   = clean_infra(args.infra)
 
-    ministry = bf['Ministry'].dropna().iloc[0] if 'Ministry' in bf.columns else "Unknown Ministry"
+    ministry_vals = bf['Ministry'].dropna() if 'Ministry' in bf.columns else pd.Series(dtype=str)
+    ministry = str(ministry_vals.iloc[0]) if len(ministry_vals) > 0 else "Unknown Ministry"
     assessment_period = derive_assessment_period(bf, tf)
     report_date = derive_report_date(bf, tf)
 

@@ -18,11 +18,13 @@ This file is produced by `parse_data.py` and consumed by `generate_chart.py` and
   "apps": [ /* see App Object below */ ],
 
   "team": {
-    "program_lead": "string",
-    "assessment_lead": "string",
-    "owners": ["string"],
-    "architects": ["string — append † if first name only"],
-    "advisor": "string"
+    "program_lead": "string — format: 'Name, Title — Ministry'",
+    "assessment_lead": "string — format: 'Name, Title — Ministry'",
+    "participants": ["string — people who attended assessment sessions, format: 'Name, Title — Ministry'"],
+    "ea_advisors": ["string — EA architects and advisors, format: 'Name, Title — Ministry'"],
+    "owners": ["string — application owners of record (NOT assessment participants), format: 'Name — Ministry'"],
+    "architects": ["string — DEPRECATED, use ea_advisors instead"],
+    "advisor": "string — DEPRECATED, use ea_advisors instead"
   },
 
   "data_quality_notes": [

@@ -1,0 +1,357 @@
+{
+  "ministry": "Environment",
+  "assessment_period": "Feb\u2013Mar 2026",
+  "report_date": "March 2026",
+  "total_apps": 15,
+  "assessed_apps": 14,
+  "incomplete_count": 1,
+  "apps": [
+    {
+      "num": 1,
+      "name": "AQMS - Air Quality Monitoring System",
+      "time_category": "Invest",
+      "criticality": 91.3,
+      "business_fit": 76.3,
+      "tech_fit": 57.3,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Krista Campbell",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 10,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 2,
+      "name": "Biodiversity Website",
+      "time_category": "Eliminate",
+      "criticality": 37.5,
+      "business_fit": 38.8,
+      "tech_fit": 18.8,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Andrea Benville",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 15,
+      "name": "eCLMS - Enterprise Crown Land Management System - D365",
+      "time_category": "Invest",
+      "criticality": 83.8,
+      "business_fit": 87.5,
+      "tech_fit": 82.3,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": true,
+      "owner": "Krista Campbell",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 3,
+      "name": "ECRM - ENV",
+      "time_category": "Modernize",
+      "criticality": 75.0,
+      "business_fit": 55.0,
+      "tech_fit": 38.8,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Krista Campbell",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 560,
+      "itsm_requests": 20,
+      "itsm_problems": 20
+    },
+    {
+      "num": 4,
+      "name": "FMS - Financial Management System",
+      "time_category": "Eliminate",
+      "criticality": 45.0,
+      "business_fit": 45.0,
+      "tech_fit": 12.3,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Robert Gillis",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 119,
+      "itsm_requests": 63,
+      "itsm_problems": 42
+    },
+    {
+      "num": 5,
+      "name": "Fur Program Statistics",
+      "time_category": "Incomplete Data",
+      "criticality": 11.3,
+      "business_fit": 17.5,
+      "tech_fit": null,
+      "lifecycle": "Business/Vendor Managed",
+      "crown_jewel": false,
+      "owner": "Joann Skilnick",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 6,
+      "name": "HABISASK - Hunting, Angling and Biodiversity Information",
+      "time_category": "Invest",
+      "criticality": 72.5,
+      "business_fit": 71.3,
+      "tech_fit": 58.8,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Katherine Mehl",
+      "assessors": [
+        "Mike",
+        "Jarred",
+        "Bryan"
+      ],
+      "architect": null,
+      "itsm_incidents": 8,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 7,
+      "name": "HAL - Hunting and Fishing Licence Sales",
+      "time_category": "Invest",
+      "criticality": 93.8,
+      "business_fit": 87.5,
+      "tech_fit": 70.0,
+      "lifecycle": "Business/Vendor Managed",
+      "crown_jewel": false,
+      "owner": "Travis Williams",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 8,
+      "name": "Outfitters Database",
+      "time_category": "Eliminate",
+      "criticality": 48.8,
+      "business_fit": 38.8,
+      "tech_fit": 34.8,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Travis Williams",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 9,
+      "name": "Permits - FWLB",
+      "time_category": "Eliminate",
+      "criticality": 65.0,
+      "business_fit": 46.3,
+      "tech_fit": 36.0,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Joann Skilnick",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 36,
+      "itsm_requests": 9,
+      "itsm_problems": 0
+    },
+    {
+      "num": 10,
+      "name": "Public Inquiry System",
+      "time_category": "Invest",
+      "criticality": 72.5,
+      "business_fit": 80.0,
+      "tech_fit": 81.3,
+      "lifecycle": "Business/Vendor Managed",
+      "crown_jewel": false,
+      "owner": null,
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 12,
+      "name": "Sask Interactive",
+      "time_category": "Invest",
+      "criticality": 46.3,
+      "business_fit": 56.3,
+      "tech_fit": 58.8,
+      "lifecycle": "Incomplete Data",
+      "crown_jewel": false,
+      "owner": null,
+      "assessors": [
+        "Mike",
+        "Jarred",
+        "Bryan"
+      ],
+      "architect": null,
+      "itsm_incidents": null,
+      "itsm_requests": null,
+      "itsm_problems": null
+    },
+    {
+      "num": 11,
+      "name": "SEQG - Saskatchewan Environment Quality Guidelines",
+      "time_category": "Invest",
+      "criticality": 38.8,
+      "business_fit": 67.5,
+      "tech_fit": 84.0,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": false,
+      "owner": "Miranda Carlberg",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 13,
+      "name": "TIS - Timber Information System",
+      "time_category": "Eliminate",
+      "criticality": 47.5,
+      "business_fit": 32.5,
+      "tech_fit": 39.0,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Vicki Gauthier",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 14,
+      "name": "TISWEB - Timber Information System Web",
+      "time_category": "Eliminate",
+      "criticality": 47.5,
+      "business_fit": 32.5,
+      "tech_fit": 16.3,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Vicki Gauthier",
+      "assessors": [
+        "BSS"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    }
+  ],
+  "team": {
+    "program_lead": "Ryan Brittner, Director, Enterprise Architecture — SaskBuilds and Procurement",
+    "assessment_lead": "Krista Campbell, Executive Director, Business Support Services — Environment",
+    "participants": [
+      "Shelley Bond, Manager — Environment",
+      "Bryan Chernick, Director, Business Transformation — Environment",
+      "Jarred Geiss, Manager, Service Delivery — Environment"
+    ],
+    "ea_advisors": [
+      "Glenn Grad — SaskBuilds and Procurement",
+      "Alex Chime, Solution Architect, IT Planning — SaskBuilds and Procurement",
+      "Leanne Silzer — SaskBuilds and Procurement",
+      "Stuart Holtby, Allstar Technologies"
+    ],
+    "owners": [
+      "Krista Campbell — Environment",
+      "Andrea Benville — Environment",
+      "Travis Williams — Environment",
+      "Joann Skilnick — Environment",
+      "Robert Gillis — Environment",
+      "Vicki Gauthier — Environment",
+      "Miranda Carlberg — Environment",
+      "Katherine Mehl — Environment"
+    ],
+    "architects": [],
+    "advisor": ""
+  },
+  "data_quality_notes": [],
+  "key_insights": [
+    "Half the portfolio (7 of 14 assessed applications) is positioned in Invest, indicating a core of high-value, technically viable systems anchored by eCLMS - Enterprise Crown Land Management System - D365, HAL - Hunting and Fishing Licence Sales, and the Public Inquiry System.",
+    "Six applications fall in Eliminate \u2014 the largest retirement cluster in any ministry assessed to date \u2014 driven by aging platforms, non-compliant security controls, and low user satisfaction.",
+    "Only one application (ECRM - ENV) occupies Modernize, yet it carries the highest ITSM incident volume in the portfolio (560 incidents over 24 months), signalling urgent platform risk on a business-critical system.",
+    "No applications occupy the Tolerate quadrant, producing a polarized portfolio: applications either deliver strong value on both dimensions or fall short on both."
+  ],
+  "incomplete_apps": [
+    {
+      "name": "Fur Program Statistics",
+      "business_fit": 17.5,
+      "criticality": 11.3,
+      "tech_fit": null,
+      "lifecycle": "Business/Vendor Managed",
+      "likely_position": "Eliminate based on available scores (Business Fit 17.5, Criticality 11.3), though Technical Fit is missing",
+      "action": "Complete the Technical Fit assessment (T07, T08, T13 are missing) to confirm quadrant placement. Low criticality and business fit suggest Eliminate, but vendor-managed lifecycle status warrants confirmation that the ministry still uses this application."
+    }
+  ],
+  "narratives": {
+    "abstract": "Between February and March 2026, the Ministry of Environment undertook an Application Portfolio Management assessment of fifteen business applications spanning environmental monitoring, wildlife and fisheries management, land administration, and public-facing information services. Each application was evaluated against ten Business Fit factors (B1\u2013B10) and fourteen Technical Fit factors (T01\u2013T14), producing a Business Fit Score, Technical Fit Score, and Criticality Score that together determine placement within the TIME quadrant model. Assessments were conducted by application owners and subject matter experts within the ministry, with support from Business Solutions Services (BSS).\n\nOf the fifteen applications, fourteen received complete assessments and were positioned in a TIME quadrant. One application \u2014 Fur Program Statistics \u2014 was classified as Incomplete Data due to missing Technical Fit factor responses (T07, T08, T13). No data quality corrections were required; score distributions across applications were consistent with their assessed factor responses.",
+    "snapshot_insight": "The Ministry of Environment portfolio is distinctly polarized. Seven applications sit in Invest and six in Eliminate, with only a single application in Modernize and none in Tolerate. This binary distribution is unusual \u2014 most ministry portfolios show a more even spread across quadrants. The pattern reflects a ministry where the strongest systems (eCLMS - Enterprise Crown Land Management System - D365, HAL - Hunting and Fishing Licence Sales, Public Inquiry System, SEQG - Saskatchewan Environment Quality Guidelines) have been recently modernized onto cloud-native or SaaS platforms, while the legacy tier (FMS - Financial Management System, Biodiversity Website, TISWEB - Timber Information System Web, TIS - Timber Information System, Outfitters Database, Permits - FWLB) has been left in place on aging, non-compliant infrastructure with no modernization path. The gap between the two groups is wide: the average Technical Fit Score for Invest applications is 70.4, while Eliminate applications average 26.2. The absence of any Tolerate applications means the ministry has no technically capable systems of low strategic value \u2014 every viable platform is also business-critical.",
+    "invest": {
+      "pattern": "The seven Invest applications share several defining characteristics. All score highly on Strategic Contribution (B1: 3\u20135) and most are public-facing (B4: 4\u20135), reflecting the ministry\u2019s mandate to deliver environmental monitoring and wildlife management services to citizens. Business Process Criticality (B5) is consistently elevated, with five of seven applications rated as mission-critical or critical. On the technical side, the strongest performers \u2014 eCLMS - Enterprise Crown Land Management System - D365 (82.3), SEQG - Saskatchewan Environment Quality Guidelines (84.0), and Public Inquiry System (81.3) \u2014 run on cloud-native or containerized platforms with advanced security controls (T06: 5), enforced multi-factor authentication (T08: 5), and automated resilience (T09: 5). The remaining Invest applications (AQMS - Air Quality Monitoring System, HABISASK - Hunting, Angling and Biodiversity Information, Sask Interactive, HAL - Hunting and Fishing Licence Sales) sit closer to the 50-point threshold on Technical Fit, with aging development platforms (T02: 2\u20133) and basic security compliance (T06: 3). These near-threshold applications are functional and business-aligned but lack the modern architecture of the top tier.",
+      "criticality_insight": "eCLMS - Enterprise Crown Land Management System - D365 carries the highest combined weight in this quadrant: a Criticality Score of 83.8 paired with Crown Jewel designation from the infrastructure lifecycle report. It is the only Crown Jewel in the portfolio. HAL - Hunting and Fishing Licence Sales (Criticality 93.8) has the highest criticality score of any application in the ministry \u2014 its role in hunting and fishing licence sales makes it revenue-generating and public-facing, with a one-hour business interruption tolerance. AQMS - Air Quality Monitoring System (Criticality 91.3) is similarly high-dependency, supporting air quality monitoring with direct public safety implications. These three applications represent the core operational assets that require investment protection and continuity planning. Sask Interactive (Criticality 46.3) and SEQG - Saskatchewan Environment Quality Guidelines (Criticality 38.8) sit at the lower end of criticality within Invest, suggesting they are important but not operationally urgent."
+    },
+    "modernize": {
+      "pattern": "ECRM - ENV is the sole application in the Modernize quadrant, positioned there because its Business Fit Score (55.0) exceeds the threshold while its Technical Fit Score (38.8) falls below. The business case remains intact: ECRM - ENV is strategically aligned (B1: 4), public-facing (B4: 5), and critical to daily operations (B5: 4) with a 24-hour restoration requirement (B6: 3). However, the technical platform has reached end of support. The application runs on a legacy client-server architecture (T01: 2) with an obsolete development platform (T02: 1), non-portable infrastructure (T03: 1), non-compliant security controls (T06: 1), and manual recovery that would take over 48 hours (T09: 2). Current needs fulfillment (B8: 2) and user satisfaction (B10: 1) are both low, indicating the platform is actively constraining the business value it was built to deliver.",
+      "criticality_insight": "With a Criticality Score of 75.0, ECRM - ENV sits in the significant-dependency range, meaning sequenced delivery planning is needed for any modernization effort. The urgency is compounded by its ITSM profile: 560 incidents over 24 months \u2014 more than all other assessed applications combined. Twenty problems were also recorded, suggesting systemic rather than transactional issues. The combination of end-of-support lifecycle status, non-compliant security, high incident volume, and significant operational dependency makes ECRM - ENV the highest-priority modernization candidate in this portfolio."
+    },
+    "tolerate": {
+      "pattern": "No applications were positioned in the Tolerate quadrant. This is an unusual result \u2014 most ministry portfolios contain at least one or two technically sound systems that have outgrown their strategic relevance. The absence here suggests that the Ministry of Environment has not invested in platform modernization for applications where the business case has weakened; instead, those systems remain on legacy platforms and fall into Eliminate.",
+      "criticality_insight": "With no Tolerate applications, there are no candidates for a managed phase-out where technical health would buy time. Every application below the Business Fit threshold is also technically deficient, which limits options for gradual retirement through natural attrition."
+    },
+    "eliminate": {
+      "pattern": "The six Eliminate applications share a consistent profile: aging or obsolete development platforms (T02: 1\u20133), non-portable infrastructure (T03: 1\u20132), and severe gaps in modern UX (T05: 1\u20132) and security controls. FMS - Financial Management System, TISWEB - Timber Information System Web, and Biodiversity Website all score T06: 1 (non-compliant \u2014 patches no longer available). Identity assurance is particularly weak across this group: FMS - Financial Management System (T08: 2, app-specific passwords), Outfitters Database and Permits - FWLB (T08: 1, shared credentials), and TISWEB - Timber Information System Web and Biodiversity Website (T08: 1, shared credentials). None of these applications have a disaster recovery plan (T09: 1). On the business side, current needs fulfillment (B8) and future adaptability (B9) are uniformly low (1\u20132), and user satisfaction (B10) ranges from dissatisfied to very dissatisfied. TIS - Timber Information System and TISWEB - Timber Information System Web are a paired system sharing identical business scores (32.5) and similar technical profiles.",
+      "criticality_insight": "Permits - FWLB stands out within this quadrant. Its Criticality Score of 65.0 places it in the significant-dependency range, yet it sits firmly in Eliminate with a Business Fit of 46.3 and Technical Fit of 36.0. The application supports cross-organizational permit management (B4: 4), is critical to daily operations (B5: 4), and directly supports public services (B7: 4). Its retirement cannot be treated as a simple decommission \u2014 the business functions it supports will need to be absorbed by another system first. FMS - Financial Management System (Criticality 45.0) presents a similar tension: it is strategically aligned (B1: 4) and cross-organizational (B4: 4), but its technical platform is the weakest in the portfolio (Tech Fit 12.3) with legacy monolith architecture, green-screen UI, no disaster recovery, and unmonitored integrations. The Outfitters Database (Criticality 48.8) also carries moderate dependency with shared-credential access (T08: 1) and no data sensitivity controls (T07: 1), creating a security exposure that warrants attention independent of retirement timing."
+    },
+    "ea_questions": [
+      "What is the ministry\u2019s modernization plan for ECRM - ENV, given its end-of-support lifecycle status, 560 incidents over 24 months, and non-compliant security controls? Is there a funded initiative or is the ministry absorbing the operational risk?",
+      "TIS - Timber Information System and TISWEB - Timber Information System Web share identical business scores and similar technical profiles. Are these being treated as a single retirement candidate, and has the forestry data they manage been identified for migration to a successor system?",
+      "Permits - FWLB carries significant operational dependency (Criticality 65.0) but sits in Eliminate. Which system is intended to absorb its permit management functions, and is there a sequencing dependency with other retirements in this cluster?",
+      "Four Eliminate applications (Outfitters Database, Permits - FWLB, TISWEB - Timber Information System Web, Biodiversity Website) use shared credentials with no individual user tracking. Has the ministry assessed the audit and compliance exposure this creates, particularly for systems handling public-facing or sensitive data?",
+      "AQMS - Air Quality Monitoring System and HABISASK - Hunting, Angling and Biodiversity Information are positioned in Invest but sit near the Technical Fit threshold (57.3 and 58.8 respectively) with aging development platforms. Is there a planned investment cycle to prevent these from drifting into Modernize as their platforms age further?"
+    ],
+    "next_trigger": "A follow-up assessment is indicated after the ministry confirms a modernization path for ECRM - ENV and a retirement sequence for the six Eliminate applications, or within twelve months of this assessment, whichever comes first."
+  }
+}
