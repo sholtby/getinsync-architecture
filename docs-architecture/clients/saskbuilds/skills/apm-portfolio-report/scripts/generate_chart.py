@@ -55,13 +55,21 @@ def main():
     }
 
     n_apps = len(apps_sorted)
-    legend_height = max(9, n_apps * 0.5 + 2.5)
-    fig_h = max(9, legend_height)
 
-    fig, (ax_main, ax_legend) = plt.subplots(1, 2, figsize=(16, fig_h),
-        gridspec_kw={'width_ratios': [3, 1]})
-
+    # Use fixed-position axes to guarantee a square chart
+    # Figure: 16 wide x 10 tall (inches)
+    # Chart must be square: 8.5in x 8.5in → in figure coords: w=8.5/16=0.53, h=8.5/10=0.85
+    fig = plt.figure(figsize=(16, 10))
     fig.patch.set_facecolor('#FFFFFF')
+
+    chart_w_in = 8.5
+    chart_h_in = 8.5
+    fig_w_in = 16
+    fig_h_in = 10
+    chart_l = 0.06
+    chart_b = 0.08
+    ax_main = fig.add_axes([chart_l, chart_b, chart_w_in / fig_w_in, chart_h_in / fig_h_in])
+    ax_legend = fig.add_axes([chart_l + chart_w_in / fig_w_in + 0.03, chart_b, 0.30, chart_h_in / fig_h_in])
 
     # --- Main chart ---
     ax_main.set_facecolor('#F8FAFC')
@@ -177,9 +185,8 @@ def main():
             ha='center', va='center', fontsize=13, fontweight='bold',
             color='white', transform=fig.transFigure)
 
-    plt.tight_layout(rect=[0, 0, 1, 0.985])
-    plt.savefig(args.out, dpi=180, bbox_inches='tight',
-               facecolor='white', edgecolor='none')
+    # No tight_layout or subplots_adjust — axes are manually positioned
+    plt.savefig(args.out, dpi=180, facecolor='white', edgecolor='none')
     print(f"Chart saved to {args.out}")
 
 if __name__ == '__main__':

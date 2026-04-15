@@ -30,11 +30,17 @@ def clean_curated(path):
     return df
 
 def clean_business(path):
-    df = pd.read_csv(path)
+    try:
+        df = pd.read_csv(path)
+    except UnicodeDecodeError:
+        df = pd.read_csv(path, encoding='cp1252')
     return df
 
 def clean_technical(path):
-    df = pd.read_csv(path)
+    try:
+        df = pd.read_csv(path)
+    except UnicodeDecodeError:
+        df = pd.read_csv(path, encoding='cp1252')
     return df
 
 def clean_infra(path):

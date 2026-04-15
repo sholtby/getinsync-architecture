@@ -1,0 +1,490 @@
+{
+  "ministry": "Energy and Resources",
+  "assessment_period": "Feb\u2013Mar 2026",
+  "report_date": "March 2026",
+  "total_apps": 22,
+  "assessed_apps": 20,
+  "incomplete_count": 2,
+  "apps": [
+    {
+      "num": 10,
+      "name": "IRIS Business Intelligence",
+      "time_category": "Eliminate",
+      "criticality": 38.8,
+      "business_fit": 45.0,
+      "tech_fit": 48.0,
+      "lifecycle": "Incomplete Data",
+      "crown_jewel": false,
+      "owner": "Jenni Gasson",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Ryan, Barrie, Glenn, Stuart, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 22,
+      "name": "Water Analysis",
+      "time_category": "Invest",
+      "criticality": 67.5,
+      "business_fit": 70.0,
+      "tech_fit": 50.0,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": false,
+      "owner": "Scott Weaver",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 8,
+      "name": "Geoscience Data Management",
+      "time_category": "Incomplete Data",
+      "criticality": 60.0,
+      "business_fit": 55.0,
+      "tech_fit": null,
+      "lifecycle": "Incomplete Data",
+      "crown_jewel": false,
+      "owner": "Emma Zhou",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "In Project",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 16,
+      "name": "RBC Receivables Link Application",
+      "time_category": "Modernize",
+      "criticality": 38.8,
+      "business_fit": 51.3,
+      "tech_fit": 43.3,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Kim Olyowsky",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Martin, Leanne, Stuart",
+      "itsm_incidents": 6,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 5,
+      "name": "GeoLogic Geoscout",
+      "time_category": "Modernize",
+      "criticality": 46.3,
+      "business_fit": 50.0,
+      "tech_fit": 18.0,
+      "lifecycle": "ITDNAS-End-Of-Life",
+      "crown_jewel": false,
+      "owner": "Ryan Morelli-AccountDeleted",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 7,
+      "itsm_requests": 3,
+      "itsm_problems": 1
+    },
+    {
+      "num": 7,
+      "name": "GeoVista",
+      "time_category": "Modernize",
+      "criticality": 35.0,
+      "business_fit": 50.0,
+      "tech_fit": 36.5,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Ryan Morelli-AccountDeleted",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Dalton Stevens, Robert Danforth",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 17,
+      "name": "SMAD - Saskatchewan Mineral Assessment Data",
+      "time_category": "Eliminate",
+      "criticality": 42.5,
+      "business_fit": 48.8,
+      "tech_fit": 29.3,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Colin Card",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Ryan, Stuart, Leanne",
+      "itsm_incidents": 48,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 15,
+      "name": "Preliminary Plans",
+      "time_category": "Eliminate",
+      "criticality": 28.8,
+      "business_fit": 46.3,
+      "tech_fit": 36.8,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": false,
+      "owner": "Scott Weaver",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Sheng, Stuart and Ryan",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 2,
+      "name": "Coal Files",
+      "time_category": "Eliminate",
+      "criticality": 38.8,
+      "business_fit": 45.0,
+      "tech_fit": 44.3,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": false,
+      "owner": "Colin Card",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 9,
+      "name": "IRIS - Integrated Resource Information System",
+      "time_category": "Invest",
+      "criticality": 88.8,
+      "business_fit": 88.8,
+      "tech_fit": 65.8,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": true,
+      "owner": "Jenni Gasson",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Ryan, Glenn, Stuart, Barrie, Michele",
+      "itsm_incidents": 7,
+      "itsm_requests": 3,
+      "itsm_problems": 0
+    },
+    {
+      "num": 11,
+      "name": "Land Claims GIS Mapping",
+      "time_category": "Eliminate",
+      "criticality": 43.8,
+      "business_fit": 45.0,
+      "tech_fit": 37.0,
+      "lifecycle": "Incomplete Data",
+      "crown_jewel": false,
+      "owner": "Marilyn Lolacher",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Dalton Stevens, Robert Danforth",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 3,
+      "name": "Daily Drilling Activity Report Archive",
+      "time_category": "Eliminate",
+      "criticality": 41.3,
+      "business_fit": 42.5,
+      "tech_fit": 35.5,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Emma Zhou",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 6,
+      "name": "GeoPlanner",
+      "time_category": "Eliminate",
+      "criticality": 41.3,
+      "business_fit": 42.5,
+      "tech_fit": 36.0,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Jane Mcleod",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 12,
+      "name": "Licensed Wells Archive",
+      "time_category": "Eliminate",
+      "criticality": 41.3,
+      "business_fit": 42.5,
+      "tech_fit": 35.5,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Jenni Gasson",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 14,
+      "name": "MARS - Mineral Administration Registration System",
+      "time_category": "Tolerate",
+      "criticality": 41.3,
+      "business_fit": 42.5,
+      "tech_fit": 50.0,
+      "lifecycle": "Business/Vendor Managed",
+      "crown_jewel": false,
+      "owner": "Yanyan Han",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Vendor",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 4,
+      "name": "GeoAtlas",
+      "time_category": "Eliminate",
+      "criticality": 30.0,
+      "business_fit": 37.5,
+      "tech_fit": 29.5,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Colin Card",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 18,
+      "name": "SMDI - Saskatchewan Mineral Deposits Index",
+      "time_category": "Incomplete Data",
+      "criticality": 28.8,
+      "business_fit": 33.8,
+      "tech_fit": null,
+      "lifecycle": "Incomplete Data",
+      "crown_jewel": false,
+      "owner": null,
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 1,
+      "name": "AccuMap",
+      "time_category": "Eliminate",
+      "criticality": 22.5,
+      "business_fit": 26.3,
+      "tech_fit": 29.5,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Ryan Morelli-AccountDeleted",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": null,
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 13,
+      "name": "LogSleuth",
+      "time_category": "Eliminate",
+      "criticality": 21.3,
+      "business_fit": 16.3,
+      "tech_fit": 36.5,
+      "lifecycle": "ITDNAS-End-Of-Life",
+      "crown_jewel": false,
+      "owner": "Ryan Morelli-AccountDeleted",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Dalton Stevens, Robert Danforth",
+      "itsm_incidents": 3,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 19,
+      "name": "Test Holes",
+      "time_category": "Eliminate",
+      "criticality": 8.8,
+      "business_fit": 11.3,
+      "tech_fit": 35.5,
+      "lifecycle": "Mainstream Support",
+      "crown_jewel": false,
+      "owner": "Scott Weaver",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 20,
+      "name": "Treeno",
+      "time_category": "Eliminate",
+      "criticality": 3.8,
+      "business_fit": 11.3,
+      "tech_fit": 35.5,
+      "lifecycle": "End of Support",
+      "crown_jewel": false,
+      "owner": "Colin Card",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    },
+    {
+      "num": 21,
+      "name": "Value Navigator",
+      "time_category": "Eliminate",
+      "criticality": 3.8,
+      "business_fit": 11.3,
+      "tech_fit": 35.5,
+      "lifecycle": "Extended Support",
+      "crown_jewel": false,
+      "owner": "Bruce Wilhelm",
+      "assessors": [
+        "Emma Zhou"
+      ],
+      "architect": "Barrie, Glenn, Stuart, Ryan, Michele",
+      "itsm_incidents": 0,
+      "itsm_requests": 0,
+      "itsm_problems": 0
+    }
+  ],
+  "team": {
+    "program_lead": "Ryan Brittner, Director, Enterprise Architecture \u2014 SaskBuilds and Procurement",
+    "assessment_lead": "Emma Zhou \u2014 Energy and Resources",
+    "participants": [
+      "He Tian \u2014 Energy and Resources",
+      "Trushil Patel, Manager, Systems Integration \u2014 Energy and Resources",
+      "Michele Wyatt \u2014 SaskBuilds and Procurement"
+    ],
+    "ea_advisors": [
+      "Glenn Grad \u2014 SaskBuilds and Procurement",
+      "Leanne Silzer \u2014 SaskBuilds and Procurement",
+      "Stuart Holtby, Allstar Technologies"
+    ],
+    "owners": [
+      "Jenni Gasson \u2014 Energy and Resources",
+      "Colin Card \u2014 Energy and Resources",
+      "Emma Zhou \u2014 Energy and Resources",
+      "Jane McLeod \u2014 Energy and Resources",
+      "Marilyn Lolacher \u2014 Energy and Resources",
+      "Scott Weaver \u2014 Energy and Resources",
+      "Kim Olyowsky \u2014 Energy and Resources",
+      "Bruce Wilhelm \u2014 Energy and Resources",
+      "Yanyan Han \u2014 Energy and Resources"
+    ],
+    "architects": [],
+    "advisor": ""
+  },
+  "data_quality_notes": [
+    "IRIS - Integrated Resource Information System and IRIS Business Intelligence had inverted scores in the source assessment data. IRIS has been corrected to Invest (Criticality 88.8, Business Fit 88.8, Tech Fit 65.8). IRIS Business Intelligence has been placed in Eliminate (Criticality 38.8, Business Fit 45.0, Tech Fit 48.0). The source data should be updated accordingly."
+  ],
+  "key_insights": [
+    "70% of the assessed portfolio (14 of 20 applications) is positioned in Eliminate, reflecting accumulated technical legacy against declining business relevance across a large portion of the ministry\u2019s application inventory.",
+    "IRIS - Integrated Resource Information System is the portfolio\u2019s highest-criticality asset (88.8), correctly positioned in Invest with Crown Jewel designation. Its scores were found to be inverted with IRIS Business Intelligence in the source data and have been corrected in this report.",
+    "GeoLogic Geoscout represents the most time-pressured Modernize application \u2014 the lowest technical fit score in the portfolio (18.0) combined with ITDNAS-End-Of-Life infrastructure status.",
+    "Geoscience Data Management carries the highest criticality (60.0) of the two incomplete-data applications and warrants priority follow-up before the next portfolio planning cycle."
+  ],
+  "incomplete_apps": [
+    {
+      "name": "Geoscience Data Management",
+      "business_fit": 55.0,
+      "criticality": 60.0,
+      "tech_fit": null,
+      "lifecycle": "Incomplete Data",
+      "likely_position": "Cannot be determined. Scores suggest Invest or Modernize. Priority follow-up recommended.",
+      "action": "Complete technical assessment before the next portfolio planning cycle."
+    },
+    {
+      "name": "SMDI - Saskatchewan Mineral Deposits Index",
+      "business_fit": 33.8,
+      "criticality": 28.8,
+      "tech_fit": null,
+      "lifecycle": "Incomplete Data",
+      "likely_position": "Cannot be determined. Scores suggest Eliminate or Tolerate.",
+      "action": "Determine whether a full technical assessment is warranted given low business fit and criticality scores."
+    }
+  ],
+  "narratives": {
+    "abstract": "This report presents the findings of the Application Portfolio TIME Assessment conducted for the Ministry of Energy and Resources, Government of Saskatchewan. The assessment was administered across 22 business applications using the TIME methodology, adapted from the Gartner Application Portfolio Management framework. Each application was evaluated against ten business fit factors (B1\u2013B10) and fourteen technical fit factors (T01\u2013T14), yielding normalized scores on a 0\u2013100 scale for Business Fit, Technical Fit, and Criticality. Applications were subsequently positioned within one of four strategic quadrants \u2014 Invest, Tolerate, Modernize, or Eliminate \u2014 based on the intersection of their Business Fit and Technical Fit scores. Bubble size in the portfolio visualization represents the Criticality score, providing a risk-weighted view of each application\u2019s portfolio position.\n\nThe assessment was conducted by the APM Team, Ministry of Energy and Resources, in collaboration with application owners, technical architects, and subject matter experts across the ministry. Assessment sessions were facilitated between February and March 2026. Two applications \u2014 Geoscience Data Management and SMDI - Saskatchewan Mineral Deposits Index \u2014 could not be fully assessed due to incomplete data and are excluded from quadrant analysis pending follow-up assessment sessions. One data quality issue was identified during report preparation: the assessment records for IRIS - Integrated Resource Information System and IRIS Business Intelligence were found to have been recorded with inverted scores. This error has been corrected in the present report; the source data should be updated accordingly.",
+    "snapshot_insight": "The Ministry of Energy and Resources portfolio is heavily weighted toward Eliminate, with 14 of 20 assessed applications falling in that quadrant. Only two applications \u2014 IRIS - Integrated Resource Information System and Water Analysis \u2014 are positioned in Invest, and both sit at the lower end of their technical fit range. Three applications occupy Modernize, and a single application sits in Tolerate. This distribution reflects a ministry with a large legacy application inventory built around geoscience data management, mineral administration, and resource licensing workflows. The majority of these systems were assessed with moderate-to-low business fit scores and uniformly low technical scores, indicating that technical investment has not kept pace with platform aging across the portfolio. The corrected position of IRIS - Integrated Resource Information System as the sole Crown Jewel asset underscores the ministry\u2019s concentration of operational risk in a single platform.",
+    "invest": {
+      "pattern": "IRIS - Integrated Resource Information System and Water Analysis are the only applications positioned in Invest, distinguishing them from the rest of the Energy and Resources portfolio. IRIS - Integrated Resource Information System carries Crown Jewel designation and the highest criticality score in the ministry (88.8). Its B-factor profile reflects strong strategic alignment (B1: 5), mission-critical process dependency (B5: 5), and direct relevance to mandate delivery (B7: 5). On the technical side, IRIS - Integrated Resource Information System scores adequately but not exceptionally (Tech Fit 65.8), with a legacy client-server platform (T01: 2) and an obsolete development environment (T02: 1) offset by strong integration capabilities (T12: 4) and modern data accessibility (T14: 5). Water Analysis serves a clear operational mandate with strong strategic contribution (B1: 5) and regional growth alignment (B2: 5), but sits precisely at the 50-point technical fit threshold with a transitional development platform (T02: 3) and basic security compliance (T06: 3).",
+      "criticality_insight": "IRIS - Integrated Resource Information System at 88.8 criticality is the single most operationally significant application in the portfolio. Its technical fit of 65.8 is adequate but not exceptional \u2014 sufficient to remain in Invest, but not so strong that the platform can be taken for granted. The legacy client-server architecture (T01: 2) and obsolete development platform (T02: 1) represent ongoing technical debt that, if left unaddressed, could push this application toward Modernize at a future assessment cycle. Water Analysis sits precisely at the 50-point technical fit threshold; any further decline in technical health without corresponding investment would shift this application into Modernize territory at the next assessment cycle."
+    },
+    "modernize": {
+      "pattern": "The three Modernize applications share a business fit cluster at or just above the 50-point threshold, each retaining sufficient organizational relevance to justify continued investment. What distinguishes this group most sharply is the severity of their technical positions. GeoLogic Geoscout carries a technical fit score of 18.0 \u2014 the lowest in the entire assessed portfolio \u2014 while running on ITDNAS-End-Of-Life infrastructure. GeoVista and RBC Receivables Link Application sit in Extended Support with moderate technical scores, suggesting they are aging but not yet in crisis. B-factor assessments across the group reflect applications that support visible operational functions \u2014 resource management workflows, geoscience data visualization, and financial receivables processing \u2014 but have not kept pace with user expectations or organizational growth.",
+      "criticality_insight": "GeoLogic Geoscout demands the most immediate EA attention in this quadrant. A technical fit score of 18.0 on ITDNAS-End-Of-Life infrastructure, combined with a criticality of 46.3 and recorded ITSM activity (7 incidents, 3 requests, 1 problem over 24 months), signals a platform under active operational stress. The infrastructure lifecycle status alone \u2014 ITDNAS-End-Of-Life \u2014 constitutes an active planning trigger. RBC Receivables Link Application and GeoVista carry Extended Support status and more moderate technical scores, providing more runway, but both sit close enough to the Eliminate boundary on business fit that a further decline in organizational relevance could shift their quadrant position at the next assessment cycle."
+    },
+    "tolerate": {
+      "pattern": "MARS - Mineral Administration Registration System is the sole application in the Tolerate quadrant, with a business fit of 42.5 paired with a technical fit of exactly 50.0. Its Business/Vendor Managed lifecycle status indicates the application is maintained and supported externally, limiting the ministry\u2019s direct control over its technical trajectory and roadmap. The criticality score of 41.3 places MARS - Mineral Administration Registration System in the moderate dependency range \u2014 present enough to require a managed approach if the vendor relationship changes, but not so critical that disruption poses immediate operational risk.",
+      "criticality_insight": "The key question MARS - Mineral Administration Registration System surfaces for the EA team is one of ownership and control. Given that it is vendor-managed, what visibility does the ministry have into its technical roadmap and contract renewal timeline? A change in the vendor relationship \u2014 price increase, product discontinuation, or acquisition \u2014 could force a repositioning decision without the lead time a ministry-managed application would afford. The combination of moderate criticality and external control makes this application\u2019s status worth including in any contract review or vendor management process."
+    },
+    "eliminate": {
+      "pattern": "The 14 Eliminate applications share consistent patterns across their assessment data. On the business side, most scored low on strategic contribution, organizational scope, and user satisfaction, indicating they serve narrow, non-strategic functions within specific branches or units. Process criticality ratings are predominantly low to moderate, suggesting these applications support work that has viable workarounds or could be absorbed through other means. Several applications were assessed with limited stakeholder participation, which may itself reflect limited organizational awareness of the application. On the technical side, the group shows a concentration of legacy client-server architectures, limited platform portability, and minimal disaster recovery posture. Many run on infrastructure that is either at end-of-life or on the ITDNAS-managed file share network, with no active vendor support path. The overall profile is a group of applications that have been maintained but not modernized \u2014 functional enough to keep running, but carrying accumulating technical debt on both dimensions.",
+      "criticality_insight": "Despite sharing an Eliminate position, the criticality scores within this group vary enough to warrant differentiated EA attention. Five applications cluster between 38 and 44 on the criticality scale \u2014 Land Claims GIS Mapping (43.8), SMAD - Saskatchewan Mineral Assessment Data (42.5), Daily Drilling Activity Report Archive (41.3), GeoPlanner (41.3), and Licensed Wells Archive (41.3). These represent moderate-dependency applications requiring sequenced exit planning rather than straightforward retirement. Their lifecycle statuses \u2014 a mix of Extended Support, End of Support, and Incomplete Data \u2014 add complexity to any planning effort. IRIS Business Intelligence (38.8) sits close to the Eliminate/Invest boundary on both dimensions (Business Fit 45.0, Tech Fit 48.0) and has a functional relationship to IRIS - Integrated Resource Information System that must be considered in any exit or consolidation planning. At the lower end of the criticality scale, Test Holes (8.8), Treeno (3.8), and Value Navigator (3.8) represent the clearest candidates for near-term retirement with minimal organizational disruption. LogSleuth, on ITDNAS-End-Of-Life infrastructure with a criticality of 21.3, also presents a low-risk retirement opportunity, though its active incident history (3 incidents over 24 months) warrants a brief operational check before exit."
+    },
+    "ea_questions": [
+      "IRIS Business Intelligence is positioned in Eliminate with scores close to the quadrant boundary (Business Fit 45.0, Tech Fit 48.0). Given its functional relationship to IRIS - Integrated Resource Information System \u2014 the core operational system \u2014 what downstream reporting or operational dependencies exist that would affect how any exit or consolidation of the BI layer is planned?",
+      "Geoscience Data Management carries the highest criticality score (60.0) of any application without a confirmed TIME position, and its technical assessment is described as in progress. What is the expected completion timeline, and what governance path exists to incorporate it into portfolio planning once complete?",
+      "Five Eliminate applications cluster between 38 and 44 on the criticality scale. What data flows, shared infrastructure, or operational dependencies exist between these applications that would affect how any exit or consolidation effort is sequenced?",
+      "GeoLogic Geoscout sits on ITDNAS-End-Of-Life infrastructure with the lowest technical fit score in the portfolio (18.0) and active ITSM history. Is there a current infrastructure exit plan for this application, and if not, at what point does the infrastructure end-of-life status become a forcing function for the modernization decision?",
+      "IRIS - Integrated Resource Information System is the highest-value asset in the portfolio with a criticality of 88.8 and Crown Jewel designation. What governance mechanism exists to ensure this application\u2019s technical currency, platform roadmap, and lifecycle status are actively maintained and visible to the EA team?"
+    ],
+    "next_trigger": "Review this portfolio assessment when any Eliminate-quadrant application reaches an infrastructure end-of-life event, contract renewal, or sustained ITSM activity threshold \u2014 or when the Geoscience Data Management technical assessment is completed."
+  }
+}
