@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-13 (v2.11)
+Last updated: 2026-04-16 (v2.12)
 
 ---
 
@@ -244,6 +244,12 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | features/ai-chat/v2.md | v2 | 🟢 | AI chat v2 |
 | features/ai-chat/v3-multicloud.md | v3 | 🟡 | Multi-cloud AI chat (designed, mixed refs) |
 | features/ai-chat/semantic-layer.yaml | v1.0 | 🟡 | **Semantic layer config — maps 6 business domains to 38 views/RPCs for AI Chat MCP tools and Explorer tab. Cost, portfolio, tech health, roadmap, integrations (stub), data quality.** |
+
+### Publish Assessment Report
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| features/publish-assessment/architecture.md | v1.0 | 🟡 | **Native workspace-level portfolio report generation.** Replaces manual SaskBuilds report workflow. AI narrative generation via Edge Function + server-side PDF. Phased delivery: RPC → Edge Function → frontend → PDF → history. |
 
 ### Cloud Discovery (Future — Phase 27)
 
@@ -826,11 +832,22 @@ The following documents were removed during the architecture audit. They describ
 | Status | Count |
 |--------|-------|
 | 🟢 AS-BUILT | 61 |
-| 🟡 AS-DESIGNED | 29 |
+| 🟡 AS-DESIGNED | 30 |
 | 🟠 NEEDS UPDATE | 1 |
 | ☪ REFERENCE | 23 |
 | ⏸ PARKED | 3 |
-| **Total tracked** | **117** |
+| **Total tracked** | **118** |
+
+---
+
+## Clients
+
+Client-specific data, skills, and configuration. Each client has a directory under `clients/`.
+
+| Directory | Description |
+|-----------|-------------|
+| `clients/saskbuilds/` | SaskBuilds and Procurement — APM portfolio report skill, ministry assessment data (Environment, Energy & Resources) |
+| `clients/garland/` | City of Garland — LeanIX export data (20260409 current, 20260316 deprecated) |
 
 ---
 
@@ -868,6 +885,7 @@ The following documents were removed during the architecture audit. They describ
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.12 | 2026-04-16 | **Repo cleanup + Publish Assessment architecture + SaskBuilds reports.** Removed redundant `docs-architecture/` directory — `clients/` moved to repo root. Garland data moved from `testing/` to `clients/garland/`. Stale test artifacts removed (server-name-test-plan.md, integration_multimatrix.xlsx, selkirk-productions-import.csv). NEW: `clients/` manifest section (SaskBuilds, Garland). NEW: `features/publish-assessment/architecture.md` v1.0 🟡 — native workspace-level portfolio report generation (AI narrative + server-side PDF). NEW: `clients/saskbuilds/` — APM portfolio report skill (parameterised scripts), Environment + Energy & Resources ministry assessment data and generated reports. Document count 117→118. AS-DESIGNED 29→30. |
 | v2.11 | 2026-04-13 | **Multi-server DP — AI Chat + architecture docs.** `supabase/functions/ai-chat/tools.ts`: server context builder rewritten to query `deployment_profile_servers` → `servers` junction with role labels and primary markers; backward-compat fallback to legacy `server_name`. `adr/adr-dp-infrastructure-boundary.md` v1.1→v2.0: Multi-Server Support amendment — many-to-many junction, boundary unchanged. `core/deployment-profile.md` v2.0→v2.1: new §11 documenting `servers` table, `deployment_profile_servers` junction, backward compat. `features/technology-health/dashboard.md` v1.1→v1.2: §3.6 + §5.3 updated for entity-based server grouping, `vw_server_deployment_summary`. `core/visual-diagram.md` v2.6→v2.7: DPNode multi-server rendering at 3 zoom levels (L1 primary only, L2 +N badge, L3 all with roles). |
 | v2.10 | 2026-04-12 | **Multi-server DP schema — SQL scripts generated.** NEW: `planning/sql/multi-server/` (4 SQL files: 01-tables, 02-rls, 03-migration, 04-views). 3 new tables: `servers` (namespace-scoped), `server_role_types` (reference, 6 seed rows), `deployment_profile_servers` (junction, many-to-many). 10 RLS policies, 2 audit triggers, 3 view GRANTs. Migration: 73 servers extracted from comma-separated `server_name` data, 75 junction links. Views: `vw_server_technology_report` rewritten (entity-based), `vw_application_infrastructure_report` + `vw_technology_tag_lifecycle_risk` updated (added `server_names` column), new `vw_server_deployment_summary`. Updated `testing/security-posture-validation.sql` v1.5→v1.6 (sentinels: 106 tables, 402 policies, 63 audit triggers, 42 views). Gotcha: DROP VIEW removes GRANTs — must re-GRANT after recreate. Schema stats: 103→106 tables, 392→402 policies, 61→63 audit triggers, 41→42 views. Schema backup PENDING. |
 | v2.09 | 2026-04-11 | **Application Categories Session 1 executed + schema backup refresh.** NEW: `planning/application-categories/` v1.0 ☪ — 3-session initiative against the existing 14-row `application_categories` catalog. Session 1 data-only enrichment: 32/32 Riverside apps assigned, 53 total category assignments (100% coverage), 0 UNCATEGORIZED misuse, 12 of 13 real categories used (DEVELOPMENT unused by design). Per-category breakdown: RECORDS 11, CRM 10, LEGAL 7, FINANCE 5, INFRASTRUCTURE 5, HR 3, GIS_SPATIAL 3, HEALTH 3, ANALYTICS 2, ERP 2, SECURITY 1, COLLABORATION 1. Catalog level-set identified 3 missing Gartner MQs (ITSM, EAM, FSM) shoehorning ServiceNow ITSM / ServiceDesk Plus / Samsara Fleet / Sensus FlexNet — deferred to future Phase 2 catalog refinement. NEW: `planning/application-categories/enrichment-sql/` v1.0 ☪ (7 chunked SQL files, CTE-driven, SQL-Editor-safe). Schema metadata: `application_categories` table comment corrected to reflect M:M (stale ARM v2.0 comment said 'exactly one category'). Schema backup refreshed 2026-04-03 → 2026-04-11 (`schema/nextgen-schema-current.sql`). Schema Statistics updated: tables 102→103, RLS policies 389→392, audit triggers 60→61 (views 41, functions 60 unchanged — drift was pre-existing, harvested during this session's §9 stats alignment). Sessions 2 and 3 (AI Chat category tools + eval) ready to run. Document count 117→118. |
