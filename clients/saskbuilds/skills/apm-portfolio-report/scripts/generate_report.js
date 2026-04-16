@@ -525,16 +525,16 @@ const doc = new Document({
 
       // Distribution + insights
       new Table({
-        width: { size: W, type: WidthType.DXA }, columnWidths: [2600, 240, 6520], rows: [
+        width: { size: W, type: WidthType.DXA }, columnWidths: [3600, 240, 5520], rows: [
           new TableRow({
             children: [
               new TableCell({
-                borders: noBorders, width: { size: 2600, type: WidthType.DXA }, children: [
+                borders: noBorders, width: { size: 3600, type: WidthType.DXA }, children: [
                   new Table({
-                    width: { size: 2600, type: WidthType.DXA }, columnWidths: [1400, 600, 600], rows: [
-                      new TableRow({ children: ["TIME Category", "Count", "% of Assessed"].map((h, i) => new TableCell({ borders, shading: { fill: NAVY, type: ShadingType.CLEAR }, width: { size: [1400, 600, 600][i], type: WidthType.DXA }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new Paragraph({ alignment: i > 0 ? AlignmentType.CENTER : AlignmentType.LEFT, children: [new TextRun({ text: h, bold: true, size: 16, font: "Arial", color: WHITE })] })] })) }),
+                    width: { size: 3600, type: WidthType.DXA }, columnWidths: [1800, 800, 1000], rows: [
+                      new TableRow({ children: ["TIME", "#", "% Assessed"].map((h, i) => new TableCell({ borders, shading: { fill: NAVY, type: ShadingType.CLEAR }, width: { size: [1800, 800, 1000][i], type: WidthType.DXA }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new Paragraph({ alignment: i > 0 ? AlignmentType.CENTER : AlignmentType.LEFT, children: [new TextRun({ text: h, bold: true, size: 16, font: "Arial", color: WHITE })] })] })) }),
                       ...[["Invest", cnt("Invest"), pct("Invest"), INV_BG], ["Modernize", cnt("Modernize"), pct("Modernize"), MOD_BG], ["Tolerate", cnt("Tolerate"), pct("Tolerate"), TOL_BG], ["Eliminate", cnt("Eliminate"), pct("Eliminate"), ELIM_BG]].map(([cat, c, p, bg]) =>
-                        new TableRow({ children: [[cat, 1400], [c, 600], [p, 600]].map(([val, w], i) => new TableCell({ borders, shading: { fill: bg, type: ShadingType.CLEAR }, width: { size: w, type: WidthType.DXA }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new Paragraph({ alignment: i > 0 ? AlignmentType.CENTER : AlignmentType.LEFT, children: [new TextRun({ text: String(val), size: 16, font: "Arial", color: DARK })] })] })) })
+                        new TableRow({ children: [[cat, 1800], [c, 800], [p, 1000]].map(([val, w], i) => new TableCell({ borders, shading: { fill: bg, type: ShadingType.CLEAR }, width: { size: w, type: WidthType.DXA }, margins: { top: 60, bottom: 60, left: 80, right: 80 }, children: [new Paragraph({ alignment: i > 0 ? AlignmentType.CENTER : AlignmentType.LEFT, children: [new TextRun({ text: String(val), size: 16, font: "Arial", color: DARK })] })] })) })
                       )
                     ]
                   })
@@ -542,7 +542,7 @@ const doc = new Document({
               }),
               new TableCell({ borders: noBorders, width: { size: 240, type: WidthType.DXA }, children: [new Paragraph({ children: [new TextRun("")] })] }),
               new TableCell({
-                borders: noBorders, width: { size: 6520, type: WidthType.DXA }, children: [
+                borders: noBorders, width: { size: 5520, type: WidthType.DXA }, children: [
                   new Paragraph({ spacing: sp(0, 100), children: [new TextRun({ text: "Key Portfolio Insights", bold: true, size: 22, font: "Arial", color: NAVY })] }),
                   ...data.key_insights.map(insight => new Paragraph({
                     numbering: { reference: "bullets", level: 0 },
