@@ -84,7 +84,7 @@ Existing `application_contacts.role_type` enum: `business_owner`, `technical_own
 | Field | Status | Location / Notes |
 |---|---|---|
 | `time_quadrant` | EXISTS | `portfolio_assignments.time_quadrant` (eliminate/modernize/tolerate/invest) |
-| `paid_action` | EXISTS | `deployment_profiles.paid_action` (plan/address/delay/ignore — NOTE: CHECK constraint does **not** include `improve` or `divest` per the proposal wording; methodology doc uses PLAN/ADDRESS/DELAY/IGNORE. Proposal text says "Plan/Address/Improve/Divest" — **mismatch needs reconciliation**) |
+| `paid_action` | EXISTS | `deployment_profiles.paid_action`. Canonical PAID values: **Plan / Address / Delay / Ignore** (lowercase in DB; title case for display, docs, UI labels, and AI prompts). `Improve` and `Divest` are **not canonical** (they originate from other APM frameworks) and must not appear in docs, UI, narratives, or AI prompts. The source proposal text for this profile used `Improve`/`Divest` — those must be read as `Delay`/`Ignore` respectively when implementing Block 7. |
 | `lifecycle_status` | EXISTS | `applications.lifecycle_status` (Mainstream/Extended/End of Support) + `vw_explorer_detail.worst_lifecycle_status` for roll-up across the tech stack |
 | `time_paid_tension` | NEW-AI | Conflict flag — no stored computation today. Rule is deterministic (e.g., time_quadrant='tolerate' && paid_action='address' → tension). Recommend: compute deterministically in a view column `time_paid_tension_flag boolean` + NEW-AI narrative. Not everything needs AI; the flag is a rule, the sentence is the AI part. |
 

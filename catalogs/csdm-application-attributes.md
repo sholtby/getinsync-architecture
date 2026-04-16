@@ -80,7 +80,7 @@ CSDM does not define TIME/PAID assessment. This is GetInSync's value-add:
 | business_fit | `portfolio_assignments` | Derived 0-100 |
 | criticality | `portfolio_assignments` | Derived 0-100 |
 | time_quadrant | `portfolio_assignments` | Tolerate/Invest/Modernize/Eliminate |
-| paid_action | `deployment_profiles` | Plan/Address/Improve/Divest |
+| paid_action | `deployment_profiles` | Plan/Address/Delay/Ignore |
 
 ---
 

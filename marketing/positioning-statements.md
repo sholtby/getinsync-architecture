@@ -90,7 +90,7 @@ The ninja spreadsheet nightmare: multiple versions, no audit trail, manual updat
 
 Two complementary frameworks:
 - **TIME** (Tolerate/Invest/Modernize/Eliminate) — Strategic direction
-- **PAID** (Plan/Address/Improve/Divest) — Technical debt priority
+- **PAID** (Plan/Address/Delay/Ignore) — Technical debt priority
 
 ### Deployment Profiles
 

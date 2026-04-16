@@ -41,7 +41,7 @@ training (we call it the "18-year-old test").
 **TIME/PAID assessment framework.** Ten business factors (B1–B10) and fifteen technical
 factors (T01–T15) produce four derived scores: Business Fit, Tech Health, Criticality,
 and Tech Risk. These map to TIME (Tolerate/Invest/Modernize/Eliminate) and PAID
-(Plan/Address/Improve/Divest) quadrants — giving stakeholders a clear rationalization
+(Plan/Address/Delay/Ignore) quadrants — giving stakeholders a clear rationalization
 roadmap.
 
 **True application cost attribution.** Every dollar gets a home and an owner. Costs flow

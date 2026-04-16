@@ -97,7 +97,7 @@ New Edge Function: `supabase/functions/publish-assessment/index.ts`
 - Empty or near-threshold scores (within 5 points of 50) should be flagged
 - Empty quadrants get a narrative explaining the absence
 - Tone: APM surfaces insights, does not prescribe
-- PAID interpretation added (Plan/Address/Improve/Divest) — the SaskBuilds reports only had TIME
+- PAID interpretation added (Plan/Address/Delay/Ignore) — the SaskBuilds reports only had TIME
 
 **Config:** Add to `supabase/config.toml`:
 ```toml
@@ -160,7 +160,7 @@ On publish:
 The user's initial prompt is a strong starting point. Refinements based on SaskBuilds experience:
 
 1. **Factor interpretation depth** — The prompt asks for top 2 strengths/concerns. Add: "Cite the factor question text and score. Explain why this factor matters for THIS application's position, not generically."
-2. **TIME + PAID tension** — This is the killer insight. Add explicit examples: "Tolerate + Divest means the application is not strategically valuable but carries high technical risk — the risk may force action before the business case would."
+2. **TIME + PAID tension** — This is the killer insight. Add explicit examples: "Tolerate + Address means the application is not strategically valuable but carries high technical risk that demands action — the risk may force investment before the business case would justify it." (Canonical PAID values are Plan / Address / Delay / Ignore only — never Improve or Divest.)
 3. **Crown Jewel handling** — "If crown_jewel is true, note this prominently in the snapshot and explain how it modifies the urgency of any concerns identified."
 4. **Near-threshold awareness** — "If any axis score is within 5 points of the threshold (45-55), note that this application's quadrant position is sensitive to small score changes."
 5. **Lifecycle context** — "End of Support lifecycle status combined with Modernize or Eliminate TIME position creates compounding urgency — name it."

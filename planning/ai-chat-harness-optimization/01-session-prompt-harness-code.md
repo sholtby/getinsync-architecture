@@ -157,8 +157,8 @@ Implement these in order. Commit incrementally if you want, but a single squashe
          },
          paid_action: {
            type: 'string',
-           description: 'Filter by PAID action: Plan, Address, Improve, or Divest.',
-           enum: ['Plan', 'Address', 'Improve', 'Divest'],
+           description: 'Filter by PAID action: Plan, Address, Delay, or Ignore.',
+           enum: ['Plan', 'Address', 'Delay', 'Ignore'],
          },
          limit: {
            type: 'number',
