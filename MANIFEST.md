@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-16 (v2.12)
+Last updated: 2026-04-16 (v2.13)
 
 ---
 
@@ -250,6 +250,12 @@ Stuart keeps a subset of key files synced to the **Claude Opus project** for con
 | Document | Version | Status | Description |
 |----------|---------|--------|-------------|
 | features/publish-assessment/architecture.md | v1.0 | 🟡 | **Native workspace-level portfolio report generation.** Replaces manual SaskBuilds report workflow. AI narrative generation via Edge Function + server-side PDF. Phased delivery: RPC → Edge Function → frontend → PDF → history. |
+
+### Application Profile
+
+| Document | Version | Status | Description |
+|----------|---------|--------|-------------|
+| features/application-profile/schema-mapping.md | v1.0 | 🟡 | **Application Profile — canonical one-page business-language summary; atomic unit of the platform.** 11-block proposal (Identity, Business Purpose, User Community, Information Domains, Ownership, Criticality, Lifecycle, Context, Cost, Tech Debt & Remediation, Assessment) mapped field-by-field against existing schema. Identifies 7 NEW-STORED columns, 3 new tables (capabilities, data_domain_types, application_tech_debt), 6 NEW-AI narrative fields with cache strategy. Recommends VIEW (`vw_application_profile`) + new `application_narrative_cache` table. Aligns the profile to be the single shape the Publish Assessment RPC consumes. |
 
 ### Cloud Discovery (Future — Phase 27)
 
@@ -885,6 +891,7 @@ Client-specific data, skills, and configuration. Each client has a directory und
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.13 | 2026-04-16 | **NEW: Application Profile schema mapping.** `features/application-profile/schema-mapping.md` v1.0 🟡 — 11-block Application Profile data shape mapped field-by-field against existing schema. Gap analysis: 7 NEW-STORED columns on applications/application_integrations, 3 new tables (capabilities, data_domain_types, application_tech_debt), 6 NEW-AI narrative fields. Recommends `vw_application_profile` view + new `application_narrative_cache` table. Identifies `paid_action` enum mismatch (proposal Plan/Address/Improve/Divest vs schema PLAN/ADDRESS/DELAY/IGNORE) and T14/T15 doc/schema drift in publish-assessment spec. Aligns profile to become the single data shape the `get_workspace_assessment_report_data` RPC consumes (RPC becomes "profiles + aggregates" rather than parallel assembly). Document count 118→119. AS-DESIGNED 30→31. |
 | v2.12 | 2026-04-16 | **Repo cleanup + Publish Assessment architecture + SaskBuilds reports.** Removed redundant `docs-architecture/` directory — `clients/` moved to repo root. Garland data moved from `testing/` to `clients/garland/`. Stale test artifacts removed (server-name-test-plan.md, integration_multimatrix.xlsx, selkirk-productions-import.csv). NEW: `clients/` manifest section (SaskBuilds, Garland). NEW: `features/publish-assessment/architecture.md` v1.0 🟡 — native workspace-level portfolio report generation (AI narrative + server-side PDF). NEW: `clients/saskbuilds/` — APM portfolio report skill (parameterised scripts), Environment + Energy & Resources ministry assessment data and generated reports. Document count 117→118. AS-DESIGNED 29→30. |
 | v2.11 | 2026-04-13 | **Multi-server DP — AI Chat + architecture docs.** `supabase/functions/ai-chat/tools.ts`: server context builder rewritten to query `deployment_profile_servers` → `servers` junction with role labels and primary markers; backward-compat fallback to legacy `server_name`. `adr/adr-dp-infrastructure-boundary.md` v1.1→v2.0: Multi-Server Support amendment — many-to-many junction, boundary unchanged. `core/deployment-profile.md` v2.0→v2.1: new §11 documenting `servers` table, `deployment_profile_servers` junction, backward compat. `features/technology-health/dashboard.md` v1.1→v1.2: §3.6 + §5.3 updated for entity-based server grouping, `vw_server_deployment_summary`. `core/visual-diagram.md` v2.6→v2.7: DPNode multi-server rendering at 3 zoom levels (L1 primary only, L2 +N badge, L3 all with roles). |
 | v2.10 | 2026-04-12 | **Multi-server DP schema — SQL scripts generated.** NEW: `planning/sql/multi-server/` (4 SQL files: 01-tables, 02-rls, 03-migration, 04-views). 3 new tables: `servers` (namespace-scoped), `server_role_types` (reference, 6 seed rows), `deployment_profile_servers` (junction, many-to-many). 10 RLS policies, 2 audit triggers, 3 view GRANTs. Migration: 73 servers extracted from comma-separated `server_name` data, 75 junction links. Views: `vw_server_technology_report` rewritten (entity-based), `vw_application_infrastructure_report` + `vw_technology_tag_lifecycle_risk` updated (added `server_names` column), new `vw_server_deployment_summary`. Updated `testing/security-posture-validation.sql` v1.5→v1.6 (sentinels: 106 tables, 402 policies, 63 audit triggers, 42 views). Gotcha: DROP VIEW removes GRANTs — must re-GRANT after recreate. Schema stats: 103→106 tables, 392→402 policies, 61→63 audit triggers, 41→42 views. Schema backup PENDING. |
