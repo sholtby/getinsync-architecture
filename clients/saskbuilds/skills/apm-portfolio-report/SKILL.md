@@ -33,7 +33,7 @@ Generates a two-part Word document from four standardized APM input files:
 
 **File storage:** Input files and generated outputs are stored per-ministry under:
 ```
-docs-architecture/clients/saskbuilds/data/<ministry>/
+clients/saskbuilds/data/<ministry>/
 ```
 
 ---
