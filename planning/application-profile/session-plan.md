@@ -1,9 +1,16 @@
 # Application Profile Tier 1 — Session Plan
 
-**Version:** v1.0
+**Version:** v1.1
 **Status:** 🟡 AS-DESIGNED
 **Last updated:** 2026-04-16
 **Authoring context:** Session plan for the Application Profile Tier 1 build. Depends on `features/application-profile/schema-mapping.md` v1.0 for the field-by-field schema mapping. Each session below is a 2–4 hour Claude Code sitting with a clear entry/exit.
+
+## Changelog
+
+| Version | Date | Changes |
+|---|---|---|
+| v1.1 | 2026-04-16 | **(a) Application Categories pulled into Tier 1.** `application_categories` taxonomy + `application_category_assignments` junction already exist (namespace-scoped, full coverage for Riverside). Session 2 adds `category_names jsonb` to `vw_application_profile`. Session 3 adds the field to the TS interface. Session 5 renders it as tag chips in Block 2 (Business Purpose). Capabilities remain a Tier 2 placeholder — categories answer "what type of software" (ERP, GIS, ANALYTICS); capabilities will answer "what business function it enables." Different concepts, both belong in Block 2. **(b) Session 5 subcomponent extraction is now mandatory** (not "possibly"). Eleven blocks in one file will cross the 800-line threshold; extract up front. New `src/components/applications/profile/` directory with one component per block; `ApplicationDetailDrawer.tsx` becomes a thin orchestrator (<400 lines). |
+| v1.0 | 2026-04-16 | Initial session plan — 6 sessions, bundled #86/#87/#94 Phase 1 schema into Session 1, #97 into Session 3. |
 
 ---
 
@@ -14,13 +21,13 @@ Tier 1 delivers the **data plumbing and UI consumption** for the Application Pro
 In scope:
 - Schema additions to `applications`, `application_integrations`, `application_contacts.role_type` CHECK constraint
 - New `application_narrative_cache` table (structure only — no generation pipeline yet)
-- `vw_application_profile` view
+- `vw_application_profile` view — includes `category_names jsonb` aggregate from existing `application_category_assignments` + `application_categories` tables
 - `VwApplicationProfile` TypeScript interface
-- Evolve `ApplicationDetailDrawer.tsx` to consume the view
+- Evolve `ApplicationDetailDrawer.tsx` into a thin orchestrator + one block component per profile section under `src/components/applications/profile/`
 - Architecture-doc updates (publish-assessment RPC alignment, application.md, MANIFEST)
 
 Explicitly out of scope for Tier 1 (deferred to Tier 2+):
-- `capabilities` + `application_capabilities` tables (Feature Roadmap Tier 2)
+- `capabilities` + `application_capabilities` tables (Feature Roadmap Tier 2) — distinct from categories; answers "what business function it enables"
 - `data_domain_types` + `application_data_domains` tables
 - `application_tech_debt` table
 - AI narrative generation (Edge Function that populates the cache)
@@ -102,6 +109,7 @@ Design, deploy, and verify `vw_application_profile` — the single projection th
   - `estimated_remediation_cost_low`, `estimated_remediation_cost_high` from summed `initiatives.one_time_cost_low`/`_high`.
   - `latest_assessed_at` = `greatest(dp.assessed_at, pa.business_assessed_at)`.
   - `assessment_completeness_rollup` computed from `dp.tech_assessment_status` + `pa.business_assessment_status`.
+  - `category_names jsonb` — array of `{category_code, category_name}` objects, one entry per category assigned to the app. Source: `application_category_assignments` junction → `application_categories` reference table (namespace-scoped, filter `is_active = true`, order by `display_order`). Follow the pattern already used in [src/components/dashboard/DashboardPage.tsx:79](src/components/dashboard/DashboardPage.tsx:79) (`application_category_assignments` select with nested `category:application_categories(...)`); SQL-side, aggregate with `jsonb_agg(jsonb_build_object('category_code', ac.code, 'category_name', ac.name) ORDER BY ac.display_order) FILTER (WHERE ac.id IS NOT NULL)` in a LEFT JOIN so apps with no categories yield `'[]'::jsonb` instead of NULL.
 - Derived flag columns:
   - `is_crown_jewel` = `pa.criticality >= 50`.
   - `near_threshold_flag` = any of (`business_fit`, `tech_health`, `criticality`, `tech_risk`) within 5 of the namespace-scoped threshold in `assessment_thresholds`.
@@ -140,7 +148,7 @@ Declare `VwApplicationProfile` in `view-contracts.ts`, fix two pre-existing view
 - Optionally `src/types/index.ts` → split into `src/types/deployment-profiles.ts`, `src/types/servers.ts` (**#96** — only if sizing still argues for it after the rest lands).
 
 **Concrete changes**
-1. New interface `VwApplicationProfile` — field-for-field match to `vw_application_profile` columns. Include all 40+ fields; strict types (`string | null`, `number | null` as appropriate).
+1. New interface `VwApplicationProfile` — field-for-field match to `vw_application_profile` columns. Include all 40+ fields; strict types (`string | null`, `number | null` as appropriate). Include `category_names` as `Array<{ category_code: string; category_name: string }>` (non-null — empty array when the app has no categories, per the view's COALESCE to `'[]'::jsonb`).
 2. New interface `VwApplicationRunRate` — matches `vw_application_run_rate` (used in `supabase/functions/ai-chat/tools.ts` today without a type declaration).
 3. `ServerTechnologyReportRow`: remove `workspace_id`, `workspace_name` (they don't exist in the underlying view) — **closes #97**.
 4. Optional: `index.ts` split when (a) it's still past 800 lines after other Tier 1 work lands, and (b) refactoring doesn't touch interfaces being added in Sessions 4–5. Otherwise defer to its own session.
@@ -203,26 +211,39 @@ None — these are net-new hooks for a new concept.
 Evolve the existing drawer to render every Block 1–11 field from the profile. Do not fork into a new component — per `schema-mapping.md` §8, we evolve in place.
 
 **Files touched**
-- `src/components/applications/ApplicationDetailDrawer.tsx` — primary site, expect +200 to +400 lines net.
-- Possibly new subcomponents under `src/components/applications/profile/` for block rendering (`IdentityBlock.tsx`, `BusinessPurposeBlock.tsx`, etc.) if the drawer is crossing the 800-line threshold again — judgement call at the time.
-- `src/hooks/useApplicationDetail.ts` — reconcile with new `useApplicationProfile` hook. One of: (a) keep `useApplicationDetail` for non-profile data (costs, servers) and combine in the drawer; (b) migrate all drawer data to the profile hook. Recommend (a) — cost aggregation still uses `vw_deployment_profile_costs` per DP, not the profile view.
+- `src/components/applications/ApplicationDetailDrawer.tsx` — refactored into a thin orchestrator. Target: well under 400 lines. Responsibilities: call hooks, pass sliced data to block components, handle loading/error/close states.
+- **New directory: `src/components/applications/profile/`** — one file per block (mandatory, not optional). Files to create:
+  - `IdentityBlock.tsx`
+  - `BusinessPurposeBlock.tsx`
+  - `UserCommunityBlock.tsx` (render `user_groups` + `estimated_user_count` + serving areas; no inline placeholder workaround)
+  - `InformationDomainsBlock.tsx` — one-liner Tier 2 placeholder; inline in the drawer if a full file is gratuitous, but otherwise keep parallel structure
+  - `OwnershipBlock.tsx`
+  - `CriticalityBlock.tsx`
+  - `LifecyclePositionBlock.tsx`
+  - `ApplicationContextBlock.tsx`
+  - `CostSummaryBlock.tsx`
+  - `TechDebtBlock.tsx`
+  - `AssessmentContextBlock.tsx`
+- Each block component receives its data via props: the relevant slice of `VwApplicationProfile` plus, where applicable, the matching `CachedNarrative | null` from `useApplicationNarrativeCache`. Blocks do NOT call hooks themselves — the drawer orchestrates. This keeps blocks pure, easy to test, and easy to storybook later.
+- `src/hooks/useApplicationDetail.ts` — reconcile with new `useApplicationProfile` hook. Recommend: keep `useApplicationDetail` for non-profile data (costs, servers) and combine in the drawer. Cost aggregation still uses `vw_deployment_profile_costs` per DP, not the profile view.
 
 **Concrete changes**
-1. Wire `useApplicationProfile(applicationId)` into the drawer.
-2. Render each block per `schema-mapping.md`:
-   - **Block 1 Identity:** name + acronym (parenthetical if present), operational_status badge, plain_language_summary (from cache if approved; fallback to `short_description`; empty-state CTA otherwise).
-   - **Block 2 Business Purpose:** business_outcome if set (empty-state CTA if not). Capabilities: show "Not yet mapped" placeholder (Tier 2).
-   - **Block 3 User Community:** user_groups JSONB rendered as tag chips, estimated_user_count bucket, serving_areas from `branch`.
-   - **Block 4 Information Domains:** "Not yet mapped" placeholder (Tier 2).
-   - **Block 5 Ownership:** four contact roles pulled from the view's join columns. Role badges. Link to edit.
-   - **Block 6 Criticality:** criticality_score, crown_jewel badge, business_impact_statement from cache with empty-state.
-   - **Block 7 Lifecycle Position:** time_quadrant + paid_action (**use Plan/Address/Delay/Ignore — never Improve/Divest**), worst_lifecycle_status, time_paid_tension_flag visual cue + narrative from cache.
-   - **Block 8 Context:** upstream/downstream integration lists with business_purpose edge labels (fallback to integration.name); integration_summary narrative from cache. Visual diagram — keep current `vw_integration_detail` 1-hop rendering.
-   - **Block 9 Cost:** four cost lines + TCO from existing cost hooks; cost_notes text block. No role gating this session.
-   - **Block 10 Tech Debt & Remediation:** remediation_status_rollup badge, linked initiative count, estimated_remediation_cost ROM range, target_state text, remediation_summary + remediation_alignment narratives from cache. Tech debt ITEMS list — "Not yet structured" placeholder (Tier 2).
-   - **Block 11 Assessment Context:** four scores with near-threshold indicators, last_assessed_date, assessment_completeness_rollup badge.
-3. Narrative empty-states: show "No summary yet. [Generate] button" as a placeholder. The Generate button is disabled with a tooltip "Narrative generation ships in Tier 2." (Tier 2 wires the Edge Function.)
-4. Verify: dev server at `http://localhost:5173`, open drawer on a well-populated app, then a bare app, then a crown-jewel app — no regressions, all blocks render.
+1. Create `src/components/applications/profile/` directory and extract block components up front — do not start by growing the existing drawer. Each block gets one file per the list above.
+2. `ApplicationDetailDrawer.tsx` becomes the orchestrator: calls `useApplicationProfile(applicationId)`, `useApplicationNarrativeCache(applicationId)`, and existing cost/server hooks; passes props into block components; handles loading/error/empty states; wires close/back buttons. Aim for <400 lines.
+3. Render each block per `schema-mapping.md`:
+   - **Block 1 Identity** (`IdentityBlock`): name + acronym (parenthetical if present), operational_status badge, plain_language_summary (from cache if approved; fallback to `short_description`; empty-state CTA otherwise).
+   - **Block 2 Business Purpose** (`BusinessPurposeBlock`): **`business_outcome`** as a text block (empty-state CTA if not set) **and `category_names`** rendered as tag chips using `category_name` for the label and `category_code` for the tooltip/aria-label. Always render the category chips when the array is non-empty (full Riverside coverage already exists). Do **not** show a "Not yet mapped" placeholder for categories. Below the category chips, render a small "Capabilities — coming in Tier 2" placeholder to signal the related-but-distinct concept. Categories = *what type of software this is* (ERP, GIS, ANALYTICS). Capabilities = *what business function it enables* (case management, financial reporting). Both belong here; categories ship now, capabilities later.
+   - **Block 3 User Community** (`UserCommunityBlock`): user_groups JSONB rendered as tag chips, estimated_user_count bucket, serving_areas from `branch`.
+   - **Block 4 Information Domains** (inline placeholder — no separate file for a one-liner): "Information domain tagging coming in Tier 2."
+   - **Block 5 Ownership** (`OwnershipBlock`): four contact roles pulled from the view's join columns. Role badges. Link to edit.
+   - **Block 6 Criticality** (`CriticalityBlock`): criticality_score, crown_jewel badge, business_impact_statement from cache with empty-state.
+   - **Block 7 Lifecycle Position** (`LifecyclePositionBlock`): time_quadrant + paid_action (**use Plan/Address/Delay/Ignore — never Improve/Divest**), worst_lifecycle_status, time_paid_tension_flag visual cue + narrative from cache.
+   - **Block 8 Context** (`ApplicationContextBlock`): upstream/downstream integration lists with business_purpose edge labels (fallback to integration.name); integration_summary narrative from cache. Visual diagram — keep current `vw_integration_detail` 1-hop rendering.
+   - **Block 9 Cost** (`CostSummaryBlock`): four cost lines + TCO from existing cost hooks; cost_notes text block. No role gating this session.
+   - **Block 10 Tech Debt & Remediation** (`TechDebtBlock`): remediation_status_rollup badge, linked initiative count, estimated_remediation_cost ROM range, target_state text, remediation_summary + remediation_alignment narratives from cache. Tech debt ITEMS list — "Item-level tech debt coming in Tier 2" placeholder.
+   - **Block 11 Assessment Context** (`AssessmentContextBlock`): four scores with near-threshold indicators, last_assessed_date, assessment_completeness_rollup badge.
+4. Narrative empty-states: show "No summary yet. [Generate] button" as a placeholder. The Generate button is disabled with a tooltip "Narrative generation ships in Tier 2." (Tier 2 wires the Edge Function.)
+5. Verify: dev server at `http://localhost:5173`, open drawer on a well-populated app, then a bare app, then a crown-jewel app — no regressions, all blocks render, categories chip row shows. Each block file stays focused (<150 lines each is a reasonable soft target).
 
 **Open Items bundled**
 None directly. (#94 Phase 1 *UI* work in `AddConnectionModal` is a related but separate drawer/modal — bundle it into a later integration-specific session, not here.)
@@ -250,12 +271,13 @@ Close the loop: update architecture docs to reflect what shipped, reshape the Pu
 
 **Files touched**
 - `docs-architecture/features/publish-assessment/architecture.md` — §Step 1 rewritten so `get_workspace_assessment_report_data` is "`vw_application_profile` projection + workspace aggregates + assessment_detail block for raw factor values." Fix T14/T15 references (`schema-mapping.md` §6 flag).
-- `docs-architecture/features/application-profile/schema-mapping.md` — status 🟡 → 🟢 for Tier 1 fields (others stay 🟡); add "Tier 1 shipped 2026-MM-DD" note; add pointer to this session plan.
+- `docs-architecture/features/application-profile/schema-mapping.md` — status 🟡 → 🟢 for Tier 1 fields (others stay 🟡); add "Tier 1 shipped 2026-MM-DD" note; add pointer to this session plan; note that `category_names` was added to Block 2 (Business Purpose) in Tier 1 by consuming the existing `application_categories` taxonomy.
 - `docs-architecture/core/application.md` — add new columns.
 - `docs-architecture/core/deployment-profile.md` — cross-reference profile view.
 - `docs-architecture/core/involved-party.md` — document `accountable_executive` role.
+- `docs-architecture/catalogs/application-categories.md` (if present) — cross-reference that the profile view now surfaces category names.
 - `docs-architecture/guides/user-help/` — update any user-help article whose app-detail section is now different (per CLAUDE.md §6h).
-- `docs-architecture/guides/whats-new.md` — append entry.
+- `docs-architecture/guides/whats-new.md` — append entry (note category chips on the drawer as a visible user-facing change).
 - `docs-architecture/MANIFEST.md` — version bump, changelog entry, any new doc files listed.
 
 **Open Items bundled**
