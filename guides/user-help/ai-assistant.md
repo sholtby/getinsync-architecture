@@ -33,6 +33,12 @@ The assistant has access to six types of portfolio data:
 - "List my crown jewel applications"
 - "Which applications have the worst tech health?"
 
+**Ownership and assessment gaps:**
+- "Which applications have no assigned business owner?"
+- "Show me apps missing ownership in the Police Department"
+- "What apps does Pat Alvarez own?"
+- "Which apps haven't been assessed yet?"
+
 **Risk and priority questions:**
 - "Which of my crown jewel applications are at highest risk? Rank them."
 - "What's the top risk in the Police Department workspace right now?"

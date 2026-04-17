@@ -4,6 +4,13 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 17, 2026
+
+- **AI Assistant — Ownership gap questions** — You can now ask the assistant questions like "Which applications have no assigned business owner?" or "Show me apps missing ownership." The assistant correctly identifies the ownership gap and lists the affected applications, breaking out crown jewels separately. This closes a gap where the previous filter could only match owners by name and could not detect missing owners.
+- **AI Assistant — Unassessed apps no longer mislabeled** — Previously the assistant could report unassessed applications (ones that haven't had a business or technical assessment started yet) as "low-scoring" because their underlying scores defaulted to zero. Now unassessed apps are clearly tagged as `[unassessed]` in listings, the match count shows an "(N assessed, M unassessed)" breakdown, and the application detail view shows "Not assessed" instead of "0" for criticality, tech health, business fit, and tech risk. Risk rankings and "struggling apps" filters automatically exclude unassessed apps so the results contain only apps with real low scores.
+
+---
+
 ## April 12, 2026
 
 - **Multi-Server Deployment Profiles** — Deployment profiles now support linking multiple servers instead of a single server name text field. When editing a deployment profile (On-Premise, Hybrid, Third-Party Hosted, or Cloud), the new server picker lets you search existing servers by name, link multiple servers, assign a role to each (Database, Web, Application, File, Utility), and mark one as primary with a star toggle. If a server doesn't exist yet, type the name and select "Create server" to add it inline. Existing server data has been migrated automatically.
