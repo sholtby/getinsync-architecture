@@ -1,5 +1,5 @@
 # GetInSync NextGen — Open Items Priority Matrix
-**As of:** April 13, 2026
+**As of:** April 17, 2026
 **Rule:** HIGH = Blockers / Schema | MED = Security / Compliance | LOW = UI / Polish
 
 ---
@@ -110,6 +110,14 @@ These features have complete architecture documents but no code implementation. 
 | **Cloud Discovery** | features/cloud-discovery/architecture.md | Large | FUTURE | AWS/Azure/GCP connectors. Enterprise feature. |
 | **Unified Chat** | features/support/unified-chat-integration.md | Large | FUTURE | Blocked on Edge Functions + AI Chat + conversation persistence tables. |
 | **ITSM Integration (Phase 37)** | features/integrations/itsm-api-research.md | 15-20 days | FUTURE | ServiceNow + HaloITSM publish/subscribe. Q3+. |
+
+---
+
+## Completed Apr 17
+
+| Item | Resolution |
+|------|------------|
+| AI Chat — Garland audit yellow flag (Slide 5: ownership-gap query) | ✅ COMPLETE. Two related fixes shipped in v2026.4.11 on branch `fix/ai-chat-owner-filter` (merged to dev + main, Edge Function deployed). **Fix 1 (commit b6e1233):** added `has_owner` boolean filter to `list-applications` tool. `true` = apps where `owner_name IS NOT NULL`; `false` = apps where `owner_name IS NULL`. Fills the gap where the existing `owner` ilike filter could not detect missing owners. **Fix 2 (commit ce548c8):** verification of the Garland query exposed that `vw_explorer_detail` returns `0` (not NULL) as the unassessed sentinel for criticality / tech_health / business_fit. Tools were treating `0` as a real low score, leading the AI to mislabel unassessed apps as "low-scoring" and pollute risk/struggling-apps results. Updated `list-applications` (select assessment_status fields, render `[unassessed]` tag and "Status: Not assessed" line, show "(N assessed, M unassessed)" breakdown, exclude unassessed from `tech_health_max` filter), `application-detail` (treat 0 as 'Not assessed' for criticality/tech_health/tech_risk/business_fit, crown-jewel marker only fires when criticality > 0), and `technology-risk` (replaced `.not('criticality', 'is', null)` with `.gt('criticality', 0)` — NULL filter alone passed unassessed apps through). Verified end-to-end against Riverside namespace: AI now correctly reports "31 unowned: 7 assessed (4 crown jewels + 3 others) + 24 unassessed". Memory updated with `vw_explorer_detail` zero-sentinel gotcha. User docs updated: `whats-new.md` Apr 17 entry, `ai-assistant.md` ownership-and-assessment-gap example questions added. |
 
 ---
 
