@@ -1,8 +1,10 @@
 # Application Profile — Data Shape Mapping Against GetInSync Schema
 
-**Version:** v1.0
+**Version:** v1.1
 **Status:** 🟡 AS-DESIGNED
 **Last updated:** 2026-04-16
+
+**Changelog:** v1.1 (2026-04-16) — Block 7 mapping table extended with four plan-status fields on `portfolio_assignments` (`has_plan` tri-state, `plan_note`, `plan_document_url`, `planned_remediation_date`) per session-plan v1.2. Gap analysis §2 updated to list the additions on `portfolio_assignments`.
 
 ---
 
@@ -87,6 +89,10 @@ Existing `application_contacts.role_type` enum: `business_owner`, `technical_own
 | `paid_action` | EXISTS | `deployment_profiles.paid_action`. Canonical PAID values: **Plan / Address / Delay / Ignore** (lowercase in DB; title case for display, docs, UI labels, and AI prompts). `Improve` and `Divest` are **not canonical** (they originate from other APM frameworks) and must not appear in docs, UI, narratives, or AI prompts. The source proposal text for this profile used `Improve`/`Divest` — those must be read as `Delay`/`Ignore` respectively when implementing Block 7. |
 | `lifecycle_status` | EXISTS | `applications.lifecycle_status` (Mainstream/Extended/End of Support) + `vw_explorer_detail.worst_lifecycle_status` for roll-up across the tech stack |
 | `time_paid_tension` | NEW-AI | Conflict flag — no stored computation today. Rule is deterministic (e.g., time_quadrant='tolerate' && paid_action='address' → tension). Recommend: compute deterministically in a view column `time_paid_tension_flag boolean` + NEW-AI narrative. Not everything needs AI; the flag is a rule, the sentence is the AI part. |
+| `has_plan` | NEW-STORED | Add `portfolio_assignments.has_plan boolean NULLABLE` (tri-state: `null` = not yet asked, `false` = explicitly no plan, `true` = plan documented). Captured during the same workshop that scores B1–B10 and assigns the TIME quadrant — assessment context, not application metadata. Per-portfolio-assignment (same app in two portfolios can have different plans). Does NOT affect PAID derivation — informational only. Added in Tier 1 Session 1 per `planning/application-profile/session-plan.md` v1.2. |
+| `plan_note` | NEW-STORED | Add `portfolio_assignments.plan_note text`. Free text captured during workshop. `has_plan=true` → describes the plan ("Replacing with SAP S/4HANA by FY2028"). `has_plan=false` → optional context ("No budget until FY2028"). `has_plan=null` → empty. Distinct from `applications.target_state` (singular desired end state, application-scoped) — `plan_note` is how this portfolio is getting there. |
+| `plan_document_url` | NEW-STORED | Add `portfolio_assignments.plan_document_url text`. URL to supporting doc (SharePoint, Google Drive, project charter, business case). Single link. Uses the existing inline-URL pattern (`it_services.lifecycle_url`, `software_products.source_url`) — simpler than the `application_documents` table since plan docs are per-portfolio-assignment, not per-application. UI renders with `<a target="_blank" rel="noopener noreferrer">`. |
+| `planned_remediation_date` | NEW-STORED | Add `portfolio_assignments.planned_remediation_date date`. Target date for remediation / migration / replacement. Not a project schedule — just the expected horizon. `null` when unknown or no plan exists. Distinct from `initiatives.target_end_date` — initiatives are formal project records; this is a workshop-captured fact that may not have a matching initiative. |
 
 ### Block 8 — Application Context (Visual + Data)
 
@@ -141,7 +147,7 @@ Existing: `deployment_profiles.tech_debt_description`, `deployment_profiles.esti
 
 ## 2. Gap Analysis Summary
 
-**New storage required (7 areas):**
+**New storage required (8 areas):**
 1. `applications.acronym` (column)
 2. `applications.business_outcome` (column)
 3. `applications.target_state` (column)
@@ -149,6 +155,7 @@ Existing: `deployment_profiles.tech_debt_description`, `deployment_profiles.esti
 5. `applications.user_groups jsonb` + `estimated_user_count` (columns)
 6. `accountable_executive` added to `application_contacts.role_type` CHECK constraint
 7. `application_integrations.business_purpose` (column, for business-language edge labels)
+8. `portfolio_assignments` plan-status columns: `has_plan boolean NULLABLE` (tri-state), `plan_note text`, `plan_document_url text`, `planned_remediation_date date` — workshop-captured response to the TIME/PAID signal; per-portfolio-assignment scope (not per-application)
 
 **New tables required (3):**
 1. `capabilities` + `application_capabilities` (capability model, currently missing entirely)
