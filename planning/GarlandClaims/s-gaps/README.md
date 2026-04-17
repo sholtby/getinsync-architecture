@@ -1,6 +1,6 @@
 # Garland Presentation — S-Sized Gap Closure
 
-**Source:** `marketing/garland-presentation-audit-response.md`
+**Source:** `planning/GarlandClaims/garland-presentation-audit-response.md`
 **Created:** April 13, 2026
 
 ---
@@ -35,7 +35,7 @@ No dependencies between sessions. All three can run in parallel.
 |---------|-------------|
 | 01 | `src/components/applications/CostBundleSection.tsx`, `src/components/ITServiceDependencyList.tsx` |
 | 02 | `src/components/TechnologyProductModal.tsx`, `src/components/SoftwareProductModal.tsx` |
-| 03 | `planning/sql/garland-s-gaps/` (SQL output only — no src/ changes) |
+| 03 | `planning/sql/GarlandClaims/s-gaps/` (SQL output only — no src/ changes) |
 
 ## Gap Inventory
 

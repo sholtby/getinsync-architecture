@@ -23,11 +23,11 @@ This work has two phases:
 ### Hard rules
 
 1. **Branch:** `feat/restricted-role`. Create from `dev`.
-2. **SQL scripts go to `planning/sql/garland-m-gaps/`** — do NOT execute SQL.
+2. **SQL scripts go to `planning/sql/GarlandClaims/m-gaps/`** — do NOT execute SQL.
 3. **Run `npx tsc --noEmit` before committing** — must pass with zero errors.
 4. **Restricted = read-only** — this role can NEVER create, update, or delete. Only SELECT visibility is scoped.
 5. **Non-restricted roles are unaffected** — Admin, Editor, Steward, and Viewer see everything in their workspace as before. Only Restricted users get filtered visibility.
-6. **Do NOT modify Steward logic** — that is a separate session (`garland-l-gaps/01`).
+6. **Do NOT modify Steward logic** — that is a separate session (`GarlandClaims/l-gaps/01`).
 
 ### Step 1 — Read the required context (in this order)
 
@@ -81,7 +81,7 @@ psql "$DATABASE_READONLY_URL" -c "\d public.portfolio_assignments"
 
 ### Step 3 — Generate SQL: Portfolio user assignments table + constraint update
 
-**File:** `planning/sql/garland-m-gaps/03-restricted-role-schema.sql`
+**File:** `planning/sql/GarlandClaims/m-gaps/03-restricted-role-schema.sql`
 
 **3a. Create portfolio_user_assignments junction table:**
 
@@ -163,7 +163,7 @@ Add consolidated verification at the bottom of the script.
 
 ### Step 4 — Generate SQL: Application-level RLS for restricted visibility
 
-**File:** `planning/sql/garland-m-gaps/03-restricted-role-rls.sql`
+**File:** `planning/sql/GarlandClaims/m-gaps/03-restricted-role-rls.sql`
 
 This is the hardest part. The existing `applications` SELECT policy allows all workspace members to see all apps. For restricted users, we need to add a portfolio-scoping condition.
 
@@ -292,8 +292,8 @@ Update `docs-architecture/identity-security/rbac-permissions.md`:
 
 ```bash
 cd ~/Dev/getinsync-nextgen-ag
-mkdir -p planning/sql/garland-m-gaps
-git add planning/sql/garland-m-gaps/03-* src/hooks/usePermissions.ts src/hooks/useApplications.ts src/pages/settings/ src/components/
+mkdir -p planning/sql/GarlandClaims/m-gaps
+git add planning/sql/GarlandClaims/m-gaps/03-* src/hooks/usePermissions.ts src/hooks/useApplications.ts src/pages/settings/ src/components/
 git commit -m "feat: restricted role scoped to assigned portfolios
 
 Adds portfolio_user_assignments junction table. Restricted users see
@@ -326,7 +326,7 @@ cd ~/Dev/getinsync-nextgen-ag
 
 ### What NOT to do
 
-- Do NOT modify Steward role logic — that is `garland-l-gaps/01`
+- Do NOT modify Steward role logic — that is `GarlandClaims/l-gaps/01`
 - Do NOT execute SQL scripts — generate them for Stuart
 - Do NOT change write permissions for restricted — they are already read-only
 - Do NOT modify RLS on tables unrelated to application visibility (budgets, settings, etc.)

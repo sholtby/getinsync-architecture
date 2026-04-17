@@ -1,6 +1,6 @@
 # Garland Presentation — XS Gap Closure
 
-**Source:** `marketing/garland-presentation-audit-response.md`
+**Source:** `planning/GarlandClaims/garland-presentation-audit-response.md`
 **Created:** April 13, 2026
 
 ---

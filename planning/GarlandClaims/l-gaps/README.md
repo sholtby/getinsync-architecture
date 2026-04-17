@@ -1,6 +1,6 @@
 # Garland Presentation — L-Sized Gap Closure
 
-**Source:** `marketing/garland-presentation-audit-response.md`
+**Source:** `planning/GarlandClaims/garland-presentation-audit-response.md`
 **Created:** April 13, 2026
 
 ---
@@ -18,7 +18,7 @@ Two L-sized gaps (1–2 days each) identified during the Garland presentation cl
 
 Both can run in parallel — no file overlap. However:
 
-**⚠️ Cross-size conflict:** Session 01 modifies `src/hooks/usePermissions.ts`. The M-gap Restricted session (`garland-m-gaps/03`) also modifies this file. Do NOT run L-01 and M-03 in parallel. Sequence: merge one, then start the other.
+**⚠️ Cross-size conflict:** Session 01 modifies `src/hooks/usePermissions.ts`. The M-gap Restricted session (`GarlandClaims/m-gaps/03`) also modifies this file. Do NOT run L-01 and M-03 in parallel. Sequence: merge one, then start the other.
 
 ## Session Summary
 
@@ -33,8 +33,8 @@ Both can run in parallel — no file overlap. However:
 
 | Session | Files Owned |
 |---------|-------------|
-| 01 | `planning/sql/garland-l-gaps/01-*`, `src/hooks/usePermissions.ts`, `src/hooks/useStewardScope.ts`, `src/components/applications/` (assessment gating) |
-| 02 | `planning/sql/garland-l-gaps/02-*`, `supabase/functions/ai-chat/tools.ts`, `supabase/functions/ai-chat/system-prompt.ts` |
+| 01 | `planning/sql/GarlandClaims/l-gaps/01-*`, `src/hooks/usePermissions.ts`, `src/hooks/useStewardScope.ts`, `src/components/applications/` (assessment gating) |
+| 02 | `planning/sql/GarlandClaims/l-gaps/02-*`, `supabase/functions/ai-chat/tools.ts`, `supabase/functions/ai-chat/system-prompt.ts` |
 
 ## Gap Inventory
 
@@ -45,10 +45,10 @@ Both can run in parallel — no file overlap. However:
 
 ## SQL Script Delivery
 
-Session 01 generates SQL scripts in `planning/sql/garland-l-gaps/`. Stuart applies via Supabase SQL Editor.
+Session 01 generates SQL scripts in `planning/sql/GarlandClaims/l-gaps/`. Stuart applies via Supabase SQL Editor.
 
 ```
-planning/sql/garland-l-gaps/
+planning/sql/GarlandClaims/l-gaps/
 ├── 01-steward-rls-policies.sql
 └── 02-budget-ai-tool.sql       (only if schema changes needed)
 ```

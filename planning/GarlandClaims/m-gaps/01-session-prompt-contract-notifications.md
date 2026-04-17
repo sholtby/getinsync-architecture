@@ -23,7 +23,7 @@ The `notifications` and `notification_rules` tables already exist in the schema 
 ### Hard rules
 
 1. **Branch:** `feat/contract-notifications`. Create from `dev`.
-2. **SQL scripts go to `planning/sql/garland-m-gaps/`** — do NOT execute SQL.
+2. **SQL scripts go to `planning/sql/GarlandClaims/m-gaps/`** — do NOT execute SQL.
 3. **No email infrastructure** — in-app notifications only (the `channels` column defaults to `["in_app"]`).
 4. **Run `npx tsc --noEmit` before committing** — must pass with zero errors.
 5. **Follow existing component patterns** — lucide-react icons, Tailwind styling, toast for errors.
@@ -71,7 +71,7 @@ psql "$DATABASE_READONLY_URL" -c "SELECT policyname, cmd, qual FROM pg_policies 
 
 ### Step 3 — Generate SQL: Contract notification scanner function
 
-**File:** `planning/sql/garland-m-gaps/01-contract-notification-function.sql`
+**File:** `planning/sql/GarlandClaims/m-gaps/01-contract-notification-function.sql`
 
 Create a SECURITY DEFINER function that:
 
@@ -156,7 +156,7 @@ $$;
 
 ### Step 4 — Generate SQL: Cron schedule
 
-**File:** `planning/sql/garland-m-gaps/01-contract-notification-cron.sql`
+**File:** `planning/sql/GarlandClaims/m-gaps/01-contract-notification-cron.sql`
 
 ```sql
 -- Run daily at 06:00 UTC (midnight CST for Garland)
@@ -258,8 +258,8 @@ Update `docs-architecture/features/cost-budget/cost-model.md`:
 
 ```bash
 cd ~/Dev/getinsync-nextgen-ag
-mkdir -p planning/sql/garland-m-gaps
-git add planning/sql/garland-m-gaps/01-* src/components/notifications/
+mkdir -p planning/sql/GarlandClaims/m-gaps
+git add planning/sql/GarlandClaims/m-gaps/01-* src/components/notifications/
 git commit -m "feat: contract expiry in-app notifications with notification bell
 
 Adds pg_cron function to scan vw_contract_expiry daily and insert

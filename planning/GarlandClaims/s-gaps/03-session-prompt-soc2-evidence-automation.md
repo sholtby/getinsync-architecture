@@ -21,7 +21,7 @@ Currently, `generate_soc2_evidence()` is a manually-invoked RPC that returns a J
 ### Hard rules
 
 1. **Branch:** `fix/soc2-evidence-cron`. Create from `dev`.
-2. **Output SQL files only** to `planning/sql/garland-s-gaps/`. Do NOT execute any SQL.
+2. **Output SQL files only** to `planning/sql/GarlandClaims/s-gaps/`. Do NOT execute any SQL.
 3. **Do NOT modify application code** — no `src/` changes.
 4. **Follow the project's new-table checklist:** RLS enabled, audit trigger, GRANT to authenticated + service_role.
 5. **Use the existing `generate_soc2_evidence()` function** — do NOT rewrite it. Wrap it.
@@ -69,7 +69,7 @@ psql "$DATABASE_READONLY_URL" -c "SELECT pg_get_functiondef(oid) FROM pg_proc WH
 
 ### Step 3 — Generate SQL Script 01: Fix known data quality issues
 
-**File:** `planning/sql/garland-s-gaps/01-fix-evidence-quality.sql`
+**File:** `planning/sql/GarlandClaims/s-gaps/01-fix-evidence-quality.sql`
 
 Two known issues in `generate_soc2_evidence()` need fixing before we automate:
 
@@ -96,7 +96,7 @@ Generate a `CREATE OR REPLACE FUNCTION generate_soc2_evidence()` that fixes both
 
 ### Step 4 — Generate SQL Script 02: Create evidence storage table
 
-**File:** `planning/sql/garland-s-gaps/02-evidence-storage.sql`
+**File:** `planning/sql/GarlandClaims/s-gaps/02-evidence-storage.sql`
 
 Create a `soc2_evidence_snapshots` table:
 
@@ -129,7 +129,7 @@ Follow the new-table checklist:
 
 ### Step 5 — Generate SQL Script 03: Create wrapper function + cron job
 
-**File:** `planning/sql/garland-s-gaps/03-cron-schedule.sql`
+**File:** `planning/sql/GarlandClaims/s-gaps/03-cron-schedule.sql`
 
 Create a wrapper function that pg_cron calls:
 
@@ -232,7 +232,7 @@ ORDER BY ord;
 
 ### Step 6 — Generate SQL Script 04: Seed initial snapshot
 
-**File:** `planning/sql/garland-s-gaps/04-seed-initial-snapshot.sql`
+**File:** `planning/sql/GarlandClaims/s-gaps/04-seed-initial-snapshot.sql`
 
 Run the wrapper once immediately to create the first automated snapshot:
 
@@ -257,9 +257,9 @@ Check if `docs-architecture/testing/security-posture-validation.sql` needs the n
 
 ```bash
 cd ~/Dev/getinsync-nextgen-ag
-mkdir -p planning/sql/garland-s-gaps
-# The SQL files should already be in planning/sql/garland-s-gaps/
-git add planning/sql/garland-s-gaps/
+mkdir -p planning/sql/GarlandClaims/s-gaps
+# The SQL files should already be in planning/sql/GarlandClaims/s-gaps/
+git add planning/sql/GarlandClaims/s-gaps/
 git commit -m "fix: SQL scripts for automated SOC2 evidence collection via pg_cron
 
 Creates soc2_evidence_snapshots table, wrapper function, and monthly

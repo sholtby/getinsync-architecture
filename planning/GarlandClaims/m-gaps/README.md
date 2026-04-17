@@ -1,6 +1,6 @@
 # Garland Presentation — M-Sized Gap Closure
 
-**Source:** `marketing/garland-presentation-audit-response.md`
+**Source:** `planning/GarlandClaims/garland-presentation-audit-response.md`
 **Created:** April 13, 2026
 
 ---
@@ -19,7 +19,7 @@ Three M-sized gaps (4 hours–1 day each) identified during the Garland presenta
 
 All three can run in parallel — no dependencies between sessions.
 
-**⚠️ Cross-size conflict:** Session 03 modifies `src/hooks/usePermissions.ts`. The L-gap Steward session (`garland-l-gaps/01`) also modifies this file. Do NOT run M-03 and L-01 in parallel.
+**⚠️ Cross-size conflict:** Session 03 modifies `src/hooks/usePermissions.ts`. The L-gap Steward session (`GarlandClaims/l-gaps/01`) also modifies this file. Do NOT run M-03 and L-01 in parallel.
 
 ## Session Summary
 
@@ -35,9 +35,9 @@ All three can run in parallel — no dependencies between sessions.
 
 | Session | Files Owned |
 |---------|-------------|
-| 01 | `planning/sql/garland-m-gaps/01-*`, `src/components/notifications/`, `src/components/layout/` (notification bell) |
+| 01 | `planning/sql/GarlandClaims/m-gaps/01-*`, `src/components/notifications/`, `src/components/layout/` (notification bell) |
 | 02 | `src/components/budget/BudgetTrendChart.tsx`, `src/components/budget/useBudgetHistory.ts`, `src/components/budget/BudgetNamespaceOverview.tsx` |
-| 03 | `planning/sql/garland-m-gaps/03-*`, `src/hooks/usePermissions.ts`, `src/hooks/useApplications.ts` |
+| 03 | `planning/sql/GarlandClaims/m-gaps/03-*`, `src/hooks/usePermissions.ts`, `src/hooks/useApplications.ts` |
 
 ## Gap Inventory
 
@@ -56,10 +56,10 @@ All three can run in parallel — no dependencies between sessions.
 
 ## SQL Script Delivery
 
-Sessions 01 and 03 generate SQL scripts in `planning/sql/garland-m-gaps/`. Stuart applies these via Supabase SQL Editor before the UI code is merged.
+Sessions 01 and 03 generate SQL scripts in `planning/sql/GarlandClaims/m-gaps/`. Stuart applies these via Supabase SQL Editor before the UI code is merged.
 
 ```
-planning/sql/garland-m-gaps/
+planning/sql/GarlandClaims/m-gaps/
 ├── 01-contract-notification-function.sql
 ├── 01-contract-notification-cron.sql
 ├── 03-restricted-role-schema.sql

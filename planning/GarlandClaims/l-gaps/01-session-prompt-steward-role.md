@@ -1,7 +1,7 @@
 # Session Prompt 01 — Steward Role: Application-Scoped Write Access
 
 > **Copy everything below the `---` line into a fresh Claude Code session.**
-> Prerequisite: None (but do NOT run in parallel with garland-m-gaps/03-restricted-role — both touch usePermissions.ts)
+> Prerequisite: None (but do NOT run in parallel with GarlandClaims/m-gaps/03-restricted-role — both touch usePermissions.ts)
 > Estimated: 1-2 days
 
 ---
@@ -21,7 +21,7 @@ The key insight: **Steward scope is derived from `application_contacts`**, not f
 ### Hard rules
 
 1. **Branch:** `feat/steward-role`. Create from `dev`.
-2. **SQL scripts go to `planning/sql/garland-l-gaps/`** — do NOT execute SQL.
+2. **SQL scripts go to `planning/sql/GarlandClaims/l-gaps/`** — do NOT execute SQL.
 3. **Run `npx tsc --noEmit` before committing** — must pass with zero errors.
 4. **Steward scope is contact-based** — use `application_contacts.role_type` for scoping, NOT a new junction table. The table already exists.
 5. **Steward editable fields (from RBAC doc §6.3):**
@@ -33,7 +33,7 @@ The key insight: **Steward scope is derived from `application_contacts`**, not f
    - ❌ Technical Assessment factors
    - ❌ DP infrastructure fields (hosting, cloud, DR, etc.)
    - ❌ Portfolio assignment or workspace settings
-6. **Do NOT modify Restricted role logic** — that is `garland-m-gaps/03`.
+6. **Do NOT modify Restricted role logic** — that is `GarlandClaims/m-gaps/03`.
 
 ### Step 1 — Read the required context (in this order)
 
@@ -221,7 +221,7 @@ Verify: `useApplications.ts` does NOT need filtering for steward (unlike Restric
 
 ### Step 7 — Generate SQL: Steward write policies (optional but recommended)
 
-**File:** `planning/sql/garland-l-gaps/01-steward-rls-policies.sql`
+**File:** `planning/sql/GarlandClaims/l-gaps/01-steward-rls-policies.sql`
 
 For defense-in-depth, add RLS policies that enforce steward write scoping at the database level (not just UI):
 
@@ -265,7 +265,7 @@ Update `docs-architecture/identity-security/rbac-permissions.md`:
 cd ~/Dev/getinsync-nextgen-ag
 git add src/hooks/usePermissions.ts src/hooks/useStewardScope.ts src/components/applications/
 # Add any SQL files generated
-git add planning/sql/garland-l-gaps/01-*
+git add planning/sql/GarlandClaims/l-gaps/01-*
 git commit -m "feat: steward role — application-scoped business assessment editing
 
 Stewards can edit B1-B10, lifecycle status, and annual cost on applications
@@ -302,7 +302,7 @@ cd ~/Dev/getinsync-nextgen-ag
 ### What NOT to do
 
 - Do NOT create a separate `steward_assignments` junction table — use `application_contacts`
-- Do NOT modify the Restricted role — that is `garland-m-gaps/03`
+- Do NOT modify the Restricted role — that is `GarlandClaims/m-gaps/03`
 - Do NOT give stewards access to technical assessment fields
 - Do NOT give stewards access to infrastructure fields (hosting, cloud, DR, etc.)
 - Do NOT modify application visibility — stewards see all apps in their workspace, they just can't edit all of them
