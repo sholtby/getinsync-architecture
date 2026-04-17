@@ -1,6 +1,6 @@
 # Application Profile Tier 1 — Session Plan
 
-**Version:** v1.1
+**Version:** v1.2
 **Status:** 🟡 AS-DESIGNED
 **Last updated:** 2026-04-16
 **Authoring context:** Session plan for the Application Profile Tier 1 build. Depends on `features/application-profile/schema-mapping.md` v1.0 for the field-by-field schema mapping. Each session below is a 2–4 hour Claude Code sitting with a clear entry/exit.
@@ -9,6 +9,7 @@
 
 | Version | Date | Changes |
 |---|---|---|
+| v1.2 | 2026-04-16 | **Plan-status tracking added to Tier 1.** Four new columns on `portfolio_assignments` — `has_plan boolean NULLABLE` (tri-state: null=not yet asked, false=explicitly no plan, true=plan documented), `plan_note text`, `plan_document_url text`, `planned_remediation_date date` — capture workshop-surfaced information about whether an application has a documented plan. Session 1 adds the columns. Session 2 projects them in `vw_application_profile`. Session 3 adds them to `VwApplicationProfile`. Session 5 renders them as a "Response Plan" sub-section of Block 7 (Lifecycle Position) with inline edit capability. **NEW Session 5b** adds a post-completion capture panel to `PortfolioAssessmentWizard.tsx` (deferrable to Tier 1.5). Session 6 updates the Publish Assessment RPC spec to include plan status in the per-app profile shape and documents EA Handoff auto-finding patterns (e.g., "N Eliminate apps have no plan"). Plan status does NOT affect PAID derivation — it contextualizes PAID, not scores it. |
 | v1.1 | 2026-04-16 | **(a) Application Categories pulled into Tier 1.** `application_categories` taxonomy + `application_category_assignments` junction already exist (namespace-scoped, full coverage for Riverside). Session 2 adds `category_names jsonb` to `vw_application_profile`. Session 3 adds the field to the TS interface. Session 5 renders it as tag chips in Block 2 (Business Purpose). Capabilities remain a Tier 2 placeholder — categories answer "what type of software" (ERP, GIS, ANALYTICS); capabilities will answer "what business function it enables." Different concepts, both belong in Block 2. **(b) Session 5 subcomponent extraction is now mandatory** (not "possibly"). Eleven blocks in one file will cross the 800-line threshold; extract up front. New `src/components/applications/profile/` directory with one component per block; `ApplicationDetailDrawer.tsx` becomes a thin orchestrator (<400 lines). |
 | v1.0 | 2026-04-16 | Initial session plan — 6 sessions, bundled #86/#87/#94 Phase 1 schema into Session 1, #97 into Session 3. |
 
@@ -19,11 +20,12 @@
 Tier 1 delivers the **data plumbing and UI consumption** for the Application Profile, without the AI narrative generation pipeline and without the new Tier 2 concept tables (capabilities, data domains, tech debt items).
 
 In scope:
-- Schema additions to `applications`, `application_integrations`, `application_contacts.role_type` CHECK constraint
+- Schema additions to `applications`, `application_integrations`, `application_contacts.role_type` CHECK constraint, and `portfolio_assignments` (plan-status columns)
 - New `application_narrative_cache` table (structure only — no generation pipeline yet)
-- `vw_application_profile` view — includes `category_names jsonb` aggregate from existing `application_category_assignments` + `application_categories` tables
+- `vw_application_profile` view — includes `category_names jsonb` aggregate from existing `application_category_assignments` + `application_categories` tables, plus plan-status passthrough from `portfolio_assignments`
 - `VwApplicationProfile` TypeScript interface
 - Evolve `ApplicationDetailDrawer.tsx` into a thin orchestrator + one block component per profile section under `src/components/applications/profile/`
+- Plan-status capture: four new columns on `portfolio_assignments` (`has_plan`, `plan_note`, `plan_document_url`, `planned_remediation_date`), rendered in the drawer's Block 7 (Lifecycle Position) as a "Response Plan" sub-section with inline edit; included in the Publish Assessment RPC's per-app profile shape
 - Architecture-doc updates (publish-assessment RPC alignment, application.md, MANIFEST)
 
 Explicitly out of scope for Tier 1 (deferred to Tier 2+):
@@ -56,6 +58,7 @@ Apply the complete Tier 1 schema delta in one SQL-Editor session, gated by data-
    - `UPDATE portfolio_assignments SET business_assessment_status = 'not_started' WHERE business_assessment_status = 'Not Started';` (**bundles #87**)
 2. `applications` columns: `acronym text`, `business_outcome text`, `target_state text`, `cost_notes text`, `user_groups jsonb`, `estimated_user_count text` (CHECK in `('<10','10-100','100-1000','1000+')`)
 3. `application_integrations` columns: `business_purpose text` (AP) + `lifecycle_start_date date`, `lifecycle_end_date date`, `sftp_required boolean`, `sftp_host text`, `sftp_credentials_status text` (**bundles #94 Phase 1 schema**)
+3b. `portfolio_assignments` columns (plan-status tracking): `has_plan boolean NULLABLE` (tri-state: null = not yet asked, false = explicitly no plan, true = plan documented), `plan_note text`, `plan_document_url text`, `planned_remediation_date date`. No CHECK constraints — `has_plan` uses NULL semantics intentionally; the other three are free text / date. No reference table needed.
 4. `application_contacts.role_type` CHECK constraint: drop and re-add with `accountable_executive` added to the allowed values list
 5. New table `application_narrative_cache` per `operations/new-table-checklist.md`:
    - Columns: `id uuid PK`, `namespace_id uuid NOT NULL FK`, `application_id uuid NOT NULL FK`, `deployment_profile_id uuid FK NULLABLE`, `narrative_key text CHECK IN ('plain_language_summary','business_impact','integration_summary','time_paid_tension','remediation_summary','remediation_alignment')`, `content text`, `generated_at timestamptz`, `input_hash text`, `approved boolean DEFAULT false`, `approved_by uuid FK users`, `approved_at timestamptz`, `created_at`, `updated_at`
@@ -79,7 +82,7 @@ Apply the complete Tier 1 schema delta in one SQL-Editor session, gated by data-
 2. `psql "$DATABASE_READONLY_URL" -f docs-architecture/testing/pgtap-rls-coverage.sql` → all assertions pass, including new ones for `application_narrative_cache`.
 3. `psql "$DATABASE_READONLY_URL" -f docs-architecture/testing/data-quality-validation.sql` → §casing:paid_action and §assessment:business_assessment_status PASS.
 4. `npx tsc --noEmit` → zero errors (no app code changed, but sanity check).
-5. `SELECT count(*) FROM information_schema.columns WHERE table_name IN ('applications','application_integrations','application_contacts');` confirms new columns.
+5. `SELECT count(*) FROM information_schema.columns WHERE table_name IN ('applications','application_integrations','application_contacts','portfolio_assignments');` confirms new columns across all four tables, including the four plan-status columns on `portfolio_assignments`.
 6. `SELECT conrelid::regclass, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname ~ 'role_type';` confirms `accountable_executive` in the CHECK.
 7. Manually insert a test row into `application_narrative_cache` as a namespace admin → succeeds; as a viewer → blocked.
 8. Schema stats updated in `security-posture-validation.sql` and `MEMORY.md`: tables 106→107, RLS policies +4, audit triggers +1.
@@ -110,6 +113,7 @@ Design, deploy, and verify `vw_application_profile` — the single projection th
   - `latest_assessed_at` = `greatest(dp.assessed_at, pa.business_assessed_at)`.
   - `assessment_completeness_rollup` computed from `dp.tech_assessment_status` + `pa.business_assessment_status`.
   - `category_names jsonb` — array of `{category_code, category_name}` objects, one entry per category assigned to the app. Source: `application_category_assignments` junction → `application_categories` reference table (namespace-scoped, filter `is_active = true`, order by `display_order`). Follow the pattern already used in [src/components/dashboard/DashboardPage.tsx:79](src/components/dashboard/DashboardPage.tsx:79) (`application_category_assignments` select with nested `category:application_categories(...)`); SQL-side, aggregate with `jsonb_agg(jsonb_build_object('category_code', ac.code, 'category_name', ac.name) ORDER BY ac.display_order) FILTER (WHERE ac.id IS NOT NULL)` in a LEFT JOIN so apps with no categories yield `'[]'::jsonb` instead of NULL.
+  - `has_plan`, `plan_note`, `plan_document_url`, `planned_remediation_date` — passthrough from `portfolio_assignments` (publisher row). The view surfaces the tri-state `has_plan` directly; downstream consumers decide how to bucket null vs false (e.g., `COUNT(*) FILTER (WHERE has_plan = true)` for "apps with documented plans", `COUNT(*) FILTER (WHERE has_plan IS NOT TRUE)` for "apps where a plan has not been confirmed").
 - Derived flag columns:
   - `is_crown_jewel` = `pa.criticality >= 50`.
   - `near_threshold_flag` = any of (`business_fit`, `tech_health`, `criticality`, `tech_risk`) within 5 of the namespace-scoped threshold in `assessment_thresholds`.
@@ -148,7 +152,7 @@ Declare `VwApplicationProfile` in `view-contracts.ts`, fix two pre-existing view
 - Optionally `src/types/index.ts` → split into `src/types/deployment-profiles.ts`, `src/types/servers.ts` (**#96** — only if sizing still argues for it after the rest lands).
 
 **Concrete changes**
-1. New interface `VwApplicationProfile` — field-for-field match to `vw_application_profile` columns. Include all 40+ fields; strict types (`string | null`, `number | null` as appropriate). Include `category_names` as `Array<{ category_code: string; category_name: string }>` (non-null — empty array when the app has no categories, per the view's COALESCE to `'[]'::jsonb`).
+1. New interface `VwApplicationProfile` — field-for-field match to `vw_application_profile` columns. Include all 40+ fields; strict types (`string | null`, `number | null` as appropriate). Include `category_names` as `Array<{ category_code: string; category_name: string }>` (non-null — empty array when the app has no categories, per the view's COALESCE to `'[]'::jsonb`). Include plan-status fields: `has_plan: boolean | null`, `plan_note: string | null`, `plan_document_url: string | null`, `planned_remediation_date: string | null` (ISO date string — use `string` not `Date` to match the raw view output).
 2. New interface `VwApplicationRunRate` — matches `vw_application_run_rate` (used in `supabase/functions/ai-chat/tools.ts` today without a type declaration).
 3. `ServerTechnologyReportRow`: remove `workspace_id`, `workspace_name` (they don't exist in the underlying view) — **closes #97**.
 4. Optional: `index.ts` split when (a) it's still past 800 lines after other Tier 1 work lands, and (b) refactoring doesn't touch interfaces being added in Sessions 4–5. Otherwise defer to its own session.
@@ -237,7 +241,11 @@ Evolve the existing drawer to render every Block 1–11 field from the profile. 
    - **Block 4 Information Domains** (inline placeholder — no separate file for a one-liner): "Information domain tagging coming in Tier 2."
    - **Block 5 Ownership** (`OwnershipBlock`): four contact roles pulled from the view's join columns. Role badges. Link to edit.
    - **Block 6 Criticality** (`CriticalityBlock`): criticality_score, crown_jewel badge, business_impact_statement from cache with empty-state.
-   - **Block 7 Lifecycle Position** (`LifecyclePositionBlock`): time_quadrant + paid_action (**use Plan/Address/Delay/Ignore — never Improve/Divest**), worst_lifecycle_status, time_paid_tension_flag visual cue + narrative from cache.
+   - **Block 7 Lifecycle Position** (`LifecyclePositionBlock`): time_quadrant + paid_action (**use Plan/Address/Delay/Ignore — never Improve/Divest**), worst_lifecycle_status, time_paid_tension_flag visual cue + narrative from cache. **New "Response Plan" sub-section** rendering the four plan-status fields:
+     - `has_plan = null` → grey "Plan status: not yet asked" placeholder with a CTA to capture
+     - `has_plan = false` → amber "No plan" badge; show `plan_note` if present as "context"
+     - `has_plan = true` → green "Plan documented" badge; show `plan_note`, a link to `plan_document_url` using the established `<a target="_blank" rel="noopener noreferrer">` pattern, and `planned_remediation_date` if set
+     - Inline edit capability: clicking the sub-section opens a small edit form writing all four fields to `portfolio_assignments` via a new `useUpdatePortfolioPlan(portfolioAssignmentId)` mutation hook. If `has_plan = true` but no `initiative_deployment_profiles` row exists for this app's DP, surface a small "Link an initiative?" prompt — optional Tier 2 follow-up.
    - **Block 8 Context** (`ApplicationContextBlock`): upstream/downstream integration lists with business_purpose edge labels (fallback to integration.name); integration_summary narrative from cache. Visual diagram — keep current `vw_integration_detail` 1-hop rendering.
    - **Block 9 Cost** (`CostSummaryBlock`): four cost lines + TCO from existing cost hooks; cost_notes text block. No role gating this session.
    - **Block 10 Tech Debt & Remediation** (`TechDebtBlock`): remediation_status_rollup badge, linked initiative count, estimated_remediation_cost ROM range, target_state text, remediation_summary + remediation_alignment narratives from cache. Tech debt ITEMS list — "Item-level tech debt coming in Tier 2" placeholder.
@@ -261,6 +269,40 @@ None directly. (#94 Phase 1 *UI* work in `AddConnectionModal` is a related but s
 **Effort estimate:** 3–4 hrs.
 
 **Committable state at end:** yes — ships the full UI. Tier 2 is purely additive (generation + new catalogs).
+
+---
+
+### Session 5b (optional, deferrable to Tier 1.5): Wizard Plan Capture Panel
+
+**Scope**
+Add a post-completion summary card to `PortfolioAssessmentWizard.tsx` that appears after both the Business and Technical assessments reach `complete`. Captures plan-status fields inline with the assessment flow so the data gets created during the workshop rather than as a follow-up edit in the drawer.
+
+**Files touched**
+- `src/components/PortfolioAssessmentWizard.tsx` — new summary card component after the Save panel (~lines 720–740).
+- `src/hooks/useUpdatePortfolioPlan.ts` — reused from Session 5 (mutation hook is shared; this session does not create a new hook).
+
+**Concrete changes**
+1. When `business_assessment_status === 'complete'` AND `tech_assessment_status === 'complete'`, render a "Plan status" card below the wizard's current Save area.
+2. Card fields: tri-state toggle (Yes / No / Unknown mapped to `true` / `false` / `null` for `has_plan`), textarea for `plan_note`, URL input for `plan_document_url` (basic URL format validation), date picker for `planned_remediation_date`.
+3. Save writes to `portfolio_assignments` via the same `useUpdatePortfolioPlan` mutation hook used by the drawer's inline edit in Session 5. No new backend surface.
+4. Reuse the textarea control pattern already used for `cost_allocation_notes` on the same table — same column type, same edit semantics.
+5. Toast on save success/failure per CLAUDE.md error handling rules.
+
+**Open Items bundled**
+None.
+
+**Prerequisites**
+- Session 5 merged (shared mutation hook `useUpdatePortfolioPlan` exists).
+
+**Exit criteria**
+1. Completing a portfolio assessment in the wizard with both tabs at `complete` reveals the plan-status card.
+2. Saving the card persists the four fields to `portfolio_assignments`; re-opening the wizard shows the persisted values.
+3. The drawer's Block 7 Response Plan sub-section reflects the same values (round-trip through `vw_application_profile`).
+4. `npx tsc --noEmit` clean.
+
+**Effort estimate:** ~1 hr.
+
+**Committable state at end:** yes — additive to the wizard; does not disturb existing assessment flow.
 
 ---
 
@@ -331,25 +373,28 @@ None (doc-only).
 ### Dependency graph
 
 ```
-Session 1 (Schema + data cleanup)
+Session 1 (Schema + data cleanup, includes plan-status columns)
     |
     v
-Session 2 (vw_application_profile view)
+Session 2 (vw_application_profile view, projects plan-status passthrough)
     |
     v
-Session 3 (TypeScript interfaces + #97 fix)
+Session 3 (TypeScript interfaces + #97 fix, includes plan-status fields)
     |
     v
 Session 4 (Hooks)
     |
     v
-Session 5 (ApplicationDetailDrawer evolution)
+Session 5 (ApplicationDetailDrawer evolution, renders Response Plan in Block 7)
+    |    \
+    |     v
+    |   Session 5b (OPTIONAL, deferrable to Tier 1.5): Wizard plan capture panel
     |
     v
-Session 6 (Doc alignment + publish-assessment RPC reshape)
+Session 6 (Doc alignment + publish-assessment RPC reshape + EA Handoff auto-findings)
 ```
 
-All six sessions are **strictly serial**. No parallelization opportunity — each consumes the output of the previous.
+Sessions 1–6 remain **strictly serial** — each consumes the output of the previous. Session 5b is a branch off Session 5 that can ship in parallel with Session 6 (different files: 5b touches the wizard; 6 touches architecture docs) or be deferred to Tier 1.5 without blocking the rest.
 
 ### Branch strategy
 
@@ -372,7 +417,7 @@ All six sessions are **strictly serial**. No parallelization opportunity — eac
 - Session 5 standalone sitting (3–4 hrs, heaviest UI work).
 - Session 6 standalone (1–1.5 hrs).
 
-Total Tier 1 effort: ~12–14 hours across 5 sittings.
+Total Tier 1 effort: ~13–15 hours across 5 sittings (including ~80 min of plan-status additions distributed across Sessions 1/2/3/5/6). Add ~1 hr if Session 5b is included in Tier 1 rather than deferred to Tier 1.5.
 
 ---
 
@@ -384,7 +429,8 @@ The Publish Assessment RPC (`get_workspace_assessment_report_data`) is specified
    > "The RPC returns a three-layer JSON: (1) `workspace_aggregates` — TIME/PAID distribution counts, Crown Jewel count, assessment completion stats, publishing user; (2) `applications[]` — each entry is a row from `vw_application_profile` projected to JSONB (the canonical Application Profile shape, shared with the UI drawer); (3) `applications[].assessment_detail` — raw B1–B10 and T01–T15 factor values plus namespace-scoped factor labels from `assessment_factors` (needed for the PDF factor tables; not surfaced in the UI drawer)."
 2. **Session 6** fixes the T14/T15 ambiguity in the same doc (several places say "T01–T14"; schema has T01–T15).
 3. **Future (post-Tier-1) session** implements the RPC itself. It becomes thin: `SELECT jsonb_build_object('aggregates', (...aggregates SELECT...), 'applications', (SELECT jsonb_agg(row_to_json(p)) FROM vw_application_profile p WHERE p.workspace_id = $1), 'applications_assessment_detail', (...factor-values SELECT...))`.
-4. **Snapshot alignment (future):** when `assessment_history.snapshot_data` is written on publish, include the current `application_narrative_cache` rows for each app — so the snapshot is immutable regardless of future cache invalidation. This is a Tier 2 concern (lands when generation pipeline lands).
+3a. **The per-app `profile` block includes plan status.** Since `vw_application_profile` exposes `has_plan`, `plan_note`, `plan_document_url`, `planned_remediation_date` after Session 2, the RPC picks them up automatically once it projects the view. Additionally, the RPC's workspace-aggregate block should expose plan-coverage counts per quadrant (e.g., `eliminate_apps_without_plan_count`, `modernize_apps_with_target_date_count`, `address_apps_with_plan_no_initiative_count`) so the Edge Function doesn't need to re-count. The EA Handoff section should auto-generate findings like "N of M Eliminate applications have no documented plan — governance review recommended" and "N Modernize applications have plans targeting FY2027; M have no target date." Session 6 documents these patterns as examples the Edge Function's system prompt can generate.
+4. **Snapshot alignment (future):** when `assessment_history.snapshot_data` is written on publish, include the current `application_narrative_cache` rows AND the plan-status values for each app — so the snapshot is immutable regardless of future cache invalidation or plan edits. This is a Tier 2 concern (lands when generation pipeline lands).
 
 No Tier 1 session implements the RPC itself — that stays deferred. Tier 1 only aligns the **spec** so the shape is ready when the RPC is built.
 
