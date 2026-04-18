@@ -4,6 +4,12 @@ Recent updates to GetInSync NextGen.
 
 ---
 
+## April 18, 2026
+
+- **PAID framework terminology corrected everywhere** — The PAID framework stands for **Plan / Address / Ignore / Delay**. In a few places (the AI assistant's PAID distribution output, the Derived Scores configuration help text, and the Garland customer deck) the wrong labels "Improve" and "Divest" had crept in. These are now consistently Ignore and Delay. The dashboard distribution panel is unchanged — it was already using the correct labels.
+
+---
+
 ## April 17, 2026
 
 - **AI Assistant — Ownership gap questions** — You can now ask the assistant questions like "Which applications have no assigned business owner?" or "Show me apps missing ownership." The assistant correctly identifies the ownership gap and lists the affected applications, breaking out crown jewels separately. This closes a gap where the previous filter could only match owners by name and could not detect missing owners.

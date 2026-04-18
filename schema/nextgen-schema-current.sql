@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict vCiHaelSe9I2Ihp8cgbEavYzxkTyVqcSucwhFOXtGWaXPy1neOabbUXPoa2BRgp
+\restrict zH7sRgV9d2hBfQXLaAuUDjtxWHs1AU3QhvaJKDBY2XSDn4aR8JxeoTKggWbBff0
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.1
@@ -7500,7 +7500,7 @@ CREATE TABLE public.deployment_profiles (
     CONSTRAINT deployment_profiles_assessment_status_check CHECK ((tech_assessment_status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'complete'::text]))),
     CONSTRAINT deployment_profiles_cloud_provider_check CHECK (((cloud_provider IS NULL) OR (cloud_provider = ''::text) OR (cloud_provider = ANY (ARRAY['aws'::text, 'azure'::text, 'gcp'::text, 'oracle'::text, 'ibm'::text, 'other'::text])))),
     CONSTRAINT deployment_profiles_dp_type_check CHECK ((dp_type = ANY (ARRAY['application'::text, 'platform_tenant'::text, 'infrastructure'::text, 'cost_bundle'::text]))),
-    CONSTRAINT deployment_profiles_paid_action_check CHECK (((paid_action IS NULL) OR (paid_action = ANY (ARRAY['plan'::text, 'address'::text, 'ignore'::text, 'delay'::text, 'improve'::text, 'divest'::text, 'Plan'::text, 'Address'::text, 'Ignore'::text, 'Delay'::text])))),
+    CONSTRAINT deployment_profiles_paid_action_check CHECK (((paid_action IS NULL) OR (paid_action = ANY (ARRAY['plan'::text, 'address'::text, 'ignore'::text, 'delay'::text])))),
     CONSTRAINT deployment_profiles_remediation_effort_check CHECK (((remediation_effort IS NULL) OR (remediation_effort = ANY (ARRAY['xs'::text, 's'::text, 'm'::text, 'l'::text, 'xl'::text, '2xl'::text, 'XS'::text, 'S'::text, 'M'::text, 'L'::text, 'XL'::text, '2XL'::text])))),
     CONSTRAINT deployment_profiles_t01_check CHECK (((t01 >= 1) AND (t01 <= 5))),
     CONSTRAINT deployment_profiles_t02_check CHECK (((t02 >= 1) AND (t02 <= 5))),
@@ -9516,10 +9516,10 @@ CREATE VIEW public.vw_dashboard_summary WITH (security_invoker='true') AS
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'complete'::text)) AS assessed_count,
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'in_progress'::text)) AS needs_profiling_count,
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'not_started'::text)) AS not_started_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'plan'::text)) AS plan_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'address'::text)) AS address_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['ignore'::text, 'improve'::text]))) AS improve_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['delay'::text, 'divest'::text]))) AS divest_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'plan'::text)) AS plan_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'address'::text)) AS address_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'ignore'::text)) AS ignore_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'delay'::text)) AS delay_count,
             round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
             COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
             COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
@@ -9581,8 +9581,8 @@ CREATE VIEW public.vw_dashboard_summary WITH (security_invoker='true') AS
     COALESCE(r.at_risk_count, (0)::bigint) AS at_risk_count,
     COALESCE(d.plan_count, (0)::bigint) AS plan_count,
     COALESCE(d.address_count, (0)::bigint) AS address_count,
-    COALESCE(d.improve_count, (0)::bigint) AS improve_count,
-    COALESCE(d.divest_count, (0)::bigint) AS divest_count,
+    COALESCE(d.ignore_count, (0)::bigint) AS ignore_count,
+    COALESCE(d.delay_count, (0)::bigint) AS delay_count,
     COALESCE(p.avg_business_fit, (0)::numeric) AS avg_business_fit,
     COALESCE(d.avg_tech_health, (0)::numeric) AS avg_tech_health,
     COALESCE(d.total_annual_licensing_cost, (0)::numeric) AS total_annual_licensing_cost,
@@ -9631,10 +9631,10 @@ CREATE VIEW public.vw_dashboard_summary_scoped WITH (security_invoker='true') AS
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'complete'::text)) AS assessed_count,
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'in_progress'::text)) AS needs_profiling_count,
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'not_started'::text)) AS not_started_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'plan'::text)) AS plan_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'address'::text)) AS address_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['ignore'::text, 'improve'::text]))) AS improve_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['delay'::text, 'divest'::text]))) AS divest_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'plan'::text)) AS plan_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'address'::text)) AS address_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'ignore'::text)) AS ignore_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'delay'::text)) AS delay_count,
             round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
             COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
             COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
@@ -9698,8 +9698,8 @@ CREATE VIEW public.vw_dashboard_summary_scoped WITH (security_invoker='true') AS
     COALESCE(r.at_risk_count, (0)::bigint) AS at_risk_count,
     COALESCE(d.plan_count, (0)::bigint) AS plan_count,
     COALESCE(d.address_count, (0)::bigint) AS address_count,
-    COALESCE(d.improve_count, (0)::bigint) AS improve_count,
-    COALESCE(d.divest_count, (0)::bigint) AS divest_count,
+    COALESCE(d.ignore_count, (0)::bigint) AS ignore_count,
+    COALESCE(d.delay_count, (0)::bigint) AS delay_count,
     COALESCE(p.avg_business_fit, (0)::numeric) AS avg_business_fit,
     COALESCE(d.avg_tech_health, (0)::numeric) AS avg_tech_health,
     COALESCE(d.total_annual_licensing_cost, (0)::numeric) AS total_annual_licensing_cost,
@@ -9745,10 +9745,10 @@ CREATE VIEW public.vw_dashboard_workspace_breakdown WITH (security_invoker='true
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'complete'::text)) AS assessed_count,
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'in_progress'::text)) AS needs_profiling_count,
             count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.tech_assessment_status = 'not_started'::text)) AS not_started_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'plan'::text)) AS plan_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = 'address'::text)) AS address_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['ignore'::text, 'improve'::text]))) AS improve_count,
-            count(DISTINCT dp_base.dp_id) FILTER (WHERE (lower(dp_base.paid_action) = ANY (ARRAY['delay'::text, 'divest'::text]))) AS divest_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'plan'::text)) AS plan_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'address'::text)) AS address_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'ignore'::text)) AS ignore_count,
+            count(DISTINCT dp_base.dp_id) FILTER (WHERE (dp_base.paid_action = 'delay'::text)) AS delay_count,
             round(avg(dp_base.tech_health) FILTER (WHERE (dp_base.tech_health IS NOT NULL)), 1) AS avg_tech_health,
             COALESCE(sum(dp_base.annual_licensing_cost), (0)::numeric) AS total_annual_licensing_cost,
             COALESCE(sum(dp_base.annual_cost), (0)::numeric) AS total_annual_cost,
@@ -9815,8 +9815,8 @@ CREATE VIEW public.vw_dashboard_workspace_breakdown WITH (security_invoker='true
     COALESCE(r.at_risk_count, (0)::bigint) AS at_risk_count,
     COALESCE(d.plan_count, (0)::bigint) AS plan_count,
     COALESCE(d.address_count, (0)::bigint) AS address_count,
-    COALESCE(d.improve_count, (0)::bigint) AS improve_count,
-    COALESCE(d.divest_count, (0)::bigint) AS divest_count,
+    COALESCE(d.ignore_count, (0)::bigint) AS ignore_count,
+    COALESCE(d.delay_count, (0)::bigint) AS delay_count,
     COALESCE(p.avg_business_fit, (0)::numeric) AS avg_business_fit,
     COALESCE(d.avg_tech_health, (0)::numeric) AS avg_tech_health,
     COALESCE(d.total_annual_licensing_cost, (0)::numeric) AS total_annual_licensing_cost,
@@ -11344,106 +11344,106 @@ PARTITION BY RANGE (inserted_at);
 
 
 --
--- Name: messages_2026_04_09; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_09 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: messages_2026_04_10; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_10 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: messages_2026_04_11; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_11 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: messages_2026_04_12; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_12 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: messages_2026_04_13; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_13 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: messages_2026_04_14; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE realtime.messages_2026_04_14 (
-    topic text NOT NULL,
-    extension text NOT NULL,
-    payload jsonb,
-    event text,
-    private boolean DEFAULT false,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
 -- Name: messages_2026_04_15; Type: TABLE; Schema: realtime; Owner: -
 --
 
 CREATE TABLE realtime.messages_2026_04_15 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_16; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_16 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_17; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_17 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_18; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_18 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_19; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_19 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_20; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_20 (
+    topic text NOT NULL,
+    extension text NOT NULL,
+    payload jsonb,
+    event text,
+    private boolean DEFAULT false,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    inserted_at timestamp without time zone DEFAULT now() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
+);
+
+
+--
+-- Name: messages_2026_04_21; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.messages_2026_04_21 (
     topic text NOT NULL,
     extension text NOT NULL,
     payload jsonb,
@@ -11653,52 +11653,52 @@ CREATE TABLE supabase_migrations.schema_migrations (
 
 
 --
--- Name: messages_2026_04_09; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_09 FOR VALUES FROM ('2026-04-09 00:00:00') TO ('2026-04-10 00:00:00');
-
-
---
--- Name: messages_2026_04_10; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_10 FOR VALUES FROM ('2026-04-10 00:00:00') TO ('2026-04-11 00:00:00');
-
-
---
--- Name: messages_2026_04_11; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_11 FOR VALUES FROM ('2026-04-11 00:00:00') TO ('2026-04-12 00:00:00');
-
-
---
--- Name: messages_2026_04_12; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_12 FOR VALUES FROM ('2026-04-12 00:00:00') TO ('2026-04-13 00:00:00');
-
-
---
--- Name: messages_2026_04_13; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_13 FOR VALUES FROM ('2026-04-13 00:00:00') TO ('2026-04-14 00:00:00');
-
-
---
--- Name: messages_2026_04_14; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_14 FOR VALUES FROM ('2026-04-14 00:00:00') TO ('2026-04-15 00:00:00');
-
-
---
 -- Name: messages_2026_04_15; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
 ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_15 FOR VALUES FROM ('2026-04-15 00:00:00') TO ('2026-04-16 00:00:00');
+
+
+--
+-- Name: messages_2026_04_16; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_16 FOR VALUES FROM ('2026-04-16 00:00:00') TO ('2026-04-17 00:00:00');
+
+
+--
+-- Name: messages_2026_04_17; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_17 FOR VALUES FROM ('2026-04-17 00:00:00') TO ('2026-04-18 00:00:00');
+
+
+--
+-- Name: messages_2026_04_18; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_18 FOR VALUES FROM ('2026-04-18 00:00:00') TO ('2026-04-19 00:00:00');
+
+
+--
+-- Name: messages_2026_04_19; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_19 FOR VALUES FROM ('2026-04-19 00:00:00') TO ('2026-04-20 00:00:00');
+
+
+--
+-- Name: messages_2026_04_20; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_20 FOR VALUES FROM ('2026-04-20 00:00:00') TO ('2026-04-21 00:00:00');
+
+
+--
+-- Name: messages_2026_04_21; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages ATTACH PARTITION realtime.messages_2026_04_21 FOR VALUES FROM ('2026-04-21 00:00:00') TO ('2026-04-22 00:00:00');
 
 
 --
@@ -13373,59 +13373,59 @@ ALTER TABLE ONLY realtime.messages
 
 
 --
--- Name: messages_2026_04_09 messages_2026_04_09_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_09
-    ADD CONSTRAINT messages_2026_04_09_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_04_10 messages_2026_04_10_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_10
-    ADD CONSTRAINT messages_2026_04_10_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_04_11 messages_2026_04_11_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_11
-    ADD CONSTRAINT messages_2026_04_11_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_04_12 messages_2026_04_12_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_12
-    ADD CONSTRAINT messages_2026_04_12_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_04_13 messages_2026_04_13_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_13
-    ADD CONSTRAINT messages_2026_04_13_pkey PRIMARY KEY (id, inserted_at);
-
-
---
--- Name: messages_2026_04_14 messages_2026_04_14_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY realtime.messages_2026_04_14
-    ADD CONSTRAINT messages_2026_04_14_pkey PRIMARY KEY (id, inserted_at);
-
-
---
 -- Name: messages_2026_04_15 messages_2026_04_15_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
 ALTER TABLE ONLY realtime.messages_2026_04_15
     ADD CONSTRAINT messages_2026_04_15_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_16 messages_2026_04_16_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_16
+    ADD CONSTRAINT messages_2026_04_16_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_17 messages_2026_04_17_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_17
+    ADD CONSTRAINT messages_2026_04_17_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_18 messages_2026_04_18_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_18
+    ADD CONSTRAINT messages_2026_04_18_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_19 messages_2026_04_19_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_19
+    ADD CONSTRAINT messages_2026_04_19_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_20 messages_2026_04_20_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_20
+    ADD CONSTRAINT messages_2026_04_20_pkey PRIMARY KEY (id, inserted_at);
+
+
+--
+-- Name: messages_2026_04_21 messages_2026_04_21_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY realtime.messages_2026_04_21
+    ADD CONSTRAINT messages_2026_04_21_pkey PRIMARY KEY (id, inserted_at);
 
 
 --
@@ -15142,52 +15142,52 @@ CREATE INDEX messages_inserted_at_topic_index ON ONLY realtime.messages USING bt
 
 
 --
--- Name: messages_2026_04_09_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_09_inserted_at_topic_idx ON realtime.messages_2026_04_09 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_04_10_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_10_inserted_at_topic_idx ON realtime.messages_2026_04_10 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_04_11_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_11_inserted_at_topic_idx ON realtime.messages_2026_04_11 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_04_12_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_12_inserted_at_topic_idx ON realtime.messages_2026_04_12 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_04_13_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_13_inserted_at_topic_idx ON realtime.messages_2026_04_13 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
--- Name: messages_2026_04_14_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX messages_2026_04_14_inserted_at_topic_idx ON realtime.messages_2026_04_14 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
-
-
---
 -- Name: messages_2026_04_15_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
 CREATE INDEX messages_2026_04_15_inserted_at_topic_idx ON realtime.messages_2026_04_15 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_16_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_16_inserted_at_topic_idx ON realtime.messages_2026_04_16 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_17_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_17_inserted_at_topic_idx ON realtime.messages_2026_04_17 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_18_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_18_inserted_at_topic_idx ON realtime.messages_2026_04_18 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_19_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_19_inserted_at_topic_idx ON realtime.messages_2026_04_19 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_20_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_20_inserted_at_topic_idx ON realtime.messages_2026_04_20 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
+
+
+--
+-- Name: messages_2026_04_21_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX messages_2026_04_21_inserted_at_topic_idx ON realtime.messages_2026_04_21 USING btree (inserted_at DESC, topic) WHERE ((extension = 'broadcast'::text) AND (private IS TRUE));
 
 
 --
@@ -15254,90 +15254,6 @@ CREATE UNIQUE INDEX vector_indexes_name_bucket_id_idx ON storage.vector_indexes 
 
 
 --
--- Name: messages_2026_04_09_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_09_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_09_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_09_pkey;
-
-
---
--- Name: messages_2026_04_10_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_10_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_10_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_10_pkey;
-
-
---
--- Name: messages_2026_04_11_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_11_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_11_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_11_pkey;
-
-
---
--- Name: messages_2026_04_12_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_12_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_12_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_12_pkey;
-
-
---
--- Name: messages_2026_04_13_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_13_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_13_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_13_pkey;
-
-
---
--- Name: messages_2026_04_14_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_14_inserted_at_topic_idx;
-
-
---
--- Name: messages_2026_04_14_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_14_pkey;
-
-
---
 -- Name: messages_2026_04_15_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
@@ -15349,6 +15265,90 @@ ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.
 --
 
 ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_15_pkey;
+
+
+--
+-- Name: messages_2026_04_16_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_16_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_16_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_16_pkey;
+
+
+--
+-- Name: messages_2026_04_17_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_17_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_17_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_17_pkey;
+
+
+--
+-- Name: messages_2026_04_18_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_18_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_18_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_18_pkey;
+
+
+--
+-- Name: messages_2026_04_19_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_19_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_19_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_19_pkey;
+
+
+--
+-- Name: messages_2026_04_20_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_20_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_20_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_20_pkey;
+
+
+--
+-- Name: messages_2026_04_21_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_inserted_at_topic_index ATTACH PARTITION realtime.messages_2026_04_21_inserted_at_topic_idx;
+
+
+--
+-- Name: messages_2026_04_21_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX realtime.messages_pkey ATTACH PARTITION realtime.messages_2026_04_21_pkey;
 
 
 --
@@ -22891,5 +22891,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vCiHaelSe9I2Ihp8cgbEavYzxkTyVqcSucwhFOXtGWaXPy1neOabbUXPoa2BRgp
+\unrestrict zH7sRgV9d2hBfQXLaAuUDjtxWHs1AU3QhvaJKDBY2XSDn4aR8JxeoTKggWbBff0
 

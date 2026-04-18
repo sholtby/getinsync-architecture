@@ -380,7 +380,7 @@ The following documents were removed during the architecture audit. They describ
 
 ---
 
-## Schema Statistics (as of 2026-04-12)
+## Schema Statistics (as of 2026-04-18)
 
 | Category | Count |
 |----------|-------|
@@ -390,7 +390,7 @@ The following documents were removed during the architecture audit. They describ
 | **RLS Policies** | 402 |
 | **Audit Triggers** | 63 |
 | **Explicit GRANTs** | 106 tables × 2 roles (authenticated + service_role) |
-| **Schema backup** | schema/nextgen-schema-current.sql (2026-04-11) — PENDING new dump |
+| **Schema backup** | schema/nextgen-schema-current.sql (2026-04-18) |
 | **Standard Regions** | 37 |
 | **Demo Namespaces** | 2 (Gov of Alberta Test, City of Riverside) |
 | **Production Namespaces** | 17 (all region = 'ca') |
