@@ -373,6 +373,7 @@ Screenshots that illustrate user-help articles are allowed under **`guides/user-
 - Internal architecture docs — those stay in their existing directories (`core/`, `features/`, etc.)
 - Draft docs not ready for public — keep in `marketing/` or another directory until ready
 - Orphaned screenshots not referenced by any published article
+- **Customer-identifying content** — never mention or disclose any customer-related activities, customer names, customer-specific work, customer deliverables (decks, reports, integrations), or customer-initiated feature requests in any file under `guides/`. Examples of what to avoid: "fix for the Garland deck", "per the ClientCo workshop", "requested by City of X". **The only exception is the fictitious demo namespace `City of Riverside`** — that name is safe to use because no such customer exists. If a change was driven by customer work, describe the user-visible effect generically ("a few places", "some customer-facing pages", "the AI assistant output") without naming the customer or the artefact. This rule covers `whats-new.md`, every article under `user-help/`, and any future `guides/` subdirectory. Customer attribution belongs in `clients/<customer>/`, `planning/`, or session summaries — never in GitBook-synced content.
 
 ### Internal link rules
 
