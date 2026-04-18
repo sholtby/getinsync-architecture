@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-17 (v2.19)
+Last updated: 2026-04-18 (v2.20)
 
 ---
 
@@ -842,9 +842,9 @@ The following documents were removed during the architecture audit. They describ
 | 🟢 AS-BUILT | 61 |
 | 🟡 AS-DESIGNED | 30 |
 | 🟠 NEEDS UPDATE | 1 |
-| ☪ REFERENCE | 23 |
+| ☪ REFERENCE | 26 |
 | ⏸ PARKED | 3 |
-| **Total tracked** | **118** |
+| **Total tracked** | **121** |
 
 ---
 
@@ -855,7 +855,8 @@ Client-specific data, skills, and configuration. Each client has a directory und
 | Directory | Description |
 |-----------|-------------|
 | `clients/saskbuilds/` | SaskBuilds and Procurement — APM portfolio report skill, ministry assessment data (Environment, Energy & Resources) |
-| `clients/garland/` | City of Garland — LeanIX export data (20260409 current, 20260316 deprecated) |
+| `clients/garland/` | City of Garland — GetInSync OG export data (20260409 current, 20260316 deprecated); TDX connector workshop materials under `nextgen/workshop/` |
+| `clients/garland/nextgen/workshop/` | DRAFT workshop materials for May 14, 2026 TDX connector session — connector build plan, TDX tenant prep spec, and TDX Web API investigation log (all ☪ REFERENCE) |
 
 ---
 
@@ -893,6 +894,7 @@ Client-specific data, skills, and configuration. Each client has a directory und
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.20 | 2026-04-18 | **NEW: `clients/garland/nextgen/workshop/` — draft TDX connector workshop materials for May 14, 2026 Garland session.** Three DRAFT documents (all ☪ REFERENCE): `tdx-connector-build-plan.md` (internal, NextGen-side architecture — Supabase Edge Function at `supabase/functions/tdx-connector/`, 16-field custom-attribute mapping from `vw_explorer_detail`, mapping table `tdx_ci_mappings` driven by TDX's no-upsert constraint, 30 req/60s rate-limit ceiling, 6-phase build sequence with Garland OG→NextGen migration as hard dependency), `tdx-tenant-prep-spec.md` (externally-shareable, consultative tone, jargon-free — what Garland's TDX implementer provisions: dedicated "Applications" Asset/CI App, custom "Business Application" CI type, 16 custom fields, "Integrates With" + "Composed Of" relationship types, scoped service account, explicit Sassafras/AllSight coexistence lanes), `tdx-api-investigation-log.md` (internal reference grounded in vanilla TDX Web API docs — primary finding: TDX has no native Business Application CI, must be custom; relationships cannot carry custom attributes; no search-by-ExternalID; Sassafras absent from public docs, marked `[INFERENCE]`/`[UNKNOWN]`; 5 ranked gotchas). Also establishes `clients/<client>/<platform>/<engagement>/` directory pattern for future client engagement materials. Corrected stale Garland clients description (LeanIX → GetInSync OG). Document count 118→121, REFERENCE 23→26. |
 | v2.19 | 2026-04-17 | **NEW: `planning/application-profile/prompts/` — 8 paste-ready Claude Code session prompts.** One atomic prompt per session of the Tier 1 build: `session-1-schema-migration.md` (schema delta + data cleanup, bundles #86/#87/#94 Phase 1), `session-2-view.md` (`vw_application_profile`), `session-3-typescript.md` (`VwApplicationProfile` + #97 cleanup), `session-4-hooks.md` (`useApplicationProfile`/`useApplicationNarrativeCache`/`useUpdatePortfolioPlan`), `session-5-drawer.md` (drawer evolution with mandatory block extraction), `session-5b-wizard-optional.md` (deferrable Tier 1.5 wizard capture panel), `session-6-docs-rpc.md` (doc alignment + Publish Assessment RPC spec reshape). Plus `README.md` explaining sequence and how to run. Each prompt is self-contained with required reads, rules (PAID canonical terminology reinforced), concrete changes, exit criteria, and commit guidance — ready to paste into a fresh session. |
 | v2.18 | 2026-04-16 | **Application Profile schema-mapping v1.0 → v1.1 + session-plan v1.2 trim.** `features/application-profile/schema-mapping.md` Block 7 mapping table extended with four plan-status rows (`has_plan`, `plan_note`, `plan_document_url`, `planned_remediation_date` — all NEW-STORED on `portfolio_assignments`); Gap Analysis Summary §2 updated from 7 to 8 NEW-STORED areas. `planning/application-profile/session-plan.md` Session 5 Block 7 trimmed: "Link an initiative?" prompt deferred to Tier 2 (initiative-to-DP linkage isn't fully rendered in the drawer in Tier 1 — that's Block 10 Tier 2 scope); rest of v1.2 unchanged. |
 | v2.17 | 2026-04-16 | **Application Profile session plan v1.1 → v1.2: plan-status tracking added to Tier 1.** `planning/application-profile/session-plan.md` — four new columns on `portfolio_assignments` (`has_plan boolean NULLABLE` tri-state, `plan_note text`, `plan_document_url text`, `planned_remediation_date date`) capture workshop-surfaced information about whether an application has a documented plan. Session 1 adds the columns. Session 2 projects them in `vw_application_profile`. Session 3 adds them to `VwApplicationProfile`. Session 5's Block 7 (Lifecycle Position) gains a "Response Plan" sub-section with inline edit. New optional Session 5b adds a post-completion capture panel to `PortfolioAssessmentWizard.tsx` (deferrable to Tier 1.5). Section 4 adds item 3a: per-app `profile` block in the Publish Assessment RPC includes plan status; workspace aggregates expose plan-coverage counts per quadrant; EA Handoff section auto-generates findings like "N Eliminate apps have no plan." Plan status does NOT affect PAID derivation — it is informational. Effort delta: ~80 min distributed across sessions, +1 hr if 5b included. |

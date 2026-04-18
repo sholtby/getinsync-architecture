@@ -1,7 +1,7 @@
 # CHANGELOG.md
 GetInSync NextGen Architecture Change Log
 
-Last updated: 2026-02-14
+Last updated: 2026-04-18
 
 ---
 
@@ -14,6 +14,42 @@ This document tracks significant architectural decisions, schema changes, and fe
 ---
 
 ## Recent Changes (2026-02-01 to present)
+
+### TDX Connector Workshop Draft Materials — Garland (Apr 18, 2026)
+
+**Trigger:** Garland (existing OG customer, migrating to NextGen) is standing up TeamDynamix (TDX) as its ITSM platform. Workshop planned May 14, 2026 to align on how NextGen → TDX outbound enrichment will work. Pre-workshop drafts needed so the workshop can refine rather than generate.
+
+**New documents created:**
+
+| Document | Status | Description |
+|----------|--------|-------------|
+| clients/garland/nextgen/workshop/tdx-connector-build-plan.md | DRAFT ☪ | Internal technical build plan — Supabase Edge Function connector at `supabase/functions/tdx-connector/`, 16-field custom-attribute mapping from `vw_explorer_detail`, `tdx_ci_mappings` state store (driven by TDX's no-upsert constraint), 30 req/60s rate-limit ceiling, 6-phase build sequence |
+| clients/garland/nextgen/workshop/tdx-tenant-prep-spec.md | DRAFT ☪ | Externally-shareable readiness spec for Garland's TDX implementer — dedicated "Applications" Asset/CI App, custom "Business Application" CI type, 16 custom fields, "Integrates With" + "Composed Of" relationship types, scoped service account, Sassafras/AllSight coexistence lanes |
+| clients/garland/nextgen/workshop/tdx-api-investigation-log.md | DRAFT ☪ | Internal reference — vanilla TDX Web API findings, inferences, unknowns |
+
+**Key architectural findings grounding the design:**
+
+1. **TDX has no native Business Application CI type.** TDX's CMDB is generic; Garland's tenant must provision a custom Asset/CI App and a custom CI type before NextGen can write.
+2. **TDX relationships cannot carry custom attributes.** Integration edge metadata (direction, method, frequency, sensitivity, criticality, data tags) stays GetInSync-internal; TDX sees only the edge itself, with a link back to GetInSync for detail.
+3. **TDX has no search-by-ExternalID.** NextGen must own a durable `application_id ↔ tdx_ci_id` mapping table; the ExternalID field is written for human traceability but is not a round-trip key.
+4. **Sassafras / AllSight is invisible in public TDX Web API docs.** Coexistence strategy is conservative — separate Asset/CI App, separate service account, no cross-writes, future cross-linking deferred.
+
+**Scope boundaries (enforced in the docs):**
+
+- Outbound-only, v1 — no inbound, no ticket read-through
+- Applications-only push (one CI per NextGen Application); Deployment Profiles stay GetInSync-internal
+- Hard dependency on Garland OG→NextGen migration before connector activation
+- Explicitly NOT CSDM-flavoured — TDX has no CSDM equivalent; the connector is designed on TDX's own terms
+
+**New directory pattern established:** `clients/<client>/<platform>/<engagement>/` — `clients/garland/nextgen/workshop/` is the first instance. Future client engagements (other platforms, other sessions) follow the same shape.
+
+**Corrections in this pass:** the clients/garland/ description in MANIFEST had stale "LeanIX export data" language; corrected to "GetInSync OG export data".
+
+**Status:** all three documents are DRAFT. Structural decisions (integration modelling style, multi-portfolio TIME/PAID rollup, owner lookup fallback, suite parent/child scope, delta-detection mechanism, secret storage) are surfaced as Open Questions in the docs for resolution during or before the May 14 workshop.
+
+**Next:** workshop runs May 14. Approved decisions become Phase 0/1 work items in the NextGen code repo (no code touched in this planning session).
+
+---
 
 ### Gamification & Data Governance Architecture (Feb 14, 2026)
 
