@@ -135,7 +135,7 @@ We'll walk through seven capability areas in this format:
 **TIME** (Technical Health vs Business Fit) — Tolerate, Invest, Modernize, Eliminate.
 *"What should we do with this application?"*
 
-**PAID** *(new)* (Criticality vs Tech Risk) — Plan, Address, Improve, Divest.
+**PAID** *(new)* (Criticality vs Tech Risk) — Plan, Address, Ignore, Delay.
 *"How urgently do we need to act?"*
 
 **Criticality is derived** — not a separate field someone fills in. It comes directly from the business assessment scores. No manual tagging, no subjective override.
@@ -154,7 +154,7 @@ We'll walk through seven capability areas in this format:
 Tolerate it, Invest in it, Modernize it, or Eliminate it.
 
 **PAID Quadrant** — How urgently do we need to act?
-Plan for it, Address it, Improve it, or Divest from it.
+Plan for it, Address it, Ignore it, or Delay it.
 
 **Run Rate** — What does it cost to keep this application running today?
 Operational and recurring costs attributed to each application.

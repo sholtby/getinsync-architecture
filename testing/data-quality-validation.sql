@@ -261,7 +261,8 @@ WHERE NOT EXISTS (
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- CHECK 7: PAID Action Casing
--- Should be lowercase: 'plan' | 'address' | 'ignore' | 'delay' | 'improve' | 'divest'
+-- Canonical lowercase enum: 'plan' | 'address' | 'ignore' | 'delay'
+-- (2026-04-18: 'improve' and 'divest' removed — they were never the real PAID labels)
 -- ─────────────────────────────────────────────────────────────────────────────
 
 SELECT 'CHECK 7: deployment_profiles.paid_action' AS check_name,
@@ -269,7 +270,7 @@ SELECT 'CHECK 7: deployment_profiles.paid_action' AS check_name,
        count(*) AS row_count,
        CASE WHEN count(*) = 0 THEN 'PASS' ELSE 'FAIL' END AS result
 FROM deployment_profiles
-WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay', 'improve', 'divest')
+WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay')
   AND paid_action IS NOT NULL
 GROUP BY paid_action
 
@@ -279,7 +280,7 @@ SELECT 'CHECK 7: deployment_profiles.paid_action',
        '(all valid)', 0, 'PASS'
 WHERE NOT EXISTS (
   SELECT 1 FROM deployment_profiles
-  WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay', 'improve', 'divest')
+  WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay')
     AND paid_action IS NOT NULL
 );
 
@@ -620,12 +621,12 @@ SELECT 'Casing: paid_action',
        coalesce(
          (SELECT string_agg(DISTINCT paid_action, ', ')
           FROM deployment_profiles
-          WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay', 'improve', 'divest')
+          WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay')
             AND paid_action IS NOT NULL),
          '(clean)'),
        CASE WHEN EXISTS (
          SELECT 1 FROM deployment_profiles
-         WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay', 'improve', 'divest')
+         WHERE paid_action NOT IN ('plan', 'address', 'ignore', 'delay')
            AND paid_action IS NOT NULL
        ) THEN 'FAIL' ELSE 'PASS' END
 

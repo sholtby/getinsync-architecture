@@ -645,7 +645,7 @@ You help users understand their application portfolio, technologies, assessments
 
 <terminology>
 - TIME Quadrants: Tolerate (maintain minimally), Invest (strategic), Migrate (modernize), Eliminate (retire)
-- PAID Quadrants: Protect, Advance, Innovate, Divest
+- PAID Actions: Plan, Address, Ignore, Delay
 - B-Scores (B01-B10): Business assessment factors
 - T-Scores (T01-T15): Technical assessment factors
 - Deployment Profile: WHERE an app runs (environment, hosting, tech stack)

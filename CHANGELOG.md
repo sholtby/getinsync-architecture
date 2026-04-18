@@ -15,6 +15,27 @@ This document tracks significant architectural decisions, schema changes, and fe
 
 ## Recent Changes (2026-02-01 to present)
 
+### PAID Framework Terminology Cleanup (Apr 18, 2026)
+
+**Trigger:** Audit found that the PAID acronym (**P**lan / **A**ddress / **I**gnore / **D**elay) was stored in the database and referenced throughout the code as `plan / address / improve / divest` — wrong letters for the "I" and "D". Compensating workarounds (dual-label CASE expressions in views, `if (val === 'improve' || val === 'ignore')` branches in hooks, AI-chat tool enum `['Plan','Address','Improve','Divest']`) had cemented the bug across five layers.
+
+**Remediation landed in a single feature branch `fix/paid-framework-terminology`:**
+
+- **Schema:** new chunk `schema/2026-04-18-paid-framework-cleanup.sql`
+  - Normalized `deployment_profiles.paid_action` to lowercase (mixed `Plan`/`plan` previously)
+  - Replaced `deployment_profiles_paid_action_check` with the canonical 4-value set `{plan, address, ignore, delay}` (was 10 values with TitleCase variants + wrong `improve`/`divest`)
+  - Rebuilt `vw_dashboard_summary`, `vw_dashboard_summary_scoped`, `vw_dashboard_workspace_breakdown` — renamed aggregation columns `improve_count → ignore_count` and `divest_count → delay_count`, dropped the `ARRAY['ignore','improve']` / `ARRAY['delay','divest']` fallbacks
+  - `vw_explorer_detail` untouched (passthrough view; lowercase normalization is sufficient)
+- **Frontend:** `view-contracts.ts`, `usePortfolios.ts`, `useApplications.ts`, `DashboardPage.tsx`, `useDashboardSummary.ts`, `AssessmentCompletionBar.tsx`, `DerivedScoresTab.tsx` — column renames, dual-label mappings deleted, helper text corrected
+- **Edge Functions:** `ai-chat/tools.ts` enum switched to lowercase `['plan','address','ignore','delay']` (the DB stores lowercase post-normalization and the tool does `.eq('paid_action', …)`), dashboard output uses `ignore_count`/`delay_count`; `ai-chat/system-prompt.ts` legacy-label workaround comment removed; `apm-chat/index.ts` terminology section corrected (had used a different-and-wrong "Protect/Advance/Innovate/Divest" variant)
+- **Docs:** `marketing/GetInSync_NextGen_Garland_18Slide_Final.md` (Slides 8 and 9), `testing/data-quality-validation.sql` (CHECK 7 and casing check) — no longer list `improve`/`divest` as valid values
+
+**Data impact:** zero rows used the wrong values (live DB distribution was entirely `plan/address/ignore/delay` with mixed case). No data migration; constraint tightening + case normalization only.
+
+**Why it matters:** An acronym with wrong letters is an audit risk — the bug was visible in the Garland marketing deck (Slides 8 and 9) and in every AI-chat response that listed PAID counts. SOC2 reviewers would flag the discrepancy between spoken framework and persisted enum.
+
+---
+
 ### TDX Connector Workshop Draft Materials — Garland (Apr 18, 2026)
 
 **Trigger:** Garland (existing OG customer, migrating to NextGen) is standing up TeamDynamix (TDX) as its ITSM platform. Workshop planned May 14, 2026 to align on how NextGen → TDX outbound enrichment will work. Pre-workshop drafts needed so the workshop can refine rather than generate.

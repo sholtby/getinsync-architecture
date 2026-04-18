@@ -1,6 +1,6 @@
 # MANIFEST.md
 GetInSync NextGen Architecture Manifest
-Last updated: 2026-04-18 (v2.20)
+Last updated: 2026-04-18 (v2.21)
 
 ---
 
