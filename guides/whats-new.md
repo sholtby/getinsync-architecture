@@ -6,7 +6,7 @@ Recent updates to GetInSync NextGen.
 
 ## April 18, 2026
 
-- **PAID framework terminology corrected everywhere** — The PAID framework stands for **Plan / Address / Ignore / Delay**. In a few places (the AI assistant's PAID distribution output, the Derived Scores configuration help text, and the Garland customer deck) the wrong labels "Improve" and "Divest" had crept in. These are now consistently Ignore and Delay. The dashboard distribution panel is unchanged — it was already using the correct labels.
+- **PAID framework terminology corrected everywhere** — The PAID framework stands for **Plan / Address / Ignore / Delay**. In a couple of places — the AI assistant's PAID distribution output and the Derived Scores configuration help text — the wrong labels "Improve" and "Divest" had crept in. These are now consistently Ignore and Delay. The dashboard distribution panel is unchanged — it was already using the correct labels.
 
 ---
 
