@@ -46,6 +46,8 @@ This section lists everything Garland's TDX implementer needs to provision befor
 
 **Why a dedicated container?** Because the items GetInSync writes are a different kind of thing from the items Sassafras writes. Mixing them in the same container makes both harder to govern: ownership, retention, workflows, reports, and security roles all get muddled. A dedicated container keeps the concerns clean.
 
+**Where Garland will see connector health.** Garland staff see connector-health signals (last sync time, queue depth, per-application sync freshness, failed-sync alerts) **inside GetInSync, not inside TDX**. TDX users see the resulting Configuration Items; GetInSync users see the plumbing. The admin UI on the GetInSync side surfaces everything needed to monitor the integration.
+
 ### 2.2 A custom configuration item type
 
 **Inside the "Applications" Asset/CI App, create a new CI type** to represent business applications.
@@ -130,7 +132,7 @@ The table below is the starting point for the fields GetInSync will populate. Ga
 - Admin rights, security-role management, user management.
 - Ticketing, problem, change, knowledge, service catalog write access.
 
-**Rate-limit context.** GetInSync respects TDX's documented per-endpoint rate limits and runs at well under half of them. The connector is designed so that a full-portfolio refresh on a mid-sized tenant completes in tens of minutes, not seconds. If Garland's tenant has a non-standard rate-limit configuration, please let us know at the workshop.
+**Rate-limit context.** GetInSync runs well below TDX's documented per-endpoint rate limits. The most restrictive TDX limit we have documented sits around 60 requests per 5 seconds for CI updates; GetInSync caps itself at about half of that during bulk phases and much lower during steady-state. A full-portfolio refresh on a mid-sized tenant completes in tens of minutes, not seconds. If Garland's tenant has a non-standard rate-limit configuration, please let us know at the workshop.
 
 **Service-account separation from Sassafras.** Please use two **different** TDX users — one for GetInSync, one for Sassafras / AllSight. Each writes into its own Asset/CI App; neither touches the other's space. Shared accounts blur audit trails and make incidents harder to diagnose. Two accounts, two audit trails, clean separation.
 
@@ -150,6 +152,8 @@ The tenant will have two automated writers. Here is how each stays on its own si
 | What it **never touches** | Any Sassafras-populated CI type or Asset/CI App | Any CI in the "Applications" Asset/CI App |
 
 The two systems can coexist in the same tenant peacefully because they write into different containers, with different credentials, and for different purposes. Over time — once the tenant is stable and both integrations are proven — Garland may want to cross-link the two (e.g., show which installed software runs a given business application). That is a future conversation, not a day-one requirement.
+
+**Planned coexistence review.** Once Garland's TDX tenant is live with both GetInSync and Sassafras writing (expected Phase 5 of the GetInSync-side build plan — see the companion build-plan doc), we will jointly inspect Sassafras's TDX-side CI shape, confirm no accidental overlap, and decide whether any cross-linking is worth formalising. This is a planned review point, not a deferred worry.
 
 ---
 
@@ -197,6 +201,13 @@ Things the workshop will benefit from clarifying. GetInSync does not need answer
 - **TDX AI and automation features.** If Garland plans to enable any TDX automation that looks at CIs — classification AI, automated relationship inference, health scoring — please flag which CI types it will touch. GetInSync-written fields are freshly overwritten on each sync; automated transforms on those fields will conflict.
 - **Shared or separate service accounts across the two integrations.** This spec recommends separate service accounts for GetInSync and Sassafras. If Garland has a policy preference either way, please confirm.
 - **Access for Garland's TDX team to review this spec.** Is this document suitable to share with Garland's implementer directly, or does Stuart at GetInSync plan to walk through it with them first? Either is fine; we want to match the spec's tone to the audience.
+- **Which TDX version is Garland's tenant on?** Some API endpoints referenced in the connector design may behave differently on older versions of TDX. The connector targets the current TDX API surface as documented by TeamDynamix. If Garland's tenant is on an older release, some additional version-compatibility work may be required; please share the version so GetInSync can verify.
+
+---
+
+## Revisions
+
+- **2026-04-18 — Stuart review pass.** Tightened the rate-limit context paragraph to match the connector's actual conservative behaviour. Added a forward-link in §3 to the GetInSync-side Phase 5 coexistence review. Added a sentence to §2.1 pointing Garland at GetInSync-side connector-health visibility (so they don't expect to monitor the sync inside TDX). Added a TDX-version question to §6 Open Items. Composed-of example swapped (earlier in the day) from a ServiceNow illustration to Microsoft 365 to avoid competitor reference. PAID Action choice list remains `Plan / Address / Delay / Ignore` — a mid-review suggestion to switch to `Plan / Address / Improve / Divest` was applied in-flight and then reverted after Stuart re-confirmed Plan/Address/Delay/Ignore as the GetInSync canonical.
 
 ---
 

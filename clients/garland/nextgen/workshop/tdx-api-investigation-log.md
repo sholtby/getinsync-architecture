@@ -76,15 +76,50 @@ TDX's CMDB is a generic configuration management framework. The API documentatio
 - Sassafras almost certainly writes into TDX via proprietary integration paths (not the public Web API surface), populating an inventory-oriented Asset/CI App with CI types such as "Installed Software", "Software Product", "Endpoint", or similar. These CI types are likely system-provisioned rather than customer-authored.
 - Sassafras's writes and GetInSync's writes must not collide. The cleanest architectural separation is for GetInSync's Application CIs to live in **their own Asset/CI App**, distinct from Sassafras's inventory space. Doc 2 makes this a hard requirement for Garland's tenant provisioning.
 
-**What must be confirmed with TDX or Garland's TDX implementer** (`[UNKNOWN]`):
+**What remains to be confirmed with TDX or Garland's TDX implementer** (`[UNKNOWN]`, narrowed by the KSP API finding below):
 
-1. Which Asset/CI App(s) does Sassafras write into — and can a customer inspect or constrain that?
-2. What CI types does Sassafras define, and is the shape public/documented, or is it opaque to customers?
-3. Is the Sassafras-written space readable via the public Web API, or only via a Sassafras-specific API?
-4. Does Sassafras ship with predefined relationship types (e.g., "Installed On", "Running On") that a NextGen Application CI could eventually be linked into (future integration direction — not v1)?
-5. Is there documented guidance on the GetInSync + Sassafras coexistence pattern, or are we defining one from scratch?
+1. Which Asset/CI App(s) does Sassafras write into on the **TDX side** — and can a customer inspect or constrain that? (The Sassafras-side data shape is now known via its own API; what is still unclear is how Sassafras surfaces that data inside the TDX tenant as CIs.) *Partially resolved — see "What is now known" below.*
+2. What CI types does Sassafras define inside TDX, and is that shape public/documented, or opaque to customers? (TDX-side CI types remain `[UNKNOWN]`; only observable in a live tenant with Sassafras enabled.)
+3. *Resolved — see "What is now known" below.* ~~Is the Sassafras-written space readable via the public Web API, or only via a Sassafras-specific API?~~
+4. Does Sassafras ship with predefined TDX-side relationship types (e.g., "Installed On", "Running On") that a NextGen Application CI could eventually be linked into (future integration direction — not v1)? Relationship model on the TDX side remains `[UNKNOWN]`.
+5. Is there documented guidance on the GetInSync + Sassafras coexistence pattern, or are we defining one from scratch? Still `[UNKNOWN]`; we are defining one from scratch in Docs 1 and 2.
 
-The cleanest safe default while these are unknown: **separate Asset/CI Apps, separate service accounts, no write from GetInSync into Sassafras's space, no write from Sassafras into GetInSync's space**. Doc 1 (Build Plan) and Doc 2 (Tenant Prep Spec) both enshrine this.
+### What is now known about Sassafras's API surface (resolved 2026-04-18)
+
+Sassafras publishes a **first-party REST API**, the KSP API (v2), documented publicly. The Sassafras-side data model (software products, computers, users, policies) is readable independently of TDX.
+
+**Evidence:**
+
+- KSP API landing page: <https://www.sassafras.com/hrl/ksp-api.html>
+- Full REST reference: <https://www.sassafras.com/hrl/8.0/kr_restapi.html>
+
+**Shape:**
+
+- Versioned REST at `/api/v2/` on the customer's KeyServer / AllSight instance. This is **customer-hosted** infrastructure (KeyServer runs in the customer's environment), not a Sassafras-cloud endpoint.
+- Available since KeyServer 7.4.1.0.
+- Resource coverage: Computers, Policies, Products, Users — with full CRUD semantics.
+- Two auth modes:
+  - HTTP Basic Auth — positioned by Sassafras as appropriate for dev/test contexts.
+  - Access tokens — positioned as the production pattern. Tokens inherit the creating account's permissions.
+- HTTPS required.
+
+**Critical constraint flagged in the Sassafras docs verbatim:**
+
+> "The API should be used for basic querying of the data, and not for bulk or heavy-use data retrieval. There are currently other more efficient mechanisms for processes that require full data capture or continual bulk data access."
+
+This wording limits any future GetInSync–Sassafras integration to **enrichment-scale traffic**, not **replication-scale or continuous-sync** traffic. Anything that would require full-data pulls or high-frequency polling is out of scope for this API and would need a different mechanism (direct DB export, file-based bulk dump, etc., coordinated with Sassafras).
+
+**What this resolves:**
+
+- `[UNKNOWN]` item 3 is fully answered: yes, there is a Sassafras-native API, separate from TDX's API surface.
+- `[UNKNOWN]` item 1 is partially answered: GetInSync can read Sassafras's data *without* going through TDX at all, by calling the customer's KeyServer directly. Whether Sassafras also writes into TDX (and where) remains `[UNKNOWN]` on the TDX side.
+
+**What it does NOT change:**
+
+- v1 connector scope remains TDX-outbound only. This finding is captured for future sessions; it does not expand v1.
+- The coexistence architecture in Docs 1 and 2 remains: separate Asset/CI App on the TDX side, separate service accounts, no cross-writes on the TDX side. That remains the right shape regardless of what Sassafras's own API offers.
+
+The cleanest safe default while the remaining TDX-side items are unknown: **separate Asset/CI Apps in TDX, separate service accounts on TDX, no write from GetInSync into Sassafras's TDX space, no write from Sassafras into GetInSync's TDX space**. Doc 1 (Build Plan) and Doc 2 (Tenant Prep Spec) both enshrine this.
 
 ---
 
@@ -210,7 +245,7 @@ Ranked by how badly each will bite if not confirmed before implementation.
 
 1. **No upsert / no search-by-ExternalID** — `[DOCUMENTED]`. The connector must own the NextGen-ID ↔ TDX-ID mapping or it will create duplicate CIs on every retry after a mapping loss. Mitigation: durable mapping table with transactional upsert semantics on the NextGen side, plus "GetInSync Application ID" stored as a searchable custom attribute as a disaster-recovery fallback.
 2. **Relationships cannot carry custom metadata** — `[DOCUMENTED]`. Any integration attribute NextGen wants in TDX must live on one of the two endpoint CIs, or on a new "Integration" CI type. v1 accepts the loss; integration-as-CI remains an open question for v2.
-3. **Sassafras coexistence is undefined in public docs** — `[UNKNOWN]`. We proceed with a conservative "separate Asset/CI App, separate service account, no overlap" design, but need Garland (and potentially TDX support) to confirm what Sassafras actually writes and where.
+3. **Sassafras coexistence inside TDX is undefined in public docs** — `[UNKNOWN]` (narrowed). The broader "how do we integrate with Sassafras" question has a clear answer — via Sassafras's own KSP REST API (see §4), not via TDX. What remains `[UNKNOWN]` is the TDX-side CI type naming, Asset/CI App structure, and write behaviour when Sassafras populates TDX. That's only observable in a live Sassafras-enabled tenant. v1 handles this with conservative separation (separate Asset/CI App, separate service account, no overlap); v2+ cross-linking requires tenant-level inspection.
 4. **Rate-limit breach behaviour is undocumented** — `[UNKNOWN]`. Whether 429 + `Retry-After` is returned, or some other code/header combination, is not specified. Implement assuming nothing; log first breaches to capture the real signal.
 5. **Custom attribute type enumeration and lookup support are under-documented** — `[INFERENCE]`. We assume primitive + choice-list only, no entity-lookup custom attributes. If TDX actually does support a lookup field type, Doc 2's field table simplifies. Confirm during tenant provisioning.
 
@@ -219,6 +254,7 @@ Additional unknowns worth flagging:
 - Whether a single TDX tenant can host multiple Asset/CI Apps, and whether CI types are tenant-wide or per-App. `[INFERENCE]` per-App, based on the `AppID` field in the `ConfigurationItemType` model, but not explicitly stated.
 - Whether CI type creation requires special admin rights beyond standard CMDB permissions (matters for who can provision the Asset/CI App — Garland's admin vs the GetInSync service account).
 - Whether the Web API exposes enough of the TDX forms system to let NextGen drive form selection when writing a CI (form assignment typically happens via the UI, not the API).
+- **TDX version compatibility** — `[UNKNOWN]`. The TDX Web API docs at the cited URL describe the current API surface. Garland's tenant version has not been confirmed; some endpoints (especially newer search and bulk operations) may behave differently on older TDX deployments. Confirm tenant version before the connector commits to any API feature that depends on a specific TDX release.
 
 ---
 
@@ -226,9 +262,9 @@ Additional unknowns worth flagging:
 
 Recorded here so the next session or planning pass can pick them up without re-deriving:
 
-- **Sassafras software discovery → NextGen Technology Product catalog.** If Sassafras's software inventory is readable via the Web API (or a Sassafras-native API), NextGen's Technology Product catalog could be seeded or cross-referenced from it. This would strengthen NextGen's standards-intelligence coverage for Garland and reduce manual tagging. Entirely inbound; not in scope for the outbound-only connector.
+- **Sassafras software discovery → NextGen Technology Product catalog.** Sassafras's KSP REST API (documented at <https://www.sassafras.com/hrl/8.0/kr_restapi.html>) exposes a `Products` endpoint on the customer's KeyServer / AllSight instance, reachable at `/api/v2/` over HTTPS with access-token auth. GetInSync would read Sassafras's software inventory **directly from the customer's KeyServer**, *not* through TDX. The integration shape is concrete: a scheduled enrichment job pulls Products (and possibly Computers/Users for context), reconciles against NextGen's Technology Product catalog, and seeds or cross-references entries. **Critical constraint** flagged in Sassafras's own docs: "The API should be used for basic querying of the data, and not for bulk or heavy-use data retrieval." Any future integration design must honour that — enrichment-scale traffic only, not replication-scale. Full-data captures require a different mechanism coordinated with Sassafras. Entirely inbound; not in scope for the outbound-only v1 connector.
 - **TDX ticket data → NextGen DP blast-radius view.** Incident volume and change frequency against a given CI are first-class signals for NextGen's health/risk assessments. A read-only pull of ticket counts per CI (or per ExternalID) would feed the DP-level view Stuart has flagged for future work. Inbound and explicitly out of scope for this session.
-- **Application CI → Sassafras Installed Software relationship.** If Sassafras's CI types are linkable via public relationships, a NextGen Application CI could eventually be joined to the software products it runs on, giving TDX users a single place to see "business app → installed software → endpoints". Requires answering the Sassafras `[UNKNOWN]`s above.
+- **Application CI → Sassafras Installed Software relationship.** Partially unblocked: the Sassafras-side data is now known to be readable via the KSP API (see first bullet). What remains `[UNKNOWN]` is the TDX-side coexistence — specifically, which CI types Sassafras writes into TDX and whether those CI types can be targeted by cross-relationships from GetInSync-owned Application CIs. That half is only observable in a live Sassafras-enabled tenant. A future direction is: GetInSync Application CI in TDX ↔ Sassafras-written Software Product CI in TDX, connected by a "Runs" or "Installed As" relationship — giving TDX users a single graph of business app → installed software → endpoints. Requires live-tenant inspection to finalise.
 
 ---
 
@@ -238,6 +274,8 @@ For each major claim, the supporting URL. Where multiple URLs contribute, the mo
 
 | Claim | Primary source |
 |---|---|
+| Sassafras KSP REST API exists, `/api/v2/` on customer's KeyServer | <https://www.sassafras.com/hrl/ksp-api.html>, <https://www.sassafras.com/hrl/8.0/kr_restapi.html> |
+| Sassafras API positioned for basic querying, not bulk | <https://www.sassafras.com/hrl/8.0/kr_restapi.html> (quoted verbatim in §4) |
 | No native Business Application CI type | <https://solutions.teamdynamix.com/TDWebApi/Home/section/ConfigurationItemTypes> |
 | Asset/CI Apps are the container for CIs | <https://solutions.teamdynamix.com/TDWebApi/Home/section/ConfigurationItems> |
 | Custom CI type creation endpoint | <https://solutions.teamdynamix.com/TDWebApi/Home/section/ConfigurationItemTypes> |
@@ -251,6 +289,14 @@ For each major claim, the supporting URL. Where multiple URLs contribute, the mo
 | People lookup | <https://solutions.teamdynamix.com/TDWebApi/Home/section/People> |
 | Accounts (Departments) search | <https://solutions.teamdynamix.com/TDWebApi/Home/section/Accounts> |
 | Permissions listing | <https://solutions.teamdynamix.com/TDWebApi/Home/section/SecurityRoles> |
+
+---
+
+---
+
+## Revisions
+
+- **2026-04-18 — Stuart review pass.** Incorporated the Sassafras KSP REST API finding (<https://www.sassafras.com/hrl/ksp-api.html>, <https://www.sassafras.com/hrl/8.0/kr_restapi.html>). §4 gained a "What is now known about Sassafras's API surface" subsection — Sassafras publishes a first-party REST API (`/api/v2/`) on the customer's KeyServer / AllSight instance with HTTP Basic + access-token auth and an explicit vendor-flagged "enrichment-scale only, not bulk" constraint. `[UNKNOWN]` item 3 fully resolved; item 1 partially resolved; items 2, 4, 5 remain (TDX-side CI shape, relationship types, coexistence guidance). §6 gotcha #3 narrowed accordingly; §6 gained a TDX version-compatibility `[UNKNOWN]`. §7 future-directions bullet 1 rewritten with concrete integration shape (read directly from KeyServer, not via TDX), bullet 3 noted as partially unblocked on the Sassafras side with TDX-side coexistence still open. §8 source-evidence map gained the Sassafras URLs.
 
 ---
 
